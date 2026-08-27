@@ -80,10 +80,14 @@ var _ = Describe("Protected collector SA ValidatingAdmissionPolicies", func() {
 		Expect(strings.Split(data[protectedSAPodCreatorsKey], ",")).To(ConsistOf(
 			kubeSystemDaemonSetControllerUser,
 			kubeSystemReplicaSetControllerUser,
+			kubeSystemStatefulSetControllerUser,
+			kubeSystemJobControllerUser,
+			kubeSystemReplicationControllerUser,
 		))
 		Expect(strings.Split(data[protectedSAWorkloadCreatorsKey], ",")).To(ConsistOf(
 			"system:serviceaccount:openshift-logging:cluster-logging-operator",
 			kubeSystemDeploymentControllerUser,
+			kubeSystemCronJobControllerUser,
 		))
 	})
 

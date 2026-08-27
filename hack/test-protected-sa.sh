@@ -34,7 +34,7 @@ CONFIGMAP="${CONFIGMAP:-clo-protected-serviceaccounts}"
 CLEANUP_ONLY=false
 NO_CLEANUP=false
 
-usage() { sed -n '2,20p' "$0" | sed 's/^# \?//'; exit "${1:-0}"; }
+usage() { sed -n '2,22p' "$0" | sed 's/^# \?//'; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

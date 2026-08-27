@@ -28,9 +28,13 @@ const (
 	protectedSAKeyPrefix               = "sa_"
 	protectedSAPodCreatorsKey          = "podCreators"
 	protectedSAWorkloadCreatorsKey     = "workloadCreators"
-	kubeSystemDaemonSetControllerUser  = "system:serviceaccount:kube-system:daemon-set-controller"
-	kubeSystemReplicaSetControllerUser = "system:serviceaccount:kube-system:replicaset-controller"
-	kubeSystemDeploymentControllerUser = "system:serviceaccount:kube-system:deployment-controller"
+	kubeSystemDaemonSetControllerUser      = "system:serviceaccount:kube-system:daemon-set-controller"
+	kubeSystemReplicaSetControllerUser     = "system:serviceaccount:kube-system:replicaset-controller"
+	kubeSystemStatefulSetControllerUser    = "system:serviceaccount:kube-system:statefulset-controller"
+	kubeSystemDeploymentControllerUser     = "system:serviceaccount:kube-system:deployment-controller"
+	kubeSystemJobControllerUser            = "system:serviceaccount:kube-system:job-controller"
+	kubeSystemCronJobControllerUser        = "system:serviceaccount:kube-system:cronjob-controller"
+	kubeSystemReplicationControllerUser    = "system:serviceaccount:kube-system:replication-controller"
 )
 
 //go:embed protected-sa-pods.yaml
@@ -59,8 +63,17 @@ func init() {
 	protectedSAWorkloadsBinding = internalruntime.Decode(protectedSAWorkloadsBindingYAML).(*admissionregistrationv1.ValidatingAdmissionPolicyBinding)
 }
 
-// OperatorNamespace returns the namespace the operator runs in.
+// OperatorNamespace returns the namespace the operator pod runs in.
+// It reads the projected ServiceAccount namespace (set by the kubelet, always
+// present in-cluster) so the result is independent of WATCH_NAMESPACE /
+// olm.targetNamespaces, which may list namespaces the operator watches rather
+// than the one it is deployed in.
 func OperatorNamespace() string {
+	if data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+		if ns := strings.TrimSpace(string(data)); ns != "" {
+			return ns
+		}
+	}
 	if ns := os.Getenv("WATCH_NAMESPACE"); ns != "" {
 		return strings.Split(ns, ",")[0]
 	}
@@ -123,10 +136,14 @@ func setCreatorKeys(data map[string]string, operatorNS string) {
 	data[protectedSAPodCreatorsKey] = strings.Join([]string{
 		kubeSystemDaemonSetControllerUser,
 		kubeSystemReplicaSetControllerUser,
+		kubeSystemStatefulSetControllerUser,
+		kubeSystemJobControllerUser,
+		kubeSystemReplicationControllerUser,
 	}, ",")
 	data[protectedSAWorkloadCreatorsKey] = strings.Join([]string{
 		operatorServiceAccountUser(operatorNS),
 		kubeSystemDeploymentControllerUser,
+		kubeSystemCronJobControllerUser,
 	}, ",")
 }
 

@@ -229,10 +229,14 @@ the API caller, set by the API server, **not** spoofable by the requester and
 CEL in a VAP cannot fetch the SA object, so a per-SA label is not readable at
 admission. Use an **operator-maintained param object** instead:
 
-- CLO reconciles a ConfigMap (e.g. `protected-collector-serviceaccounts` in the
-  operator namespace) whose `data` keys are `"<namespace>/<sa-name>"` for every
-  SA referenced by any CLF (`clf.Namespace + "/" + clf.Spec.ServiceAccount.Name`).
-- The VAP references this ConfigMap via `paramRef`. CEL tests membership.
+- CLO reconciles a ConfigMap `clo-protected-serviceaccounts` in the operator
+  namespace whose `data` keys are `"sa_<namespace>_<sa-name>"` for every SA
+  referenced by any CLF. The `sa_` prefix + `_` separators avoid the `/`
+  character, which is illegal in ConfigMap data keys (`[-._a-zA-Z0-9]+`);
+  since namespace and SA names both forbid `_`, the encoding is collision-free.
+- The VAP references this ConfigMap via `paramRef`. CEL rebuilds the same key
+  (`'sa_' + request.namespace + '_' + variables.sa`) and tests membership with
+  a `has(params.data)` guard so an empty ConfigMap never causes a CEL error.
 - The ConfigMap is **always present** (created empty at startup) so CEL never
   errors on a missing param — see §7 bootstrap.
 
@@ -321,13 +325,15 @@ Param (reconciled by CLO; always present):
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: protected-collector-serviceaccounts
+  name: clo-protected-serviceaccounts
   namespace: openshift-logging      # operator namespace
 data:
-  "app-logging/collector-sa": ""    # one key per <clf-ns>/<sa-name>
+  "sa_app-logging_collector-sa": "" # one key per sa_<clf-ns>_<sa-name>
+  podCreators: "system:serviceaccount:kube-system:daemon-set-controller,system:serviceaccount:kube-system:replicaset-controller"
+  workloadCreators: "system:serviceaccount:openshift-logging:cluster-logging-operator,system:serviceaccount:kube-system:deployment-controller"
 ```
 
-Policy A — Pods:
+Policy A — Pods (see `internal/admission/protected-sa-pods.yaml`):
 
 ```yaml
 apiVersion: admissionregistration.k8s.io/v1
@@ -346,34 +352,32 @@ spec:
   variables:
     - name: sa
       expression: "has(object.spec.serviceAccountName) ? object.spec.serviceAccountName : 'default'"
-    - name: key
-      expression: "object.metadata.namespace + '/' + variables.sa"
+    - name: saKey
+      expression: "'sa_' + request.namespace + '_' + variables.sa"
     - name: isProtected
-      expression: "variables.key in params.data"
+      expression: "has(params.data) && (variables.saKey in params.data)"
+    - name: allowedCreators
+      expression: "(has(params.data) && ('podCreators' in params.data)) ? params.data['podCreators'].split(',') : []"
   validations:
-    - expression: >
-        !variables.isProtected ||
-        request.userInfo.username in [
-          'system:serviceaccount:kube-system:daemon-set-controller',
-          'system:serviceaccount:kube-system:replicaset-controller'
-        ]
-      message: "Pod uses a protected collector ServiceAccount but was not created by a CLO-managed collector controller"
+    - expression: "!variables.isProtected || (request.userInfo.username in variables.allowedCreators)"
+      messageExpression: "'Pod uses protected ServiceAccount \"' + request.namespace + '/' + variables.sa + '\" which is only allowed for use by authorized ClusterLogForwarders'"
+      reason: Forbidden
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
 metadata:
-  name: clo-protected-sa-pods
+  name: clo-protected-sa-pods-binding
 spec:
   policyName: clo-protected-sa-pods
-  validationActions: ["Deny"]
+  validationActions: [Deny]
   paramRef:
-    name: protected-collector-serviceaccounts
-    namespace: openshift-logging
-    parameterNotFoundAction: Deny
+    name: clo-protected-serviceaccounts
+    namespace: openshift-logging     # overridden at reconcile time
+    parameterNotFoundAction: Allow   # fail open on missing param to avoid operator self-lockout
+  matchResources: {}
 ```
 
-Policy B — workload controllers (extract pod template per kind; CronJob nests
-one level deeper):
+Policy B — workload controllers (see `internal/admission/protected-sa-workloads.yaml`):
 
 ```yaml
 apiVersion: admissionregistration.k8s.io/v1
@@ -398,27 +402,28 @@ spec:
         operations: ["CREATE", "UPDATE"]
         resources: ["replicationcontrollers"]
   variables:
-    - name: tmplSpec
-      expression: >
-        object.kind == 'CronJob'
+    - name: podSpec
+      expression: >-
+        request.kind.kind == 'CronJob'
           ? object.spec.jobTemplate.spec.template.spec
           : object.spec.template.spec
     - name: sa
-      expression: "has(variables.tmplSpec.serviceAccountName) ? variables.tmplSpec.serviceAccountName : 'default'"
-    - name: key
-      expression: "object.metadata.namespace + '/' + variables.sa"
+      expression: "has(variables.podSpec.serviceAccountName) ? variables.podSpec.serviceAccountName : 'default'"
+    - name: saKey
+      expression: "'sa_' + request.namespace + '_' + variables.sa"
     - name: isProtected
-      expression: "variables.key in params.data"
+      expression: "has(params.data) && (variables.saKey in params.data)"
+    - name: allowedCreators
+      expression: "(has(params.data) && ('workloadCreators' in params.data)) ? params.data['workloadCreators'].split(',') : []"
   validations:
-    - expression: >
-        !variables.isProtected ||
-        request.userInfo.username == 'system:serviceaccount:openshift-logging:cluster-logging-operator' ||
-        request.userInfo.username == 'system:serviceaccount:kube-system:deployment-controller'
-      message: "Workload uses a protected collector ServiceAccount but was not created by the Cluster Logging Operator"
+    - expression: "!variables.isProtected || (request.userInfo.username in variables.allowedCreators)"
+      messageExpression: "'Workload uses protected ServiceAccount \"' + request.namespace + '/' + variables.sa + '\" which is only allowed for use by authorized ClusterLogForwarders'"
+      reason: Forbidden
 ```
 
-(Bind Policy B the same way. Template `openshift-logging` from the operator's own
-namespace at reconcile time.)
+(Bind Policy B the same way — see `internal/admission/protected-sa-workloads-binding.yaml`.
+The operator templates its own namespace into the binding's `paramRef.namespace`
+at reconcile time.)
 
 Representative test cases:
 

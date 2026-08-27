@@ -114,7 +114,7 @@ spec:
       expression: "(has(params.data) && ('podCreators' in params.data)) ? params.data['podCreators'].split(',') : []"
   validations:                                # (E)
     - expression: "!variables.isProtected || (request.userInfo.username in variables.allowedCreators)"
-      messageExpression: "'Pod uses protected collector ServiceAccount \"' + variables.sa + '\" and may only be created by a CLO-managed collector controller'"
+      messageExpression: "'Pod uses protected ServiceAccount \"' + request.namespace + '/' + variables.sa + '\" which is only allowed for use by authorized ClusterLogForwarders'"
       reason: Forbidden
 ```
 

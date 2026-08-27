@@ -2,10 +2,10 @@ package admission
 
 import (
 	"context"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,29 +24,23 @@ func NewProtectedSAAdmissionRunnable(k8sClient client.Client, operatorNS string)
 func (r *protectedSAAdmissionRunnable) Start(ctx context.Context) error {
 	log.Info("Reconciling protected collector ServiceAccount ValidatingAdmissionPolicies")
 
-	var lastErr error
-	err := wait.ExponentialBackoffWithContext(ctx, internaladmission.AdmissionReconcileBackoff, func(ctx context.Context) (bool, error) {
-		lastErr = internaladmission.ReconcileProtectedSAPolicies(ctx, r.client, r.operatorNS)
-		if lastErr == nil {
-			return true, nil
+	backoff := internaladmission.AdmissionReconcileBackoff
+	for {
+		err := internaladmission.ReconcileProtectedSAPolicies(ctx, r.client, r.operatorNS)
+		if err == nil {
+			return nil
 		}
-		if internaladmission.IsUnsupportedAdmissionPolicyAPI(lastErr) {
-			lastErr = nil
-			return true, nil
+		if internaladmission.IsUnsupportedAdmissionPolicyAPI(err) {
+			return nil
 		}
-		log.V(1).Info("retrying protected SA ValidatingAdmissionPolicy reconciliation", "error", lastErr)
-		return false, nil
-	})
-	if err != nil && !wait.Interrupted(err) {
-		if lastErr != nil {
-			log.Error(lastErr, "unable to reconcile protected SA ValidatingAdmissionPolicies", "reason", err)
+		delay := backoff.Step()
+		log.V(1).Info("retrying protected SA ValidatingAdmissionPolicy reconciliation", "error", err, "retryAfter", delay)
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(delay):
 		}
-		return nil
 	}
-	if lastErr != nil {
-		log.Error(lastErr, "unable to reconcile protected SA ValidatingAdmissionPolicies after retries")
-	}
-	return nil
 }
 
 func (r *protectedSAAdmissionRunnable) NeedLeaderElection() bool {

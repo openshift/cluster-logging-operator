@@ -94,7 +94,7 @@ var _ = Describe("[Functional][Metrics] Discarded source logs metrics", func() {
 		grepDiscardCmd := fmt.Sprintf(`%s | grep -i discard`, curlCmd)
 
 		Eventually(func() string {
-			metrics, _ := framework.RunCommand(constants.CollectorName, "sh", "-c", grepDiscardCmd)
+			metrics, _ := framework.RunCommand(functional.UtilContainerName, "sh", "-c", grepDiscardCmd)
 			return metrics
 		}, 60*time.Second, 10*time.Second).Should(
 			And(

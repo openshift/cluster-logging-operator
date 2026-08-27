@@ -227,7 +227,7 @@ func (f *CollectorFunctionalFramework) WriteAsJsonToHttpInput(inputName string, 
 func (f *CollectorFunctionalFramework) WriteToHttpInput(inputName, buf string) error {
 	for _, input := range f.Forwarder.Spec.Inputs {
 		if input.Receiver != nil && input.Receiver.HTTP != nil && input.Name == inputName {
-			_, err := f.RunCommand(constants.CollectorName, "curl", "-ksv", fmt.Sprintf("http://localhost:%d", input.Receiver.Port), "-d", string(buf))
+			_, err := f.RunCommand(UtilContainerName, "curl", "-ksv", fmt.Sprintf("http://localhost:%d", input.Receiver.Port), "-d", string(buf))
 			return err
 		}
 	}

@@ -9,7 +9,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 )
 
@@ -58,7 +57,7 @@ func (f *CollectorFunctionalFramework) CollectMetricLines(metricName, waitFor st
 	var matched []string
 	var lastErr error
 	err := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		raw, err := f.RunCommand(constants.CollectorName, "bash", "-c",
+		raw, err := f.RunCommand(UtilContainerName, "bash", "-c",
 			fmt.Sprintf("curl -ks --max-time 10 -H \"Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)\" https://%s.%s:24231/metrics", f.Name, f.Namespace))
 		if err != nil {
 			lastErr = err

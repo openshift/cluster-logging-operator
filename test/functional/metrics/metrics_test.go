@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -75,7 +74,7 @@ var _ = Describe("[Functional][Metrics]Function testing of collector metrics", f
 		Expect(framework.Deploy()).To(BeNil())
 		metricsURL := fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace)
 		curlCmd := fmt.Sprintf(`curl -ksv -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" %s`, metricsURL)
-		metrics, _ := framework.RunCommand(constants.CollectorName, "sh", "-c", curlCmd)
+		metrics, _ := framework.RunCommand(functional.UtilContainerName, "sh", "-c", curlCmd)
 		Expect(metrics).To(ContainSubstring(sampleMetric))
 	})
 
@@ -83,7 +82,7 @@ var _ = Describe("[Functional][Metrics]Function testing of collector metrics", f
 		Expect(framework.DeployWithVisitor(func(builder *runtime.PodBuilder) error { return nil })).To(BeNil())
 		metricsURL := fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace)
 		curlCmd := fmt.Sprintf(`curl -ksv -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" %s`, metricsURL)
-		metrics, _ := framework.RunCommand(constants.CollectorName, "sh", "-c", curlCmd)
+		metrics, _ := framework.RunCommand(functional.UtilContainerName, "sh", "-c", curlCmd)
 		Expect(metrics).To(ContainSubstring(sampleMetric))
 	})
 

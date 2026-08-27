@@ -248,13 +248,13 @@ test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
 		./test/functional/... \
-		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
+		-ginkgo.no-color -timeout=40m -ginkgo.poll-progress-after='45s'
 
 .PHONY: test-helpers
 test-helpers:
 	go test -race \
 		./test/helpers/... \
-		-ginkgo.no-color -timeout=40m -ginkgo.slow-spec-threshold='45.0s'
+		-ginkgo.no-color -timeout=40m -ginkgo.poll-progress-after='45s'
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator

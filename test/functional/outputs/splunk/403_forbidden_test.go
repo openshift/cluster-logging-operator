@@ -120,7 +120,7 @@ var _ = Describe("Forwarding to Splunk with authorization failures", func() {
 		// Query metrics from the collector (no auth required since we removed it)
 		metricsURL := fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace)
 		curlCmd := fmt.Sprintf(`curl -ksv %s`, metricsURL)
-		metrics, err := framework.RunCommand(constants.CollectorName, "sh", "-c", curlCmd)
+		metrics, err := framework.RunCommand(functional.UtilContainerName, "sh", "-c", curlCmd)
 		Expect(err).To(BeNil(), "Expected no errors querying metrics")
 		Expect(metrics).ToNot(BeEmpty(), "Expected metrics to not be empty")
 

@@ -48,6 +48,13 @@ var TestAPIAdapterConfigVisitor = func(conf string) string {
 	return conf
 }
 
+const (
+	// UtilContainerName is the name of the util container in functional tests
+	UtilContainerName = "util"
+	// imageUbi is the image used for the util container in functional tests
+	imageUbi = "registry.access.redhat.com/ubi9/ubi"
+)
+
 type CollectorFramework interface {
 	DeployConfigMapForConfig(name, config, clfName, clfYaml string) error
 	BuildCollectorContainer(*runtime.ContainerBuilder, string) *runtime.ContainerBuilder
@@ -283,6 +290,13 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs").
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).
 		End()
+
+	// Add util container for testing (needed when vector moves to ubi-micro)
+	b.AddContainer(UtilContainerName, imageUbi).
+		WithCmd([]string{"/bin/sh", "-c", "sleep infinity"}).
+		WithImagePullPolicy(corev1.PullIfNotPresent).
+		End()
+
 	for _, visit := range visitors {
 		if visit != nil {
 			if err = visit(b); err != nil {

@@ -48,7 +48,7 @@ export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.37.1
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:6.0
-IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.3
+IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:0.5.0
 endif # ifdef OVERLAY
 
 REPLICAS?=0

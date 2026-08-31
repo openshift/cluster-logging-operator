@@ -28,21 +28,27 @@ var _ = Describe("EnsureCanUpdateOwnedResource", func() {
 
 	It("should allow create when the object is not persisted", func() {
 		cm := runtime.NewConfigMap("openshift-logging", "lokistack-config", nil)
-		Expect(utils.EnsureCanUpdateOwnedResource(cm, []metav1.OwnerReference{clfOwner})).To(Succeed())
+		Expect(utils.EnsureCanUpdateOwnedResource(cm, clfOwner)).To(Succeed())
 	})
 
 	It("should allow update when owned by the desired owner", func() {
 		cm := runtime.NewConfigMap("openshift-logging", "lokistack-config", nil)
 		cm.SetResourceVersion("1")
 		utils.AddOwnerRefToObject(cm, clfOwner)
-		Expect(utils.EnsureCanUpdateOwnedResource(cm, []metav1.OwnerReference{clfOwner})).To(Succeed())
+		Expect(utils.EnsureCanUpdateOwnedResource(cm, clfOwner)).To(Succeed())
+	})
+
+	It("should allow update when neither object has an owner", func() {
+		cm := runtime.NewConfigMap("openshift-config-managed", "grafana-dashboard-cluster-logging", nil)
+		cm.SetResourceVersion("1")
+		Expect(utils.EnsureCanUpdateOwnedResource(cm)).To(Succeed())
 	})
 
 	It("should refuse update when owned by another resource", func() {
 		cm := runtime.NewConfigMap("openshift-logging", "lokistack-config", nil)
 		cm.SetResourceVersion("1")
 		utils.AddOwnerRefToObject(cm, lokiOwner)
-		err := utils.EnsureCanUpdateOwnedResource(cm, []metav1.OwnerReference{clfOwner})
+		err := utils.EnsureCanUpdateOwnedResource(cm, clfOwner)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("refusing to overwrite"))
 	})
@@ -50,7 +56,7 @@ var _ = Describe("EnsureCanUpdateOwnedResource", func() {
 	It("should refuse update when the object has no owner", func() {
 		cm := runtime.NewConfigMap("openshift-logging", "lokistack-config", nil)
 		cm.SetResourceVersion("1")
-		err := utils.EnsureCanUpdateOwnedResource(cm, []metav1.OwnerReference{clfOwner})
+		err := utils.EnsureCanUpdateOwnedResource(cm, clfOwner)
 		Expect(err).To(HaveOccurred())
 	})
 })

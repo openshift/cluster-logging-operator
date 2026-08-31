@@ -16,7 +16,7 @@ import (
 func Role(k8Client client.Client, desired *rbacv1.Role) error {
 	role := runtime.NewRole(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, role, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(role, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(role, desired.OwnerReferences...); err != nil {
 			return err
 		}
 		role.Rules = desired.Rules
@@ -41,7 +41,7 @@ func RoleBinding(k8Client client.Client, desired *rbacv1.RoleBinding) error {
 		return err
 	}
 
-	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences); err != nil {
+	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences...); err != nil {
 		return err
 	}
 
@@ -72,7 +72,7 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 		return err
 	}
 
-	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences); err != nil {
+	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences...); err != nil {
 		return err
 	}
 

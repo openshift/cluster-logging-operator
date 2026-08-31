@@ -17,7 +17,7 @@ import (
 func NetworkPolicy(k8Client client.Client, desired *networkingv1.NetworkPolicy) error {
 	np := runtime.NewNetworkPolicy(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, np, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(np, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(np, desired.OwnerReferences...); err != nil {
 			return err
 		}
 		np.Labels = desired.Labels

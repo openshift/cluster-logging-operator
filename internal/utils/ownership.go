@@ -4,41 +4,38 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // EnsureCanUpdateOwnedResource returns nil when the object has not been persisted yet
-// (create path) or when it is already owned by all of the desired owners.
-// If the object exists and is not owned by the desired owners (foreign-owned or
+// (create path) or when it is already owned by the expected owner.
+// If the object exists and is not owned by the expected owner (foreign-owned or
 // unowned), it returns an error and callers must not mutate the object.
 //
-// Ownership is matched by OwnerReference UID so additional ownerRefs on the
-// object do not cause false conflicts (LOG-9591).
-func EnsureCanUpdateOwnedResource(obj metav1.Object, desiredOwners []metav1.OwnerReference) error {
+// CLO-managed resources have a single controller ownerReference (the CLF), or no
+// owner at all (e.g. dashboard ConfigMaps). Ownership is matched by UID.
+func EnsureCanUpdateOwnedResource(obj metav1.Object, desiredOwners ...metav1.OwnerReference) error {
 	if obj.GetResourceVersion() == "" {
 		return nil
 	}
-	if IsOwnedByDesired(obj.GetOwnerReferences(), desiredOwners) {
+	if hasSameOwnerUIDs(obj.GetOwnerReferences(), desiredOwners) {
 		return nil
 	}
 	return ResourceOwnershipConflictError(obj)
 }
 
-// IsOwnedByDesired reports whether every desired owner UID is present among current owners.
+// hasSameOwnerUIDs reports whether current and desired have the same owner UIDs.
 // An empty desired owner list only matches when current owners are also empty.
-func IsOwnedByDesired(current, desired []metav1.OwnerReference) bool {
-	if len(desired) == 0 {
-		return len(current) == 0
+func hasSameOwnerUIDs(current, desired []metav1.OwnerReference) bool {
+	return ownerUIDSet(current).Equal(ownerUIDSet(desired))
+}
+
+func ownerUIDSet(refs []metav1.OwnerReference) sets.Set[string] {
+	uids := sets.New[string]()
+	for _, ref := range refs {
+		uids.Insert(string(ref.UID))
 	}
-	currentUIDs := make(map[string]struct{}, len(current))
-	for _, ref := range current {
-		currentUIDs[string(ref.UID)] = struct{}{}
-	}
-	for _, want := range desired {
-		if _, ok := currentUIDs[string(want.UID)]; !ok {
-			return false
-		}
-	}
-	return true
+	return uids
 }
 
 // ResourceOwnershipConflictError builds a stable error for ownership conflicts.

@@ -27,7 +27,7 @@ func Configmap(k8Client client.Client, reader client.Reader, configMap *corev1.C
 			return fmt.Errorf("failed to get %v configmap: %v", key, err)
 		}
 
-		if err := utils.EnsureCanUpdateOwnedResource(current, configMap.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(current, configMap.OwnerReferences...); err != nil {
 			return err
 		}
 

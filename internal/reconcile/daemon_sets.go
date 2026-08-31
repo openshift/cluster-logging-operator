@@ -17,7 +17,7 @@ import (
 func DaemonSet(k8Client client.Client, desired *apps.DaemonSet) error {
 	ds := runtime.NewDaemonSet(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, ds, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(ds, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(ds, desired.OwnerReferences...); err != nil {
 			return err
 		}
 		ds.Labels = desired.Labels

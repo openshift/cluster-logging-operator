@@ -17,7 +17,7 @@ import (
 func Deployment(k8Client client.Client, desired *apps.Deployment) error {
 	dpl := runtime.NewDeployment(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, dpl, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(dpl, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(dpl, desired.OwnerReferences...); err != nil {
 			return err
 		}
 		dpl.Labels = desired.Labels

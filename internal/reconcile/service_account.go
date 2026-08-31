@@ -15,7 +15,7 @@ import (
 func ServiceAccount(k8Client client.Client, desired *v1.ServiceAccount) (*v1.ServiceAccount, error) {
 	sa := runtime.NewServiceAccount(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, sa, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(sa, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(sa, desired.OwnerReferences...); err != nil {
 			return err
 		}
 		sa.Annotations = desired.Annotations

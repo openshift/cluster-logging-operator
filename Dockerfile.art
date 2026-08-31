@@ -1,4 +1,4 @@
-FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.25.7-202602171210.g5015a16.el9 AS builder
+FROM registry.redhat.io/openshift/golang-builder:golang-builder-v1.26-rhel9 AS builder
 
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
@@ -8,19 +8,24 @@ WORKDIR /opt/app-root/src
 
 RUN make build BUILD_OPTS="-tags strictfipsruntime"
 
-FROM registry.redhat.io/ubi9/ubi-minimal:9.7
-
-RUN INSTALL_PKGS=" \
+# Install ubi-micro runtime packages into a staging root directory using DNF
+RUN mkdir -p /mnt/rootfs && \
+    dnf install -y --installroot /mnt/rootfs \
+      --releasever 9 \
+      --setopt=install_weak_deps=false \
+      --nodocs \
+      openssl-libs \
+      ca-certificates \
       rsync \
       file \
-      xz \
-      " && \
-    microdnf install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
-    microdnf clean all && \
-    mkdir /tmp/ocp-clo && \
-    chmod og+w /tmp/ocp-clo
+      xz && \
+    dnf --installroot /mnt/rootfs clean all && \
+    mkdir -p /mnt/rootfs/tmp/ocp-clo && \
+    chmod og+w /mnt/rootfs/tmp/ocp-clo
 
+FROM registry.redhat.io/ubi9/ubi-micro:9.8
+
+COPY --from=builder /mnt/rootfs/ /
 COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/
 COPY --from=builder /opt/app-root/src/bin/must-gather /usr/bin/
 

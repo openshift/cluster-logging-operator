@@ -1,4 +1,4 @@
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 ARG CACHE_DEPS="true"
 WORKDIR /opt/app-root/src
@@ -17,20 +17,26 @@ COPY ./must-gather ./must-gather
 USER 0
 RUN make build
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi:latest AS packages
 
-RUN INSTALL_PKGS=" \
-      openssl \
+# Install ubi-micro runtime packages into a staging root directory using DNF
+RUN mkdir -p /mnt/rootfs && \
+    dnf install -y --installroot /mnt/rootfs \
+      --releasever 9 \
+      --setopt=install_weak_deps=false \
+      --nodocs \
+      openssl-libs \
+      ca-certificates \
       rsync \
       file \
-      xz \
-      " && \
-    microdnf install -y ${INSTALL_PKGS} && \
-    rpm -V ${INSTALL_PKGS} && \
-    microdnf clean all && \
-    mkdir /tmp/ocp-clo && \
-    chmod og+w /tmp/ocp-clo
+      xz && \
+    dnf --installroot /mnt/rootfs clean all && \
+    mkdir -p /mnt/rootfs/tmp/ocp-clo && \
+    chmod og+w /mnt/rootfs/tmp/ocp-clo
 
+FROM registry.access.redhat.com/ubi9/ubi-micro
+
+COPY --from=packages /mnt/rootfs/ /
 COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/
 COPY --from=builder /opt/app-root/src/bin/must-gather /usr/bin/
 
@@ -50,5 +56,3 @@ LABEL \
         name="openshift-logging/cluster-logging-rhel9-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
-
-

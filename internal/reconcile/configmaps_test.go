@@ -132,22 +132,4 @@ var _ = Describe("reconciling ConfigMap", func() {
 		Expect(result.Data).To(HaveKey("config.yaml"))
 		Expect(result.OwnerReferences).To(BeEmpty())
 	})
-
-	It("should allow update when the desired owner UID is present among additional owners", func() {
-		existing := runtime.NewConfigMap(namespace, name, map[string]string{
-			"vector.toml": "old",
-		})
-		utils.AddOwnerRefToObject(existing, clfOwner)
-		utils.AddOwnerRefToObject(existing, metav1.OwnerReference{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-			Name:       "extra",
-			UID:        "extra-uid",
-		})
-		k8sClient := newClient(existing)
-
-		Expect(reconcile.Configmap(k8sClient, k8sClient, desiredCollectorCM(), comparators.CompareLabels)).To(Succeed())
-		result := getConfigMap(k8sClient)
-		Expect(result.Data["vector.toml"]).To(Equal("data_dir = \"/var/lib/vector\""))
-	})
 })

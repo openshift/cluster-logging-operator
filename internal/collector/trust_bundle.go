@@ -24,14 +24,13 @@ var (
 // ReconcileTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
 // By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
 func ReconcileTrustedCABundleConfigMap(k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
-	desiredOwners := []metav1.OwnerReference{owner}
 	cm := runtime.NewConfigMap(namespace, name, nil)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8sClient, cm, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(cm, desiredOwners); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(cm, owner); err != nil {
 			return err
 		}
 		cm.Labels = map[string]string{constants.InjectTrustedCABundleLabel: "true"}
-		cm.OwnerReferences = desiredOwners
+		cm.OwnerReferences = []metav1.OwnerReference{owner}
 		return nil
 	})
 

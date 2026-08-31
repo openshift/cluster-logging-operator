@@ -17,7 +17,7 @@ import (
 func Service(k8Client client.Client, desired *corev1.Service) error {
 	sm := runtime.NewService(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, sm, func() error {
-		if err := utils.EnsureCanUpdateOwnedResource(sm, desired.OwnerReferences); err != nil {
+		if err := utils.EnsureCanUpdateOwnedResource(sm, desired.OwnerReferences...); err != nil {
 			return err
 		}
 

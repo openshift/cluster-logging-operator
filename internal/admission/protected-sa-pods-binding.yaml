@@ -1,0 +1,13 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: clo-protected-sa-pods-binding
+spec:
+  policyName: clo-protected-sa-pods
+  validationActions: [Deny]
+  # namespace is overridden at reconcile time with the operator's own namespace.
+  paramRef:
+    name: clo-protected-serviceaccounts
+    namespace: openshift-logging
+    parameterNotFoundAction: Allow
+  matchResources: {}

@@ -134,4 +134,47 @@ created by main.main
 		}),
 	)
 
+	// LOG-9963: Independent log records where the first line contains an exception
+	// keyword must NOT cause subsequent unrelated lines to be merged.
+	// Reproduces the production scenario: a container emits single-line JSON logs;
+	// one log has an exception-related term (e.g. SecretConfigException) in its
+	// message field, and subsequent normal logs are greedily consumed by the
+	// catch-all continuation rule.
+	It("should not merge independent log records when first line contains an exception keyword", func() {
+		testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(obs.InputTypeApplication).
+			WithMultilineErrorDetectionFilter().
+			ToHttpOutput()
+
+		Expect(framework.Deploy()).To(BeNil())
+
+		// Line 1 triggers exception detection (contains "Exception:");
+		// lines 2 and 3 are regular logs that must NOT be merged with line 1.
+		messages := []string{
+			"SecretConfigException: config not found for key db.password",
+			"Request completed in 235ms",
+			"Processing batch 42 records",
+		}
+
+		var buffer []string
+		for _, msg := range messages {
+			crioLine := functional.NewCRIOLogMessageWithStream(timestamp, constants.STDOUT, msg, false)
+			buffer = append(buffer, crioLine)
+		}
+		appNamespace = framework.Pod.Namespace
+		Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+
+		for _, output := range framework.Forwarder.Spec.Outputs {
+			outputType := output.Type
+			raw, err := framework.ReadRawApplicationLogsFrom(string(outputType))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs for type %s", outputType)
+			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs for type %s: %s", outputType, raw)
+			Expect(len(logs)).To(Equal(len(messages)), "Expected each independent message to be a separate log event, got %d instead of %d", len(logs), len(messages))
+			for i, msg := range messages {
+				Expect(logs[i].Message).To(Equal(msg), "Log event %d should match the original message", i)
+			}
+		}
+	})
+
 })

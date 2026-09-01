@@ -18,12 +18,12 @@ type Elasticsearch struct {
 	Proxy *Proxy             `json:"proxy,omitempty" yaml:"proxy,omitempty" toml:"proxy,omitempty"`
 }
 
-func NewElasticsearch(url string, init func(s *Elasticsearch), inputs ...string) (s *Elasticsearch) {
+func NewElasticsearch(endpoints []string, init func(s *Elasticsearch), inputs ...string) (s *Elasticsearch) {
 	sort.Strings(inputs)
 	s = &Elasticsearch{
 		Type:      types.SinkTypeElasticsearch,
 		Inputs:    inputs,
-		Endpoints: []string{url},
+		Endpoints: endpoints,
 	}
 	if init != nil {
 		init(s)

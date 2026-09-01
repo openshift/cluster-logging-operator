@@ -19,6 +19,17 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
+func mergeEndpoints(es *obs.Elasticsearch) []string {
+	var endpoints []string
+	if es.URL != "" {
+		endpoints = append(endpoints, es.URL)
+	}
+	for _, e := range es.Endpoints {
+		endpoints = append(endpoints, string(e))
+	}
+	return endpoints
+}
+
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	componentID := helpers.MakeID(id, "index")
 	tfs = api.Transforms{}
@@ -31,7 +42,7 @@ if exists(.kubernetes.event.metadata.uid) {
 		inputs = []string{addID}
 	}
 	tfs[componentID] = commontemplate.NewTemplateRemap(inputs, o.Elasticsearch.Index, componentID)
-	sink = sinks.NewElasticsearch(o.Elasticsearch.URL, func(s *sinks.Elasticsearch) {
+	sink = sinks.NewElasticsearch(mergeEndpoints(o.Elasticsearch), func(s *sinks.Elasticsearch) {
 		s.Bulk = &sinks.Bulk{
 			Action: sinks.BulkActionCreate,
 			Index:  fmt.Sprintf("{{ _internal.%s }}", componentID),

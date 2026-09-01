@@ -88,7 +88,12 @@ func getPortProtocolFromOutputURLs(output obs.OutputSpec) []factory.PortProtocol
 	switch output.Type {
 	case obs.OutputTypeElasticsearch:
 		if output.Elasticsearch != nil {
-			urlSlice = append(urlSlice, output.Elasticsearch.URL)
+			if output.Elasticsearch.URL != "" {
+				urlSlice = append(urlSlice, output.Elasticsearch.URL)
+			}
+			for _, e := range output.Elasticsearch.Endpoints {
+				urlSlice = append(urlSlice, string(e))
+			}
 		}
 	case obs.OutputTypeSplunk:
 		if output.Splunk != nil {

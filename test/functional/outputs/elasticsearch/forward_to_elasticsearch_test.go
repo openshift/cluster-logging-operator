@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -318,5 +319,82 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			outputLogTemplate.ViaqIndexName = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
+	})
+
+	Context("with multiple endpoints", func() {
+
+		const (
+			esIndex       = "application-write"
+			esBaseAddress = "http://0.0.0.0:"
+		)
+
+		var (
+			// ES node configurations: name and HTTP port
+			esNodes = []functional.ESNodeConfig{
+				{Name: "es-node-1", HTTPPort: "9200"},
+				{Name: "es-node-2", HTTPPort: "9800"},
+			}
+		)
+
+		AfterEach(func() {
+			framework.Cleanup()
+		})
+
+		// Helper: add two ES v8 containers on different ports
+		addMultiESContainers := func(b *runtime.PodBuilder) error {
+			return framework.AddMultiESContainers(functional.ElasticsearchVersion8, b, esNodes)
+		}
+
+		// getLogsFromAllEndpoints queries both ES nodes in parallel and returns
+		// the combined log count. This avoids a sequential 5-minute timeout on a
+		// node that received zero logs due to non-deterministic load balancing.
+		getLogsFromAllEndpoints := func() int {
+			var logs1, logs2 []string
+			var wg sync.WaitGroup
+
+			queryNode := func(result *[]string, nodeName, index string, opts ...functional.Option) {
+				defer wg.Done()
+				defer GinkgoRecover()
+				*result, _ = framework.GetLogsFromElasticSearchIndex(nodeName, index, opts...)
+			}
+
+			wg.Add(2)
+			go queryNode(&logs1, esNodes[0].Name, esIndex)
+			go queryNode(&logs2, esNodes[1].Name, esIndex, functional.Option{Name: "port", Value: esNodes[1].HTTPPort})
+			wg.Wait()
+
+			return len(logs1) + len(logs2)
+		}
+
+		DescribeTable("should deliver logs to multiple endpoints", func(esSpec *obs.Elasticsearch) {
+			framework = functional.NewCollectorFunctionalFramework()
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				ToOutputWithVisitor(func(output *obs.OutputSpec) {
+					output.Name = "es-multi"
+					output.Type = obs.OutputTypeElasticsearch
+					output.Elasticsearch = esSpec
+					output.Elasticsearch.Index = `{.log_type||"notfound"}-write`
+					output.Elasticsearch.Version = 8
+				}, "es-multi")
+
+			Expect(framework.DeployWithVisitor(addMultiESContainers)).To(BeNil())
+			Expect(framework.WritesApplicationLogs(10)).To(BeNil())
+
+			Expect(getLogsFromAllEndpoints()).To(Equal(10), "Expected 10 total logs across both ES nodes")
+		},
+			Entry("using endpoints only", &obs.Elasticsearch{
+				Endpoints: []obs.EndpointURL{
+					obs.EndpointURL(esBaseAddress + esNodes[0].HTTPPort),
+					obs.EndpointURL(esBaseAddress + esNodes[1].HTTPPort),
+				},
+			}),
+			Entry("using url and endpoints combined", &obs.Elasticsearch{
+				URL: esBaseAddress + esNodes[0].HTTPPort,
+				Endpoints: []obs.EndpointURL{
+					obs.EndpointURL(esBaseAddress + esNodes[1].HTTPPort),
+				},
+			}),
+		)
 	})
 })

@@ -508,7 +508,7 @@ type Cloudwatch struct {
 	// The 'username@password' part of `url` is ignored.
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +kubebuilder:validation:XValidation:rule="self == '' || isURL(self)", message="invalid URL"
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	URL string `json:"url,omitempty"`
 
@@ -676,8 +676,32 @@ type ElasticsearchTuningSpec struct {
 	Compression string `json:"compression,omitempty"`
 }
 
+// EndpointURL is a URL to an Elasticsearch endpoint.
+// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+type EndpointURL string
+
+// Elasticsearch provides optional extra properties for `type: elasticsearch`
+//
+// +kubebuilder:validation:XValidation:rule="has(self.url) || self.endpoints.size() > 0", message="URL or endpoints required"
 type Elasticsearch struct {
-	URLSpec `json:",inline"`
+
+	// URL to send log records to.
+	// Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
+	// The 'username@password' part of `url` is ignored.
+	//
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:rule="isURL(self)", message="invalid URL"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Destination URL",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	URL string `json:"url,omitempty"`
+
+	// Endpoints is a list of Elasticsearch endpoints to send log records to.
+	// Vector distributes events across endpoints using load balancing with
+	// automatic failover. When both URL and Endpoints are provided, URL is
+	// prepended to the Endpoints list.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Endpoints"
+	Endpoints []EndpointURL `json:"endpoints,omitempty"`
 
 	// Authentication sets credentials for authenticating the requests.
 	//
@@ -887,7 +911,7 @@ type HTTP struct {
 	// ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +kubebuilder:validation:XValidation:rule="self == '' || isURL(self)", message="invalid URL"
 	ProxyURL string `json:"proxyURL,omitempty"`
 
 	// Format defines data format used to send data to remote destination.
@@ -1257,7 +1281,7 @@ type Loki struct {
 	// ProxyURL URL of a HTTP or HTTPS proxy to be used instead of direct connection.
 	//
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == '' ||  isURL(self)", message="invalid URL"
+	// +kubebuilder:validation:XValidation:rule="self == '' || isURL(self)", message="invalid URL"
 	ProxyURL string `json:"proxyURL,omitempty"`
 }
 

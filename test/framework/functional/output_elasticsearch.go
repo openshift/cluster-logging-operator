@@ -109,6 +109,32 @@ func (f *CollectorFunctionalFramework) AddESOutputWithTokenSecurity(b *runtime.P
 	return f.AddESOutput(ElasticsearchVersion8, b, output, envVars)
 }
 
+// ESNodeConfig defines configuration for an Elasticsearch node
+type ESNodeConfig struct {
+	Name     string
+	HTTPPort string
+}
+
+// AddMultiESContainers adds multiple Elasticsearch containers to the pod for testing
+// multi-endpoint scenarios. Each node runs in single-node mode with security disabled.
+// This is a convenience wrapper around AddESOutput for creating multiple nodes.
+func (f *CollectorFunctionalFramework) AddMultiESContainers(version ElasticsearchVersion, b *runtime.PodBuilder, nodes []ESNodeConfig) error {
+	for _, node := range nodes {
+		// Create a minimal OutputSpec for this node
+		output := obs.OutputSpec{
+			Name: node.Name,
+			Elasticsearch: &obs.Elasticsearch{
+				URL: fmt.Sprintf("http://localhost:%s", node.HTTPPort),
+			},
+		}
+		// Reuse AddESOutput with default settings
+		if err := f.AddESOutput(version, b, output, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (results []string, err error) {
 	index, ok := logTypeIndexMap[outputLogType]
 	if !ok {

@@ -150,9 +150,7 @@ func (p *PipelineBuilder) ToElasticSearchOutput(visitors ...func(output *obs.Out
 		output.Name = string(obs.OutputTypeElasticsearch)
 		output.Type = obs.OutputTypeElasticsearch
 		output.Elasticsearch = &obs.Elasticsearch{
-			URLSpec: obs.URLSpec{
-				URL: "http://0.0.0.0:9200",
-			},
+			URL:     "http://0.0.0.0:9200",
 			Index:   `{.log_type||"notfound"}-write`,
 			Version: 8,
 		}

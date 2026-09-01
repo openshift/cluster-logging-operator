@@ -1,0 +1,19 @@
+[transforms.es_1_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+._internal.es_1_index = to_string!(._internal.log_type||"none")
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_index"]
+endpoints = ["https://es-primary.example.com:9200", "https://es1.example.com:9200", "https://es2.example.com:9200"]
+api_version = "v8"
+
+[sinks.es_1.bulk]
+index = "{{ _internal.es_1_index }}"
+action = "create"
+
+[sinks.es_1.encoding]
+except_fields = ["_internal"]

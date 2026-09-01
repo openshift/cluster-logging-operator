@@ -49,9 +49,7 @@ var _ = Describe("Generate Vector config", func() {
 				Type: obs.OutputTypeElasticsearch,
 				Name: "es_1",
 				Elasticsearch: &obs.Elasticsearch{
-					URLSpec: obs.URLSpec{
-						URL: "https://es.svc.infra.cluster:9200",
-					},
+					URL:   "https://es.svc.infra.cluster:9200",
 					Index: `{.log_type||"none"}`,
 					Authentication: &obs.HTTPAuthentication{
 						Username: &obs.SecretReference{
@@ -159,5 +157,22 @@ var _ = Describe("Generate Vector config", func() {
 				"Key": "Value",
 			}
 		}, true, framework.NoOptions, "es_with_headers.toml"),
+		Entry("with multiple endpoints only", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = nil
+			spec.Elasticsearch.URL = ""
+			spec.Elasticsearch.Endpoints = []obs.EndpointURL{
+				"https://es1.example.com:9200",
+				"https://es2.example.com:9200",
+				"https://es3.example.com:9200",
+			}
+		}, false, framework.NoOptions, "es_with_multi_endpoints.toml"),
+		Entry("with url and endpoints combined", func(spec *obs.OutputSpec) {
+			spec.Elasticsearch.Authentication = nil
+			spec.Elasticsearch.URL = "https://es-primary.example.com:9200"
+			spec.Elasticsearch.Endpoints = []obs.EndpointURL{
+				"https://es1.example.com:9200",
+				"https://es2.example.com:9200",
+			}
+		}, false, framework.NoOptions, "es_with_url_and_endpoints.toml"),
 	)
 })

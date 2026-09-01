@@ -125,7 +125,7 @@ var _ = Describe("Network Ports", func() {
 			func(urlStr string, expectedPort int32) {
 				output := obs.OutputSpec{
 					Type:          obs.OutputTypeElasticsearch,
-					Elasticsearch: &obs.Elasticsearch{URLSpec: obs.URLSpec{URL: urlStr}},
+					Elasticsearch: &obs.Elasticsearch{URL: urlStr},
 				}
 				Expect(getPortProtocolFromOutputURLs(output)).To(Equal(makeTCPPorts(expectedPort)))
 			},
@@ -135,6 +135,36 @@ var _ = Describe("Network Ports", func() {
 				"https://es.example.com", constants.DefaultHTTPSPort),
 			Entry("should use default HTTP scheme port when no port in URL",
 				"http://es.example.com", constants.DefaultHTTPPort),
+		)
+
+		DescribeTable("Elasticsearch with multiple endpoints",
+			func(output obs.OutputSpec, expectedPorts []factory.PortProtocol) {
+				Expect(getPortProtocolFromOutputURLs(output)).To(ConsistOf(expectedPorts))
+			},
+			Entry("should extract ports from multiple endpoints",
+				obs.OutputSpec{
+					Type: obs.OutputTypeElasticsearch,
+					Elasticsearch: &obs.Elasticsearch{
+						Endpoints: []obs.EndpointURL{
+							"https://es1.example.com:9200",
+							"https://es2.example.com:9300",
+						},
+					},
+				},
+				makeTCPPorts(9200, 9300),
+			),
+			Entry("should extract ports from url and endpoints combined",
+				obs.OutputSpec{
+					Type: obs.OutputTypeElasticsearch,
+					Elasticsearch: &obs.Elasticsearch{
+						URL: "https://es-primary.example.com:9200",
+						Endpoints: []obs.EndpointURL{
+							"https://es1.example.com:9300",
+						},
+					},
+				},
+				makeTCPPorts(9200, 9300),
+			),
 		)
 
 		DescribeTable("Splunk",
@@ -362,7 +392,7 @@ var _ = Describe("Network Ports", func() {
 					{
 						Type: obs.OutputTypeElasticsearch,
 						Elasticsearch: &obs.Elasticsearch{
-							URLSpec: obs.URLSpec{URL: "https://es.example.com:9200"},
+							URL: "https://es.example.com:9200",
 						},
 					},
 					{
@@ -388,13 +418,13 @@ var _ = Describe("Network Ports", func() {
 					{
 						Type: obs.OutputTypeElasticsearch,
 						Elasticsearch: &obs.Elasticsearch{
-							URLSpec: obs.URLSpec{URL: "https://es1.example.com:9200"},
+							URL: "https://es1.example.com:9200",
 						},
 					},
 					{
 						Type: obs.OutputTypeElasticsearch,
 						Elasticsearch: &obs.Elasticsearch{
-							URLSpec: obs.URLSpec{URL: "https://es2.example.com:9200"},
+							URL: "https://es2.example.com:9200",
 						},
 					},
 					{
@@ -413,7 +443,7 @@ var _ = Describe("Network Ports", func() {
 					{
 						Type: obs.OutputTypeElasticsearch,
 						Elasticsearch: &obs.Elasticsearch{
-							URLSpec: obs.URLSpec{URL: "https://es.example.com"},
+							URL: "https://es.example.com",
 						},
 					},
 					{
@@ -443,7 +473,7 @@ var _ = Describe("Network Ports", func() {
 					{
 						Type: obs.OutputTypeElasticsearch,
 						Elasticsearch: &obs.Elasticsearch{
-							URLSpec: obs.URLSpec{URL: "https://es.example.com:9200"},
+							URL: "https://es.example.com:9200",
 						},
 					},
 				}

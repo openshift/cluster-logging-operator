@@ -109,7 +109,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 		crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), payload)
 		Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
 
-		logs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+		logs, err := framework.ReadInfrastructureLogsFrom(string(obs.OutputTypeSyslog))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(logs).To(HaveLen(1), "Expected the receiver to receive the message")
 

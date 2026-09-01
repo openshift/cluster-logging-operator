@@ -67,7 +67,9 @@ if .log_source == "container" {
             del(.verb)
           }
           .kubernetes.event = del(.event)
-          .message = del(.kubernetes.event.message)
+          # escape 'new line' symbol see: LOG-8090
+          msg = to_string!(del(.kubernetes.event.message))
+          .message = replace(msg, "\n", s'\n')
           . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
           del(.kubernetes.event.metadata.creationTimestamp)
 		  . = compact(., nullish: true)
@@ -79,11 +81,11 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  del(.stream)
+  .kubernetes.container_iostream = del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

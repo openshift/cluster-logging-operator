@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	Component      = "component"
-	IncludeEnabled = "IncludeEnabled"
+	Component                 = "component"
+	IncludeEnabled            = "IncludeEnabled"
+	ExcludeInsecureSkipVerify = "ExcludeInsecureSkipVerify"
 )
 
 var (
@@ -55,7 +56,11 @@ func New(id string, spec *obs.OutputTLSSpec, secrets observability.Secrets, op f
 		conf.CertPath = ValuePath(spec.Certificate)
 		conf.KeyPath = SecretPath(spec.Key)
 		conf.PassPhrase = secrets.AsString(spec.KeyPassphrase)
-		conf.InsecureSkipVerify = spec.InsecureSkipVerify
+		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); found {
+			conf.InsecureSkipVerify = false
+		} else {
+			conf.InsecureSkipVerify = spec.InsecureSkipVerify
+		}
 	}
 	setTLSProfileFromOptions(&conf, op)
 	if conf.CipherSuites != "" || conf.TlsMinVersion != "" || spec != nil {

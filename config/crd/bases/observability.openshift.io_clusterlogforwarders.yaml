@@ -113,6 +113,14 @@ spec:
                           More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                         type: object
                     type: object
+                  terminationGracePeriodSeconds:
+                    description: |-
+                      TerminationGracePeriodSeconds defines the termination grace period for collector pods
+                      in seconds. If not specified, the default is 10 seconds.
+                    format: int64
+                    minimum: 1
+                    nullable: true
+                    type: integer
                   tolerations:
                     description: Define the tolerations the collector pods will accept
                     items:
@@ -234,6 +242,10 @@ spec:
                         Names of users, groups, namespaces, and resources can have a leading or trailing '*' character.
                         For example namespace 'openshift-*' matches 'openshift-apiserver' or 'openshift-authentication.
                         Resource '*/status' matches 'Pod/status' or 'Deployment/status'
+
+                        Events which include both a 'resource' and 'subresource' are evaluated by combing those
+                        fields with a forward slash.  This means rules that rely upon a resource type that may or
+                        may not include the subresource should be adjusted to cover all the required use-cases (i.e. ['pod','pod/*']).
 
                         ## Default Rules
 
@@ -477,7 +489,17 @@ spec:
                           type: array
                       type: object
                     type:
-                      description: Type of filter.
+                      description: |-
+                        Type of filter.
+
+                        Possible filter types are:
+
+                        1. detectMultilineException - Enables multi-line error detection of container logs. No additional configuration required.
+                        2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
+                        3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
+                        4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
+                        5. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+                        6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
                       enum:
                       - openshiftLabels
                       - detectMultilineException
@@ -615,6 +637,15 @@ spec:
                           description: Tuning is the container input tuning spec for
                             this container sources
                           properties:
+                            maxMessageSize:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+                                partial log lines are merged.  Messages exceeding this limit are dropped.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
                             rateLimitPerContainer:
                               description: |-
                                 RateLimitPerContainer is the limit applied to each container
@@ -666,6 +697,41 @@ spec:
                             - node
                             type: string
                           type: array
+                        tuning:
+                          description: Tuning is the infrastructure input tuning spec,
+                            for now available only for container sources
+                          properties:
+                            container:
+                              description: Container is the input tuning spec for
+                                container sources
+                              properties:
+                                maxMessageSize:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: |-
+                                    MaxMessageSize  The maximum message length in bytes that a single log event can be when all
+                                    partial log lines are merged.  Messages exceeding this limit are dropped.
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                rateLimitPerContainer:
+                                  description: |-
+                                    RateLimitPerContainer is the limit applied to each container
+                                    by this input. This limit is applied per collector deployment.
+                                  properties:
+                                    maxRecordsPerSecond:
+                                      description: |-
+                                        MaxRecordsPerSecond is the maximum number of log records
+                                        allowed per input/output in a pipeline
+                                      exclusiveMinimum: true
+                                      format: int64
+                                      minimum: 0
+                                      type: integer
+                                  required:
+                                  - maxRecordsPerSecond
+                                  type: object
+                              type: object
+                          type: object
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.

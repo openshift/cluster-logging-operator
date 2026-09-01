@@ -6,8 +6,8 @@ enabled = true
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
-type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+type = "directory"
+path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -103,6 +103,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
+use_apiserver_cache = true
 
 [transforms.input_infrastructure_container_meta]
 type = "remap"
@@ -144,6 +145,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
+use_apiserver_cache = true
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"
@@ -182,10 +184,11 @@ if .log_type == "audit" && .log_source == "auditd" {
   if err == null {
     sp, err = split(match2.ts_record,":")
     if err == null && length(sp) == 2 {
-        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
-        envelop |= {"record_id": sp[1]}
-        . |= {"audit.linux" : envelop}
-        . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+          ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+          if ts != "" { .timestamp = ts }
+          ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
+          envelop |= {"record_id": sp[1]}
+          . |= {"audit.linux" : envelop}
     }
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
@@ -193,7 +196,7 @@ if .log_type == "audit" && .log_source == "auditd" {
 
   .level = "default"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "kubeAPI" {
@@ -205,7 +208,7 @@ if .log_type == "audit" && .log_source == "kubeAPI" {
   del(.message)
   .k8s_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "openshiftAPI" {
@@ -217,11 +220,12 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
   del(.message)
   .openshift_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "ovn" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  ._internal.message = .message
   del(.file)
   del(.source_type)
   if !exists(.level) {
@@ -275,7 +279,7 @@ if .log_type == "audit" && .log_source == "ovn" {
     }
   }
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "container" {
@@ -343,7 +347,9 @@ if .log_source == "container" {
             del(.verb)
           }
           .kubernetes.event = del(.event)
-          .message = del(.kubernetes.event.message)
+          # escape 'new line' symbol see: LOG-8090
+          msg = to_string!(del(.kubernetes.event.message))
+          .message = replace(msg, "\n", s'\n')
           . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
           del(.kubernetes.event.metadata.creationTimestamp)
 		  . = compact(., nullish: true)
@@ -355,11 +361,11 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  del(.stream)
+  .kubernetes.container_iostream = del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "node" {
@@ -442,7 +448,7 @@ if .log_source == "node" {
 
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
-  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+  if !exists(."@timestamp") {."@timestamp" = .timestamp}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

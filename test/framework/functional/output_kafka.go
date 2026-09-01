@@ -22,7 +22,6 @@ const (
 	kafkaZookeeperContainerName = "zookeeper"
 
 	kafkaInsidePort         = int32(9093)
-	kafkaOutsidePort        = int32(9094)
 	kafkaJMXPort            = int32(5555)
 	zookeeperDeploymentName = "zookeeper"
 
@@ -105,7 +104,6 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 		AddEnvVar("KAFKA_LOG4J_OPTS", "-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
 		AddEnvVar("JMX_PORT", strconv.Itoa(int(kafkaJMXPort))).
 		AddContainerPort("inside", kafkaInsidePort).
-		AddContainerPort("outside", kafkaOutsidePort).
 		AddContainerPort("jmx", kafkaJMXPort).
 		WithCmd([]string{"/bin/bash", "-c", cmdCreateTopicAndDeployBroker}).
 		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).

@@ -2,13 +2,14 @@ package observability_test
 
 import (
 	"context"
+	"time"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/controller/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -140,11 +141,11 @@ var _ = Describe("Reconciling the Collector", func() {
 				},
 			}
 
-			beforeEach = func(clf *obs.ClusterLogForwarder) {
+			beforeEach = func() {
 				resourceNames = factory.ResourceNames(*forwarder)
 				collectorCABundle.Name = resourceNames.CaTrustBundle
 				trustedCABundleVolume.VolumeSource.ConfigMap.Name = resourceNames.CaTrustBundle
-				client = fake.NewFakeClient( //nolint
+				client = fake.NewFakeClient(
 					collectorSecret,
 					collectorCABundle,
 					namespace,
@@ -204,7 +205,7 @@ var _ = Describe("Reconciling the Collector", func() {
 					},
 				}
 			})
-			beforeEach(clf)
+			beforeEach()
 			reconcileCollector(clf)
 
 			for _, input := range clf.Spec.Inputs {
@@ -216,7 +217,7 @@ var _ = Describe("Reconciling the Collector", func() {
 			}
 		})
 		DescribeTable("should deploy resources to support metrics collection", func(clf *obs.ClusterLogForwarder) {
-			beforeEach(clf)
+			beforeEach()
 			reconcileCollector(clf)
 
 			key := types.NamespacedName{Name: clfName, Namespace: namespaceName}
@@ -232,7 +233,7 @@ var _ = Describe("Reconciling the Collector", func() {
 		)
 
 		DescribeTable("when the cluster proxy is present should use the injected custom CA bundle", func(clf *obs.ClusterLogForwarder, obj cli.Object, templateSpec func(obj cli.Object) corev1.PodTemplateSpec) {
-			beforeEach(clf)
+			beforeEach()
 
 			// Reconcile w/o custom CA bundle
 			reconcileCollector(clf)
@@ -256,7 +257,7 @@ var _ = Describe("Reconciling the Collector", func() {
 			Entry("when deployed as a Deployment", receiverForwarder, &appsv1.Deployment{}, podTemplateSpecFromDeployment),
 		)
 		DescribeTable("when the cluster proxy is not present should not error", func(clf *obs.ClusterLogForwarder, obj cli.Object, templateSpec func(obj cli.Object) corev1.PodTemplateSpec) {
-			beforeEach(clf)
+			beforeEach()
 
 			// Reconcile w/o custom CA bundle
 			reconcileCollector(clf)

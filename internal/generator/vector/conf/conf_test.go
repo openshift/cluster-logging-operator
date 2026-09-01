@@ -71,49 +71,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		conf := Conf(secrets, spec, constants.OpenshiftNS, "my-forwarder", factory.ForwarderResourceNames{CommonName: constants.CollectorName}, op)
 		Expect(string(exp)).To(EqualConfigFrom(conf))
 	},
-		Entry("with spec for containers", "container.toml", nil,
-			obs.ClusterLogForwarderSpec{
-				Inputs: []obs.InputSpec{
-					{
-						Name: "mytestapp",
-						Type: obs.InputTypeApplication,
-						Application: &obs.Application{
-							Includes: []obs.NamespaceContainerSpec{
-								{Namespace: "test-ns"},
-							},
-						},
-					},
-					{
-						Name: "myinfra",
-						Type: obs.InputTypeInfrastructure,
-						Infrastructure: &obs.Infrastructure{
-							Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
-						},
-					},
-				},
-				Pipelines: []obs.PipelineSpec{
-					{
-						InputRefs: []string{
-							"myinfra",
-							"mytestapp",
-						},
-						OutputRefs: []string{outputName},
-						Name:       "mypipeline",
-						FilterRefs: []string{"my-labels"},
-					},
-				},
-				Outputs: []obs.OutputSpec{
-					kafkaOutput,
-				},
-				Filters: []obs.FilterSpec{
-					{
-						Name:            "my-labels",
-						Type:            obs.FilterTypeOpenshiftLabels,
-						OpenshiftLabels: map[string]string{"key1": "value1", "key2": "value2"},
-					},
-				},
-			}),
-		Entry("with complex spec", "complex.toml", nil,
+		Entry("with complex spec",
+			"complex.toml",
+			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{
@@ -160,7 +120,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 		),
-		Entry("with complex spec && http audit receiver as input source", "complex_http_receiver.toml", nil,
+		Entry("with complex spec && http audit receiver as input source",
+			"complex_http_receiver.toml",
+			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
 					{

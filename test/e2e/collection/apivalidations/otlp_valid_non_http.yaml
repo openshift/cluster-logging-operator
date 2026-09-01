@@ -4,11 +4,10 @@ metadata:
   name: clf-validation-test
 spec:
   outputs:
-    - name: syslog
-      syslog:
-        rfc: RFC5424
-        url: udps://someplance:100
-      type: syslog
+    - name: output
+      otlp:
+        url: ftp://ahost:8976/api/v1/ingest/otlp
+      type: otlp
   pipelines:
   - inputRefs:
       - infrastructure
@@ -16,6 +15,6 @@ spec:
       - application
     name: thepipeline
     outputRefs:
-    - syslog
+    - output
   serviceAccount:
     name: clf-validation-test

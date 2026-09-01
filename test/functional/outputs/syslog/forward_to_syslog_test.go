@@ -99,6 +99,66 @@ var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func
 		Expect(outputlogs[0]).To(MatchRegexp(`^<[0-9]*>[0-9]* ([0-9T:.Z\-]*) ([a-z0-9-.]*) (.*) (.*) (.*) - (.*)$`), "Exp a syslog formatted message")
 	})
 
+	Context("With prune filter ", func() {
+		It("RFC5424: should be able to send, no error in collector logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				WithFilter("syslog-filter", func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						NotIn: []obs.FieldPath{".log_type", ".log_source", ".message", ".kubernetes.pod_id"},
+					}
+				}).
+				ToSyslogOutput(obs.SyslogRFC5424)
+			Expect(framework.Deploy()).To(BeNil())
+
+			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), NonJsonAppLogs[0])
+			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).To(Not(BeEmpty()), "Expected the receiver to receive the message")
+
+			fields := strings.Split(outputlogs[0], " ")
+			Expect(getPri(fields)).To(Equal(PRI_14))
+			Expect(getAppName(fields)).To(Equal("-"))
+			Expect(getProcID(fields)).To(Equal(string(framework.Pod.UID)))
+			Expect(getMsgID(fields)).To(Equal("container"))
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.appname set to '-'"))
+		})
+
+		It("RFC3164 should be able to send, no error in collector logs", func() {
+			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(obs.InputTypeApplication).
+				WithFilter("syslog-filter", func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypePrune
+					spec.PruneFilterSpec = &obs.PruneFilterSpec{
+						NotIn: []obs.FieldPath{".log_type", ".log_source", ".message", ".kubernetes.pod_id"},
+					}
+				}).
+				ToSyslogOutput(obs.SyslogRFC3164)
+			Expect(framework.Deploy()).To(BeNil())
+
+			crioMessage := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), NonJsonAppLogs[0])
+			Expect(framework.WriteMessagesToApplicationLog(crioMessage, 1)).To(BeNil())
+
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeSyslog))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(outputlogs).To(Not(BeEmpty()), "Expected the receiver to receive the message")
+
+			Expect(getTag(outputlogs[0])).To(Equal("-"))
+
+			collectorLogs, err := framework.ReadCollectorLogs()
+			Expect(err).To(BeNil())
+			Expect(collectorLogs).ToNot(ContainSubstring(`error="function call error for \"join\"`))
+			Expect(collectorLogs).To(ContainSubstring("K8s metadata (namespace, pod, or container) missing; syslog.tag set to empty"))
+		})
+	})
+
 	Context("Application Logs", func() {
 
 		It("RFC5424: should send large message over UDP", func() {

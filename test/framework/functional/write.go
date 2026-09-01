@@ -14,7 +14,7 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/ginkgo"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/url"
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
@@ -110,7 +110,6 @@ func (f *CollectorFunctionalFramework) WriteMessagesToOAuthAuditLog(msg string, 
 }
 
 func (f *CollectorFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, numOfLogs int) error {
-
 	filename := fmt.Sprintf("%s/acl-audit-log.log", fileLogPaths[ovnAuditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
@@ -135,6 +134,31 @@ func (f *CollectorFunctionalFramework) WritesApplicationLogsWithDelay(numOfLogs 
 	return f.WritesNApplicationLogsOfSize(numOfLogs, 100, delay)
 }
 
+func (f *CollectorFunctionalFramework) WriteApplicationLogOfSizeAsPartials(size int) error {
+	partialLimit := 1000
+	partialMsg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout P $msg "
+	numOfLogs := size / partialLimit
+
+	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(file)
+	if numOfLogs > 1 {
+		log.V(3).Info("Writing message to app log with path", "path", logPath)
+		result, err := f.RunCommand(constants.CollectorName, "bash", "-c",
+			fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", logPath, partialLimit, numOfLogs, partialMsg, file))
+		log.V(3).Info("WriteApplicationLogOfSizeAsPartials: partials", "namespace", f.Pod.Namespace, "result", result, "err", err)
+		if err != nil {
+			return err
+		}
+	}
+
+	finalMsg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
+	finalLength := size - (numOfLogs * partialLimit)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c",
+		fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1); echo %s >> %s'", logPath, finalLength, finalMsg, file))
+	log.V(3).Info("WriteApplicationLogOfSizeAsPartials: full", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
 func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int, delay float32) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
@@ -152,6 +176,29 @@ func (f *CollectorFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs 
 	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
 	log.V(3).Info("WriteMessagesToLog", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
+// WriteMessagesToLogWithoutNewLine write one log message without ending new line symbol
+// need in some specific use cases
+func (f *CollectorFunctionalFramework) WriteMessagesToLogWithoutNewLine(msg string) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(filename)
+	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
+	cmd := fmt.Sprintf("mkdir -p %s;for n in {1..%d};do echo -n \"$(echo %s|base64 -d)\" >> %s;sleep 1s;done", logPath, 1, encoded, filename)
+	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
+	log.V(3).Info("WriteMessagesToLogWithoutNewLine", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}
+
+func (f *CollectorFunctionalFramework) EmulateCreationNewLogFileForContainer() error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fileLogPaths[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(filename)
+	cmd := fmt.Sprintf("mkdir -p %s; touch %s", logPath, filename)
+	log.V(3).Info("Create log file with command", "cmd", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
+	log.V(3).Info("EmulateCreationNewLogFileForContainer", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
 }
 

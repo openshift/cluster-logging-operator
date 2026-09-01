@@ -40,6 +40,7 @@ var _ = Describe("[functional][normalization][loglevel] tests for message format
 
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
+		outputLogTemplate.TimestampLegacy = nanoTime
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = message
 		outputLogTemplate.Level = expLevel

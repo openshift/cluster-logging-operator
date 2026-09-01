@@ -27,7 +27,7 @@ func (d DetectExceptions) Template() string {
 type = "detect_exceptions"
 inputs = {{.Inputs}}
 languages = ["All"]
-group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.container_name", "kubernetes.pod_id"]
+group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.container_name", "kubernetes.pod_id", "stream"]
 expire_after_ms = 2000
 multiline_flush_interval_ms = 1000
 {{end}}`

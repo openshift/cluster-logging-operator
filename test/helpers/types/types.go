@@ -116,6 +116,10 @@ type Kubernetes struct {
 	// NamespaceLabels are the labels present on the pod namespace
 	// +optional
 	NamespaceLabels map[string]string `json:"namespace_labels,omitempty"`
+
+	// The name of the stream the log line was submitted to (e.g.: stdout, stderr)
+	// +optional
+	ContainerStream string `json:"container_iostream,omitempty"`
 }
 
 type Collector struct {
@@ -190,8 +194,22 @@ type ViaQCommon struct {
 	// * yyyy-MM-dd'T'HH:mm:ssZ
 	// * dateOptionalTime
 	//
-	// example: `2015-01-24 14:06:05.071000000 Z`
-	Timestamp time.Time `json:"@timestamp,omitempty"`
+	// example: `2024-11-24T14:06:05.071000000Z`
+	TimestampLegacy time.Time `json:"@timestamp,omitempty"`
+
+	// A UTC value that marks when the log payload was created.
+	//
+	// Value derived from legacy `@timestamp` for forward compatibility.
+	//
+	// format:
+	//
+	// * yyyy-MM-dd HH:mm:ss,SSSZ
+	// * yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ
+	// * yyyy-MM-dd'T'HH:mm:ssZ
+	// * dateOptionalTime
+	//
+	// example: `2024-11-24T14:06:05.071000000Z`
+	Timestamp time.Time `json:"timestamp,omitempty"`
 
 	// Original log entry text, UTF-8 encoded
 	//
@@ -311,7 +329,8 @@ type InfraLog struct {
 	Level               string           `json:"level,omitempty"`
 	Hostname            string           `json:"hostname,omitempty"`
 	PipelineMetadata    PipelineMetadata `json:"pipeline_metadata,omitempty"`
-	Timestamp           time.Time        `json:"@timestamp,omitempty"`
+	TimestampLegacy     time.Time        `json:"@timestamp,omitempty"`
+	Timestamp           time.Time        `json:"timestamp,omitempty"`
 	LogType             string           `json:"log_type,omitempty"`
 	ViaqIndexName       string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID           string           `json:"viaq_msg_id,omitempty"`
@@ -335,7 +354,8 @@ type LinuxAuditLog struct {
 	AuditLinux       AuditLinux       `json:"audit.linux"`
 	Message          string           `json:"message,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
-	Timestamp        time.Time        `json:"@timestamp"`
+	TimestampLegacy  time.Time        `json:"@timestamp,omitempty"`
+	Timestamp        time.Time        `json:"timestamp,omitempty"`
 	LogSource        string           `json:"log_source,omitempty"`
 	LogType          string           `json:"log_type,omitempty"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
@@ -356,7 +376,8 @@ type OVNAuditLog struct {
 	Hostname         string           `json:"hostname"`
 	Message          string           `json:"message,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
-	Timestamp        time.Time        `json:"@timestamp"`
+	TimestampLegacy  time.Time        `json:"@timestamp,omitempty"`
+	Timestamp        time.Time        `json:"timestamp,omitempty"`
 	LogType          string           `json:"log_type,omitempty"`
 	LogSource        string           `json:"log_source,omitempty"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
@@ -386,7 +407,8 @@ type AuditLogCommon struct {
 	Message                  interface{}      `json:"message,omitempty"`
 	Hostname                 string           `json:"hostname,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata,omitempty"`
-	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	TimestampLegacy          time.Time        `json:"@timestamp,omitempty"`
+	Timestamp                time.Time        `json:"timestamp,omitempty"`
 	LogSource                string           `json:"log_source,omitempty"`
 	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
@@ -436,7 +458,8 @@ type AuditLog struct {
 	AuditLinux               AuditLinux       `json:"audit.linux,omitempty"`
 	Message                  string           `json:"message,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata"`
-	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	TimestampLegacy          time.Time        `json:"@timestamp,omitempty"`
+	Timestamp                time.Time        `json:"timestamp,omitempty"`
 	Docker                   Docker           `json:"docker,omitempty"`
 	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`

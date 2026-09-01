@@ -53,14 +53,14 @@ var _ = Describe("Log Format matcher tests", func() {
 	It("match same time value", func() {
 		timestamp := "2013-03-28T14:36:03.243000+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{Timestamp: nanoTime}}}).
-			To(FitLogFormatTemplate(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{Timestamp: nanoTime}}}))
+		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{TimestampLegacy: nanoTime}}}).
+			To(FitLogFormatTemplate(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{TimestampLegacy: nanoTime}}}))
 	})
 
 	It("match empty time value", func() {
 		timestamp := "2013-03-28T14:36:03.243000+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{Timestamp: nanoTime}}}).
+		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{TimestampLegacy: nanoTime}}}).
 			To(FitLogFormatTemplate(types.AllLog{}))
 	})
 	Context("for optional ints", func() {
@@ -114,8 +114,8 @@ var _ = Describe("Log Format matcher tests", func() {
 		nanoTime1, _ := time.Parse(time.RFC3339Nano, timestamp1)
 		timestamp2 := "2014-04-28T14:36:03.243000+00:00"
 		nanoTime2, _ := time.Parse(time.RFC3339Nano, timestamp2)
-		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{Timestamp: nanoTime1}}}).
-			To(Not(FitLogFormatTemplate(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{Timestamp: nanoTime2}}})))
+		Expect(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{TimestampLegacy: nanoTime1}}}).
+			To(Not(FitLogFormatTemplate(types.AllLog{ContainerLog: types.ContainerLog{ViaQCommon: types.ViaQCommon{TimestampLegacy: nanoTime2}}})))
 	})
 
 })

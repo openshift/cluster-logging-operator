@@ -130,6 +130,40 @@ func GenerateConfigmapData() (data map[string]string, err error) {
 	return data, nil
 }
 
+func (f *CollectorFunctionalFramework) SplunkHealthCheck() (string, error) {
+	var output string
+	cmd := fmt.Sprintf(`curl http://localhost:%d/services/collector/health/1.0 -H "Authorization: Splunk %s"`, SplunkHecPort, HecToken)
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		output, err = oc.Exec().WithNamespace(f.Namespace).Pod(f.Name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		if output == "" || err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return err.Error(), err
+	}
+	return output, nil
+}
+
+func (f *CollectorFunctionalFramework) ReadSplunkStatus() (string, error) {
+	var output string
+	cmd := "/opt/splunk/bin/splunk status"
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		output, err = oc.Exec().WithNamespace(f.Namespace).Pod(f.Name).Container(string(obs.OutputTypeSplunk)).WithCmd("/bin/sh", "-c", cmd).Run()
+		if output == "" || err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return err.Error(), err
+	}
+	return output, nil
+}
+
 func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(namespace, name, logType string) (results []string, err error) {
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search log_type=%s -auth "admin:%s"`, logType, AdminPassword)

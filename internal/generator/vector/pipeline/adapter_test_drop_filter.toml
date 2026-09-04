@@ -89,11 +89,11 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  .kubernetes.container_iostream = del(.stream)
+  del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "node" {
@@ -176,7 +176,7 @@ if .log_source == "node" {
 
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

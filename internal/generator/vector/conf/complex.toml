@@ -103,7 +103,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
-use_apiserver_cache = true
+
 
 [transforms.input_infrastructure_container_meta]
 type = "remap"
@@ -145,7 +145,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
-use_apiserver_cache = true
+
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"
@@ -196,7 +196,7 @@ if .log_type == "audit" && .log_source == "auditd" {
 
   .level = "default"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "kubeAPI" {
@@ -208,7 +208,7 @@ if .log_type == "audit" && .log_source == "kubeAPI" {
   del(.message)
   .k8s_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "openshiftAPI" {
@@ -220,7 +220,7 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
   del(.message)
   .openshift_audit_level = .level
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_type == "audit" && .log_source == "ovn" {
@@ -279,7 +279,7 @@ if .log_type == "audit" && .log_source == "ovn" {
     }
   }
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "container" {
@@ -361,11 +361,11 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  .kubernetes.container_iostream = del(.stream)
+  del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 if .log_source == "node" {
@@ -448,7 +448,7 @@ if .log_source == "node" {
 
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
 
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

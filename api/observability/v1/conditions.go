@@ -17,6 +17,7 @@ package v1
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 const (
+
 	// ConditionTrue means the condition is met
 	ConditionTrue = metav1.ConditionTrue
 
@@ -29,11 +30,7 @@ const (
 	// ConditionTypeAuthorized identifies the state of authorization for the service
 	ConditionTypeAuthorized = GroupName + "/Authorized"
 
-	// ConditionTypeLogLevel validates the value of the log-level annotation
 	ConditionTypeLogLevel = GroupName + "/LogLevel"
-
-	// ConditionTypeMaxUnavailable validates the value of the max-unavailable-rollout annotation
-	ConditionTypeMaxUnavailable = GroupName + "/MaxUnavailableAnnotation"
 
 	// ConditionTypeReady indicates the service is ready.
 	//
@@ -80,11 +77,8 @@ const (
 	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
 	ReasonMissingSpec = "MissingSpec"
 
-	// ReasonLogLevelSupported indicates the support for the log-level annotation value
+	// ReasonLogLevelSupported indicates the support for the log level annotation value
 	ReasonLogLevelSupported = "LogLevelSupported"
-
-	// ReasonMaxUnavailableSupported indicates the support for the max-unavailable-rollout annotation value
-	ReasonMaxUnavailableSupported = "MaxUnavailableAnnotationSupported"
 
 	// ReasonReconciliationComplete when the operator has initialized, validated, and deployed the resources for the workload
 	ReasonReconciliationComplete = "ReconciliationComplete"

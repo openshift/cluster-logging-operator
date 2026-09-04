@@ -7,26 +7,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
-var (
-	ReservedInputTypes = sets.NewString(
-		string(obs.InputTypeApplication),
-		string(obs.InputTypeAudit),
-		string(obs.InputTypeInfrastructure),
-	)
-
-	ReservedApplicationSources    = sets.NewString(string(obs.ApplicationSourceContainer))
-	ReservedInfrastructureSources = sets.NewString()
-	ReservedAuditSources          = sets.NewString()
+var ReservedInputTypes = sets.NewString(
+	string(obs.InputTypeApplication),
+	string(obs.InputTypeAudit),
+	string(obs.InputTypeInfrastructure),
 )
-
-func init() {
-	for _, i := range obs.InfrastructureSources {
-		ReservedInfrastructureSources.Insert(string(i))
-	}
-	for _, i := range obs.AuditSources {
-		ReservedAuditSources.Insert(string(i))
-	}
-}
 
 func MaxRecordsPerSecond(input obs.InputSpec) (int64, bool) {
 	if input.Application != nil &&

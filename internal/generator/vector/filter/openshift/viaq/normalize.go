@@ -82,7 +82,7 @@ if starts_with(pod_name, "eventrouter-") {
   }
 }
 `
-	HandleStream       = `.kubernetes.container_iostream = del(.stream)`
+	RemoveStream       = `del(.stream)`
 	RemovePodIPs       = `del(.kubernetes.pod_ips)`
 	RemoveNodeLabels   = `del(.kubernetes.node_labels)`
 	RemoveTimestampEnd = `del(.timestamp_end)`

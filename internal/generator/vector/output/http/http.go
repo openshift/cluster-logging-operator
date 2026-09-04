@@ -18,7 +18,6 @@ type Http struct {
 	Inputs      string
 	URI         string
 	Method      string
-	Proxy       string
 	common.RootMixin
 }
 
@@ -33,11 +32,6 @@ type = "http"
 inputs = {{.Inputs}}
 uri = "{{.URI}}"
 method = "{{.Method}}"
-{{with .Proxy -}}
-proxy.enabled = true
-proxy.http = "{{.}}"
-proxy.https = "{{.}}"
-{{end -}}
 {{.Compression}}
 {{end}}
 `
@@ -80,7 +74,6 @@ func Output(id string, o obs.OutputSpec, inputs []string, secrets observability.
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		URI:         o.HTTP.URL,
 		Method:      Method(o.HTTP),
-		Proxy:       "",
 		RootMixin:   common.NewRootMixin(nil),
 	}
 }

@@ -2,6 +2,7 @@ package observability
 
 import (
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclock "k8s.io/utils/clock"
@@ -63,15 +64,4 @@ func PruneConditions(conditions *[]metav1.Condition, spec NameList, conditionTyp
 		}
 	}
 	*conditions = keepers
-}
-
-// RemoveConditionByType removes a condition by type
-func RemoveConditionByType(conditions *[]metav1.Condition, conditionType string) {
-	newConditions := []metav1.Condition{}
-	for _, condition := range *conditions {
-		if condition.Type != conditionType {
-			newConditions = append(newConditions, condition)
-		}
-	}
-	*conditions = newConditions
 }

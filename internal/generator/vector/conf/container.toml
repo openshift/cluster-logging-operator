@@ -27,7 +27,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
-use_apiserver_cache = true
+
 
 [transforms.input_myinfra_container_meta]
 type = "remap"
@@ -57,7 +57,7 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
-use_apiserver_cache = true
+
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"
@@ -153,11 +153,11 @@ if .log_source == "container" {
   del(._partial)
   del(.file)
   del(.source_type)
-  .kubernetes.container_iostream = del(.stream)
+  del(.stream)
   del(.kubernetes.pod_ips)
   del(.kubernetes.node_labels)
   del(.timestamp_end)
-  if !exists(."@timestamp") {."@timestamp" = .timestamp}
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
   .openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
 }
 '''

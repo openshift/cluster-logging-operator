@@ -21,7 +21,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime/serviceaccount"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/validations/observability"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,9 +41,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	if context.AdditionalContext != nil {
 		options = context.AdditionalContext
 	}
-
-	// Set rollout options based on annotation (LOG-7196)
-	SetMaxUnavailableRolloutOption(context.Forwarder.Annotations, options)
 
 	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
 		// temporarily create SA token until collector is capable of dynamically reloading a projected serviceaccount token
@@ -101,7 +97,6 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		resourceNames,
 		isDaemonSet,
 		LogLevel(context.Forwarder.Annotations),
-		factory.GetMaxUnavailableValue(options),
 	)
 
 	if err = collectorFactory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
@@ -165,11 +160,6 @@ func EvaluateAnnotationsForEnabledCapabilities(annotations map[string]string, op
 			if strings.ToLower(value) == "true" {
 				options[generatorhelpers.EnableDebugOutput] = "true"
 			}
-		case constants.AnnotationMaxUnavailable:
-			// Matching the validate_annotations logic
-			if observability.IsPercentOrWholeNumber(value) {
-				options[framework.MaxUnavailableOption] = value
-			}
 		}
 	}
 }
@@ -179,13 +169,4 @@ func LogLevel(annotations map[string]string) string {
 		return level
 	}
 	return "warn"
-}
-
-func SetMaxUnavailableRolloutOption(annotations map[string]string, options framework.Options) {
-	if value, found := annotations[constants.AnnotationMaxUnavailable]; found {
-		if observability.IsPercentOrWholeNumber(value) {
-			log.V(3).Info("Max Unavailable annotation found")
-			options[framework.MaxUnavailableOption] = value
-		}
-	}
 }

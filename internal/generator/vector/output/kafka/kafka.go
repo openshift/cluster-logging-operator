@@ -65,7 +65,17 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 	if strategy != nil {
 		strategy.VisitSink(sink)
 	}
-
+	tlsConfig := []Element{Nil}
+	if o.TLS != nil && isTlsBrokers(o) {
+		skipVerify := o.TLS.InsecureSkipVerify
+		o.TLS.InsecureSkipVerify = false
+		tlsConfig = []Element{tls.New(id, o.TLS, secrets, op, Option{Name: tls.IncludeEnabled, Value: ""})}
+		if skipVerify {
+			tlsConfig = append(tlsConfig, InsecureTLS{
+				ComponentID: id,
+			})
+		}
+	}
 	elements := []Element{
 		commontemplate.TemplateRemap(componentID, inputs, Topics(o), componentID, "Kafka Topic"),
 		sink,
@@ -77,14 +87,9 @@ func New(id string, o obs.OutputSpec, inputs []string, secrets observability.Sec
 		common.NewBuffer(id, strategy),
 		SASLConf(id, o.Kafka.Authentication, secrets),
 	}
-	if o.TLS != nil && isTlsBrokers(o) {
-		elements = append(elements, tls.New(id, o.TLS,
-			secrets,
-			op,
-			Option{Name: tls.IncludeEnabled, Value: ""},
-			Option{Name: tls.ExcludeInsecureSkipVerify, Value: ""}))
-	}
-	elements = append(elements, newLibRDKafkaOptions(id, o, o.Kafka.Tuning))
+	elements = append(elements,
+		tlsConfig...,
+	)
 	return elements
 }
 

@@ -21,33 +21,32 @@ import (
 )
 
 const (
-	defaultAudience                            = "openshift"
-	clusterLoggingPriorityClassName            = "system-node-critical"
-	MetricsPort                                = int32(24231)
-	MetricsPortName                            = "metrics"
-	metricsVolumeName                          = "metrics"
-	metricsVolumePath                          = "/etc/collector/metrics"
-	saTokenVolumeName                          = "sa-token"
-	saTokenExpirationSecs                      = 3600 //1 hour
-	defaultTerminationGracePeriodSeconds int64 = 10
-	sourcePodsName                             = "varlogpods"
-	sourcePodsPath                             = "/var/log/pods"
-	sourceJournalName                          = "varlogjournal"
-	sourceJournalPath                          = "/var/log/journal"
-	sourceAuditdName                           = "varlogaudit"
-	sourceAuditdPath                           = "/var/log/audit"
-	sourceAuditOVNName                         = "varlogovn"
-	sourceOVNPath                              = "/var/log/ovn"
-	sourceOAuthServerName                      = "varlogoauthserver"
-	sourceOAuthServerPath                      = "/var/log/oauth-server"
-	sourceOAuthAPIServerName                   = "varlogoauthapiserver"
-	sourceOAuthAPIServerPath                   = "/var/log/oauth-apiserver"
-	sourceOpenshiftAPIServerName               = "varlogopenshiftapiserver"
-	sourceOpenshiftAPIServerPath               = "/var/log/openshift-apiserver"
-	sourceKubeAPIServerName                    = "varlogkubeapiserver"
-	sourceKubeAPIServerPath                    = "/var/log/kube-apiserver"
-	tmpVolumeName                              = "tmp"
-	tmpPath                                    = "/tmp"
+	defaultAudience                 = "openshift"
+	clusterLoggingPriorityClassName = "system-node-critical"
+	MetricsPort                     = int32(24231)
+	MetricsPortName                 = "metrics"
+	metricsVolumeName               = "metrics"
+	metricsVolumePath               = "/etc/collector/metrics"
+	saTokenVolumeName               = "sa-token"
+	saTokenExpirationSecs           = 3600 //1 hour
+	sourcePodsName                  = "varlogpods"
+	sourcePodsPath                  = "/var/log/pods"
+	sourceJournalName               = "varlogjournal"
+	sourceJournalPath               = "/var/log/journal"
+	sourceAuditdName                = "varlogaudit"
+	sourceAuditdPath                = "/var/log/audit"
+	sourceAuditOVNName              = "varlogovn"
+	sourceOVNPath                   = "/var/log/ovn"
+	sourceOAuthServerName           = "varlogoauthserver"
+	sourceOAuthServerPath           = "/var/log/oauth-server"
+	sourceOAuthAPIServerName        = "varlogoauthapiserver"
+	sourceOAuthAPIServerPath        = "/var/log/oauth-apiserver"
+	sourceOpenshiftAPIServerName    = "varlogopenshiftapiserver"
+	sourceOpenshiftAPIServerPath    = "/var/log/openshift-apiserver"
+	sourceKubeAPIServerName         = "varlogkubeapiserver"
+	sourceKubeAPIServerPath         = "/var/log/kube-apiserver"
+	tmpVolumeName                   = "tmp"
+	tmpPath                         = "/tmp"
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -61,15 +60,13 @@ type Factory struct {
 	ImageName              string
 	Visit                  Visitor
 	Secrets                internalobs.Secrets
-	ConfigMaps             internalobs.ConfigMaps
+	ConfigMaps             map[string]*v1.ConfigMap
 	ForwarderSpec          obs.ClusterLogForwarderSpec
 	CommonLabelInitializer CommonLabelVisitor
 	PodLabelVisitor        PodLabelVisitor
 	ResourceNames          *factory.ForwarderResourceNames
 	isDaemonset            bool
 	LogLevel               string
-	UseKubeCache           bool
-	MaxUnavailable         string
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -88,7 +85,7 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.Tolerations
 }
 
-func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps internalobs.ConfigMaps, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string, maxUnavailable string) *Factory {
+func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets internalobs.Secrets, configMaps map[string]*v1.ConfigMap, forwarderSpec obs.ClusterLogForwarderSpec, resNames *factory.ForwarderResourceNames, isDaemonset bool, logLevel string) *Factory {
 	if collectorSpec == nil {
 		collectorSpec = &obs.CollectorSpec{}
 	}
@@ -108,16 +105,14 @@ func New(confHash, clusterID string, collectorSpec *obs.CollectorSpec, secrets i
 		PodLabelVisitor: vector.PodLogExcludeLabel,
 		isDaemonset:     isDaemonset,
 		LogLevel:        logLevel,
-		MaxUnavailable:  maxUnavailable,
 	}
 	return factory
 }
 
 func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
-	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, f.MaxUnavailable, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
+	ds := factory.NewDaemonSet(namespace, name, name, constants.CollectorName, constants.VectorName, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	ds.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
-	ds.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return ds
 }
 
@@ -125,24 +120,16 @@ func (f *Factory) NewDeployment(namespace, name string, trustedCABundle *v1.Conf
 	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, tlsProfileSpec, namespace)
 	dpl := factory.NewDeployment(namespace, name, constants.CollectorName, constants.VectorName, 2, *podSpec, f.CommonLabelInitializer, f.PodLabelVisitor)
 	dpl.Spec.Template.Annotations[constants.AnnotationSecretHash] = f.Secrets.Hash64a()
-	dpl.Spec.Template.Annotations[constants.AnnotationConfigMapHash] = f.ConfigMaps.Hash64a()
 	return dpl
 }
 
 func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogForwarderSpec, clusterID string, tlsProfileSpec configv1.TLSProfileSpec, namespace string) *v1.PodSpec {
 
-	var gracePeriod *int64
-	if f.CollectorSpec.TerminationGracePeriodSeconds != nil {
-		gracePeriod = f.CollectorSpec.TerminationGracePeriodSeconds
-	} else {
-		gracePeriod = utils.GetPtr(defaultTerminationGracePeriodSeconds)
-	}
-
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
-		TerminationGracePeriodSeconds: gracePeriod,
+		TerminationGracePeriodSeconds: utils.GetPtr[int64](10),
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Volumes: []v1.Volume{
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},

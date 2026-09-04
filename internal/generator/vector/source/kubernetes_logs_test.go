@@ -17,7 +17,7 @@ var _ = Describe("source", func() {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
 		id := helpers.MakeID("source", "foo")
-		conf := NewKubernetesLogs(id, includes, excludes, maxMergedLineBytes) //, includeNS, excludes)
+		conf := NewKubernetesLogs(id, includes, excludes) //, includeNS, excludes)
 		Expect(string(exp)).To(EqualConfigFrom(conf), fmt.Sprintf("for exp. file %s", expFile))
 	},
 		Entry("should exclude includes/excludes globs from the config when they are empty",
@@ -31,12 +31,6 @@ var _ = Describe("source", func() {
 			`["/var/log/pods/bar"]`,
 			int64(0),
 			"kubernetes_logs_with_includes.toml",
-		),
-		Entry("should set correct value for max_merge_line_size",
-			"",
-			"",
-			int64(1000_000),
-			"kubernetes_logs_max_merge_line_size.toml",
 		),
 	)
 

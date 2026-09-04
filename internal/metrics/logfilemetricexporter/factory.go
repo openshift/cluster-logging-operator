@@ -28,7 +28,6 @@ const (
 	logPods                         = "varlogpods"
 	logPodsValue                    = "/var/log/pods"
 	metricsVolumePath               = "/etc/logfilemetricexporter/metrics"
-	lfmeMaxUnavailable              = "100%"
 )
 
 // resourceRequirements returns the resource requirements for a given metric-exporter implementation
@@ -70,7 +69,7 @@ func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 
 func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
 	podSpec := NewPodSpec(exporter, tlsProfileSpec)
-	ds := coreFactory.NewDaemonSet(namespace, name, exporter.Name, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, lfmeMaxUnavailable, *podSpec, visitors...)
+	ds := coreFactory.NewDaemonSet(namespace, name, exporter.Name, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, *podSpec, visitors...)
 	return ds
 }
 

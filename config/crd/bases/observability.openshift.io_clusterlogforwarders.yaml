@@ -2393,7 +2393,7 @@ spec:
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL
-                            rule: self == '' ||  isURL(self)
+                            rule: self == '' || isURL(self)
                       required:
                       - authentication
                       - groupName
@@ -2476,6 +2476,20 @@ spec:
                               - secretName
                               type: object
                           type: object
+                        endpoints:
+                          description: |-
+                            Endpoints is a list of Elasticsearch endpoints to send log records to.
+                            Vector distributes events across endpoints using load balancing with
+                            automatic failover. When both URL and Endpoints are provided, URL is
+                            prepended to the Endpoints list.
+                          items:
+                            description: EndpointURL is a URL to an Elasticsearch
+                              endpoint.
+                            type: string
+                            x-kubernetes-validations:
+                            - message: invalid URL
+                              rule: isURL(self)
+                          type: array
                         headers:
                           additionalProperties:
                             type: string
@@ -2567,9 +2581,11 @@ spec:
                           type: integer
                       required:
                       - index
-                      - url
                       - version
                       type: object
+                      x-kubernetes-validations:
+                      - message: URL or endpoints required
+                        rule: has(self.url) || self.endpoints.size() > 0
                     googleCloudLogging:
                       description: GoogleCloudLogging configures forwarding log events
                         to GCP (formally Stackdriver) Operations
@@ -2822,7 +2838,7 @@ spec:
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL
-                            rule: self == '' ||  isURL(self)
+                            rule: self == '' || isURL(self)
                         timeout:
                           description: Timeout specifies the Http request timeout
                             in seconds. If not set, 10secs is used.
@@ -3134,7 +3150,7 @@ spec:
                           type: string
                           x-kubernetes-validations:
                           - message: invalid URL
-                            rule: self == '' ||  isURL(self)
+                            rule: self == '' || isURL(self)
                         tenantKey:
                           description: |-
                             TenantKey is the tenant for the logs. This supports vector's template syntax to allow dynamic per-event values.

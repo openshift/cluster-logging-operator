@@ -177,9 +177,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 					Name: "elasticsearch-output",
 					Type: obsv1.OutputTypeElasticsearch,
 					Elasticsearch: &obsv1.Elasticsearch{
-						URLSpec: obsv1.URLSpec{
-							URL: "https://elasticsearch.example.com:9200",
-						},
+						URL: "https://elasticsearch.example.com:9200",
 					},
 				},
 				{
@@ -277,9 +275,7 @@ var _ = Describe("Reconcile NetworkPolicy", func() {
 					Name: "elasticsearch-output",
 					Type: obsv1.OutputTypeElasticsearch,
 					Elasticsearch: &obsv1.Elasticsearch{
-						URLSpec: obsv1.URLSpec{
-							URL: "https://elasticsearch.example.com:9200",
-						},
+						URL: "https://elasticsearch.example.com:9200",
 					},
 				},
 				{

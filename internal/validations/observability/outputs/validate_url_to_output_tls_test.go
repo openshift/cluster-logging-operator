@@ -88,11 +88,37 @@ var _ = Describe("[internal][validations][observability][outputs] ClusterLogForw
 		It("should pass validation when secure URL and exist TLS config: tls.TLSSecurityProfile", func() {
 			spec.Type = obs.OutputTypeElasticsearch
 			spec.Elasticsearch = &obs.Elasticsearch{
-				URLSpec: obs.URLSpec{
-					URL: "https://local.svc:514",
-				},
+				URL: "https://local.svc:514",
 			}
 
+			spec.TLS = &obs.OutputTLSSpec{
+				TLSSecurityProfile: &configv1.TLSSecurityProfile{
+					Type: configv1.TLSProfileOldType,
+				},
+			}
+			Expect(validateURLAccordingToTLS(spec)).To(BeEmpty())
+		})
+		It("should fail validation when any endpoint has insecure URL with TLS config", func() {
+			spec.Type = obs.OutputTypeElasticsearch
+			spec.Elasticsearch = &obs.Elasticsearch{
+				URL: "https://secure.svc:9200",
+				Endpoints: []obs.EndpointURL{
+					"http://insecure.svc:9200",
+				},
+			}
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			}
+			Expect(validateURLAccordingToTLS(spec)).ToNot(BeEmpty())
+		})
+		It("should pass validation when all endpoints are secure with TLS config", func() {
+			spec.Type = obs.OutputTypeElasticsearch
+			spec.Elasticsearch = &obs.Elasticsearch{
+				Endpoints: []obs.EndpointURL{
+					"https://es1.svc:9200",
+					"https://es2.svc:9200",
+				},
+			}
 			spec.TLS = &obs.OutputTLSSpec{
 				TLSSecurityProfile: &configv1.TLSSecurityProfile{
 					Type: configv1.TLSProfileOldType,

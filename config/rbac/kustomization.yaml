@@ -1,6 +1,8 @@
 resources:
 - role.yaml
 - role_binding.yaml
+- operator_namespace_role.yaml
+- operator_namespace_role_binding.yaml
 - metadata_reader_clusterrole.yaml
 - prometheus_role.yaml
 - prometheus_role_binding.yaml

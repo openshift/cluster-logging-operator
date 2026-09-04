@@ -104,7 +104,6 @@ pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
 
-
 [transforms.input_infrastructure_container_meta]
 type = "remap"
 inputs = ["input_infrastructure_container"]
@@ -179,7 +178,6 @@ pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 namespace_annotation_fields.namespace_uid = "kubernetes.namespace_id"
 rotate_wait_secs = 5
-
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"
@@ -381,9 +379,7 @@ if .log_source == "container" {
             del(.verb)
           }
           .kubernetes.event = del(.event)
-          # escape 'new line' symbol see: LOG-8090
-          msg = to_string!(del(.kubernetes.event.message))
-          .message = replace(msg, "\n", s'\n')
+          .message = del(.kubernetes.event.message)
           . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
           del(.kubernetes.event.metadata.creationTimestamp)
 		  . = compact(., nullish: true)

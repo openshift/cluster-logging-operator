@@ -8,12 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
-const (
-	MaxEventsGroupByContainer = "1"
-	MaxEventsGroupBySource    = "1"
-	MaxEventsGroupByHost      = "1"
-)
-
 type Reduce struct {
 	ComponentID string
 	Desc        string
@@ -48,7 +42,7 @@ func GroupByContainer(id string, inputs []string) Element {
 		Desc:        "Merge container logs and group by namespace, pod and container",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupByContainer,
+		MaxEvents:   "250",
 		GroupBy: MakeGroupBys(".openshift.cluster_id",
 			".kubernetes.namespace_name", ".kubernetes.pod_name", ".kubernetes.container_name"),
 	}
@@ -59,8 +53,8 @@ func GroupBySource(id string, inputs []string) Element {
 		Desc:        "Merge audit api and node logs and group by log_source",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupBySource,
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.log_type", ".openshift.log_source"),
+		MaxEvents:   "250",
+		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.log_source"),
 	}
 }
 
@@ -69,8 +63,9 @@ func GroupByHost(id string, inputs []string) Element {
 		Desc:        "Merge auditd host logs and group by hostname",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		MaxEvents:   MaxEventsGroupByHost,
-		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.hostname", ".openshift.log_type", ".openshift.log_source")}
+		MaxEvents:   "50",
+		GroupBy:     MakeGroupBys(".openshift.cluster_id", ".openshift.hostname"),
+	}
 }
 
 func MakeGroupBys(fields ...string) string {

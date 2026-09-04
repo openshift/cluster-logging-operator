@@ -2,10 +2,11 @@ package functional
 
 import (
 	"bytes"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	fluentdhelpers "github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
@@ -92,6 +93,7 @@ type = "remap"
 inputs = ["my_source"]
 source = '''
   del(.source_type)
+  del(.timestamp)
 '''
 
 [sinks.my_sink]

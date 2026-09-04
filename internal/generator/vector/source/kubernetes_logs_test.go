@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("source", func() {
-	DescribeTable("#NewKubernetesLogs", func(includes, excludes string, maxMergedLineBytes int64, expFile string) {
+	DescribeTable("#NewKubernetesLogs", func(includes, excludes string, expFile string) {
 		exp, err := tomlContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
@@ -23,13 +23,11 @@ var _ = Describe("source", func() {
 		Entry("should exclude includes/excludes globs from the config when they are empty",
 			"",
 			"",
-			int64(0),
 			"kubernetes_logs_no_includes_excludes.toml",
 		),
 		Entry("should use includes/excludes globs from the config when they exist",
 			`["/var/log/pods/foo"]`,
 			`["/var/log/pods/bar"]`,
-			int64(0),
 			"kubernetes_logs_with_includes.toml",
 		),
 	)

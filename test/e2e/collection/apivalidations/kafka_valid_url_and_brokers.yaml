@@ -7,10 +7,10 @@ spec:
     - name: kafka
       kafka:
         topic: clo-app-topic
-        url: tcp://foo
+        url: http://foo
         brokers:
-        - tls://foo
-        - tcp://bar
+        - http://foo
+        - http://bar
       type: kafka
   pipelines:
   - inputRefs:

@@ -3,12 +3,13 @@ package security
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"time"
+
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"runtime"
-	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -121,10 +122,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 		By("having all sysctls disabled")
 		result, _ = runInCollectorContainer("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0")
-		Expect(result).To(Or(
-			ContainSubstring("sysctl: no such file"),
-			ContainSubstring("executable file `/usr/sbin/sysctl` not found"),
-		))
+		Expect(result).To(ContainSubstring("sysctl: no such file"))
 
 		By("disabling privilege escalation")
 		result, err = runInCollectorContainer("cat", "/proc/1/status")

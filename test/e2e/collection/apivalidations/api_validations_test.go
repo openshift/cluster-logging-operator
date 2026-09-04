@@ -48,13 +48,10 @@ var _ = Describe("", func() {
 		_, err = buffer.ReadFrom(reader)
 		assert(buffer.String(), err)
 	},
-		Entry("should pass for LokiStack with empty tuning", "lokistack-empty-tuning.yaml", func(out string, err error) {
+		Entry("should pass for syslog with valid udp URL", "syslog_valid_url_udp.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
-		Entry("should fail for LokiStack with snappy compression", "lokistack-snappy-compression-otel.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp(".'snappy' compression cannot be used when data model is 'Otel'"))
-		}),
-		Entry("should pass for syslog with valid udp URL", "syslog_valid_url_udp.yaml", func(out string, err error) {
+		Entry("should pass for syslog with valid udps URL", "syslog_valid_url_udps.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
 		}),
 		Entry("should pass for syslog with valid tls URL", "syslog_valid_url_tls.yaml", func(out string, err error) {
@@ -70,11 +67,10 @@ var _ = Describe("", func() {
 			Expect(err.Error()).To(MatchRegexp(".*URL.*brokers.*required.*"))
 		}),
 		Entry("should fail for kafka with invalid URL", "kafka_invalid_url.yaml", func(out string, err error) {
-			Expect(err.Error()).To(MatchRegexp("must be a valid URL with a tcp or tls scheme"))
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
 		}),
 		Entry("should fail for kafka invalid broker URL", "kafka_invalid_broker_url.yaml", func(out string, err error) {
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("each broker must be a valid URL with a tcp or tls scheme"))
+			Expect(err.Error()).To(MatchRegexp("invalid URL"))
 		}),
 		Entry("LOG-5788: for multilineException filter should not fail", "log5788_mulitiline_ex_filter.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
@@ -95,12 +91,6 @@ var _ = Describe("", func() {
 		}),
 		Entry("should pass for Cloudwatch with empty URL", "cloudwatch-empty-url.yaml", func(out string, err error) {
 			Expect(err).ToNot(HaveOccurred())
-		}),
-		Entry("should pass for OTLP with any http or https URL", "otlp_valid_url.yaml", func(out string, err error) {
-			Expect(err).ToNot(HaveOccurred())
-		}),
-		Entry("should fail for OTLP with non http URL", "otlp_valid_non_http.yaml", func(out string, err error) {
-			Expect(err).To(HaveOccurred())
 		}),
 	)
 })

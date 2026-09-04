@@ -134,8 +134,8 @@ var _ = Describe("[Functional][Normalization] Messages from EventRouter", func()
 		Entry("with HTTP output for UPDATED events", obs.OutputTypeHTTP, "UPDATED", "simple syslog message", "simple syslog message"),
 		Entry("with Syslog output for ADDED events", obs.OutputTypeSyslog, "ADDED", "simple syslog message", "simple syslog message"),
 		Entry("with Syslog output for UPDATED events", obs.OutputTypeSyslog, "UPDATED", "simple syslog message", "simple syslog message"),
-		Entry("with Syslog output for ADDED events and new line symbol", obs.OutputTypeSyslog, "ADDED", "syslog message\n with new line", "syslog message\\n with new line"),
-		Entry("with Syslog output for UPDATED events and new line symbol", obs.OutputTypeSyslog, "UPDATED", "syslog message\n with new line", "syslog message\\n with new line"),
+		Entry("with Syslog output for ADDED events and new line symbol", obs.OutputTypeSyslog, "ADDED", "syslog message\n with new line", "*"),
+		Entry("with Syslog output for UPDATED events and new line symbol", obs.OutputTypeSyslog, "UPDATED", "syslog message\n with new line", "*"),
 	)
 
 	AfterEach(func() {

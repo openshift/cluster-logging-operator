@@ -2,9 +2,10 @@ package normalization
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
+
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
@@ -45,7 +46,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					LogType:          "audit",
 					Level:            "Metadata",
 					Timestamp:        time.Time{},
-					TimestampLegacy:  time.Time{},
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 					OpenshiftLabels: types.OpenshiftMeta{
 						ClusterID: "*",
@@ -83,7 +83,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					LogType:          "audit",
 					Level:            "Metadata",
 					Timestamp:        time.Time{},
-					TimestampLegacy:  time.Time{},
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 					OpenshiftLabels: types.OpenshiftMeta{
 						ClusterID: "*",
@@ -110,7 +109,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 		})
 		It("should parse linux audit log format correctly", func() {
 			// Log message data
-			timestamp := "2024-03-28T14:36:03.243000+00:00"
+			timestamp := "2013-03-28T14:36:03.243000+00:00"
 			testTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 			auditLogLine := functional.NewAuditHostLog(testTime)
 			// Template expected as output Log
@@ -125,7 +124,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					RecordID: "*",
 				},
 				Timestamp:        testTime,
-				TimestampLegacy:  testTime,
 				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 				Openshift: types.OpenshiftMeta{
 					ClusterID: "*",
@@ -152,13 +150,12 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 
 			// Template expected as output Log
 			var outputLogTemplate = types.OVNAuditLog{
-				Message:         ovnLogLine,
-				Level:           level,
-				Hostname:        framework.Pod.Spec.NodeName,
-				Timestamp:       time.Time{},
-				TimestampLegacy: time.Time{},
-				LogSource:       "*",
-				LogType:         "audit",
+				Message:   ovnLogLine,
+				Level:     level,
+				Hostname:  framework.Pod.Spec.NodeName,
+				Timestamp: time.Time{},
+				LogSource: "*",
+				LogType:   "audit",
 				Openshift: types.OpenshiftMeta{
 					Sequence:  types.NewOptionalInt(""),
 					ClusterID: "*",

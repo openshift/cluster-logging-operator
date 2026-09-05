@@ -80,6 +80,9 @@ const (
 	SyslogReceiverPort = 10514
 
 	VolumeNameTrustedCA = "trusted-ca"
+
+	STDOUT = "stdout"
+	STDERR = "stderr"
 )
 
 var ExtraNoProxyList = []string{ElasticsearchFQDN}

@@ -1,6 +1,7 @@
 package multiple
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -56,7 +57,8 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 		Describe("and one store is not available", func() {
 			BeforeEach(func() {
 				Expect(framework.DeployWithVisitor(func(builder *runtime.PodBuilder) error {
-					return framework.AddFluentdHttpOutput(builder, framework.Forwarder.Spec.Outputs[1])
+					outputSpec := observability.Outputs(framework.Forwarder.Spec.Outputs).Map()[string(obs.OutputTypeHTTP)]
+					return framework.AddFluentdHttpOutput(builder, outputSpec)
 				})).To(BeNil())
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 			})

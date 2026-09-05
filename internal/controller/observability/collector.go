@@ -1,6 +1,9 @@
 package observability
 
 import (
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
@@ -20,8 +23,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {
@@ -35,6 +36,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	resourceNames := factory.ResourceNames(*context.Forwarder)
 
 	options := framework.Options{}
+
+	// Set options to any options added during initialization of CLF
+	if context.AdditionalContext != nil {
+		options = context.AdditionalContext
+	}
+
 	if internalobs.Outputs(context.Forwarder.Spec.Outputs).NeedServiceAccountToken() {
 		// temporarily create SA token until collector is capable of dynamically reloading a projected serviceaccount token
 		var sa *corev1.ServiceAccount
@@ -81,28 +88,39 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 
 	isDaemonSet := !internalobs.DeployAsDeployment(*context.Forwarder)
 	log.V(3).Info("Deploying as DaemonSet", "isDaemonSet", isDaemonSet)
-	factory := collector.New(collectorConfHash, context.ClusterID, context.Forwarder.Spec.Collector, context.Secrets, context.ConfigMaps, context.Forwarder.Spec, resourceNames, isDaemonSet, LogLevel(context.Forwarder.Annotations))
-	if err = factory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
+	collectorFactory := collector.New(
+		collectorConfHash,
+		context.ClusterID,
+		context.Forwarder.Spec.Collector,
+		context.Secrets, context.ConfigMaps,
+		context.Forwarder.Spec,
+		resourceNames,
+		isDaemonSet,
+		LogLevel(context.Forwarder.Annotations),
+	)
+
+	if err = collectorFactory.ReconcileCollectorConfig(context.Client, context.Reader, context.Forwarder.Namespace, collectorConfig, ownerRef); err != nil {
 		log.Error(err, "collector.ReconcileCollectorConfig")
 		return
 	}
 
-	reconcileWorkload := factory.ReconcileDaemonset
+	reconcileWorkload := collectorFactory.ReconcileDaemonset
 	if !isDaemonSet {
-		reconcileWorkload = factory.ReconcileDeployment
+		reconcileWorkload = collectorFactory.ReconcileDeployment
 	}
+
 	if err := reconcileWorkload(context.Client, context.Forwarder.Namespace, trustedCABundle, ownerRef); err != nil {
 		log.Error(err, "Error reconciling the deployment of the collector")
 		return err
 	}
 
-	if err := factory.ReconcileInputServices(context.Client, context.Reader, context.Forwarder.Namespace, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := collectorFactory.ReconcileInputServices(context.Client, context.Reader, context.Forwarder.Namespace, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileInputServices")
 		return err
 	}
 
 	// Reconcile resources to support metrics gathering
-	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, factory.CommonLabelInitializer); err != nil {
+	if err := network.ReconcileService(context.Client, context.Forwarder.Namespace, resourceNames.CommonName, context.Forwarder.Name, constants.CollectorName, collector.MetricsPortName, resourceNames.SecretMetrics, collector.MetricsPort, ownerRef, collectorFactory.CommonLabelInitializer); err != nil {
 		log.Error(err, "collector.ReconcileService")
 		return err
 	}
@@ -115,12 +133,12 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 	return nil
 }
 
-func GenerateConfig(k8Client client.Client, spec obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) (config string, err error) {
+func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourceNames factory.ForwarderResourceNames, secrets internalobs.Secrets, op framework.Options) (config string, err error) {
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	//EvaluateAnnotationsForEnabledCapabilities(clusterRequest.Forwarder, op)
 	g := forwardergenerator.New()
-	generatedConfig, err := g.GenerateConf(secrets, spec.Spec, spec.Namespace, spec.Name, resourceNames, op)
+	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

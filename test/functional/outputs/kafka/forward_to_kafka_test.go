@@ -4,7 +4,9 @@ import (
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +17,7 @@ import (
 )
 
 var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
-
+	const MB = 1014 * 1024
 	var (
 		framework *functional.CollectorFunctionalFramework
 	)
@@ -24,7 +26,6 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 		framework = functional.NewCollectorFunctionalFramework()
 		log.V(2).Info("Creating secret for broker credentials")
 		framework.Secrets = append(framework.Secrets, kafka.NewBrokerSecret(framework.Namespace))
-
 	})
 
 	AfterEach(func() {
@@ -32,18 +33,23 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 	})
 
 	Context("Application Logs", func() {
-		It("should send large message over Kafka", func() {
+		It("(LOG-7608) should send large message over Kafka", func() {
 			testruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(obs.InputTypeApplication).
-				ToKafkaOutput()
+				ToKafkaOutput(func(output *obs.OutputSpec) {
+					output.Kafka.Tuning = &obs.KafkaTuningSpec{
+						MaxWrite: utils.GetPtr(resource.MustParse("6M")),
+					}
+				})
+			maxWrite := 6 * MB
 			Expect(framework.Deploy()).To(BeNil())
-
-			maxLen := 1000
-			Expect(framework.WritesNApplicationLogsOfSize(1, maxLen, 0)).To(BeNil())
+			messageLength := 2 * MB //2MB
+			Expect(framework.WriteApplicationLogOfSizeAsPartials(messageLength)).To(BeNil())
 			// Read line from Kafka output
 			outputlogs, err := framework.ReadApplicationLogsFromKafka("clo-app-topic", "localhost:9092", "kafka-consumer-clo-app-topic")
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
+			Expect(len(outputlogs[0]) <= maxWrite).To(BeTrue(), "exp. the log record %d to be less than or equal to maxWrite %d", len(outputlogs[0]), maxWrite)
 		})
 	})
 	Context("LOG-3458", func() {

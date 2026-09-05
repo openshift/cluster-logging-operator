@@ -107,27 +107,15 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	)
 
 	Context("with tuning parameters", func() {
-		var (
-			addDestinationContainer func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor
-		)
 		DescribeTable("with compression", func(compression string) {
-			framework = functional.NewCollectorFunctionalFramework()
-			obstestruntime.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(obs.InputTypeApplication).
-				ToHttpOutput(func(output *obs.OutputSpec) {
-					output.HTTP.Tuning = &obs.HTTPTuningSpec{
-						Compression: compression,
-					}
-				})
-
-			addDestinationContainer = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
-				return func(b *runtime.PodBuilder) error {
-					return f.AddVectorHttpOutput(b, f.Forwarder.Spec.Outputs[0])
-				}
+			framework.Forwarder.Spec.Outputs[0].HTTP.Tuning = &obs.HTTPTuningSpec{
+				Compression: compression,
 			}
 
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-				addDestinationContainer(framework),
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				},
 				func(builder *runtime.PodBuilder) error {
 					builder.AddLabels(map[string]string{
 						"app.kubernetes.io/name": "somevalue",

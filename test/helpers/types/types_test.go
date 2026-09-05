@@ -44,6 +44,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-27T18:32:57.600159+00:00",
   "@timestamp": "2020-11-27T18:32:57.600159+00:00",
   "viaq_index_name": "app-write",
   "viaq_msg_id": "M2QxNzM0MmQtMmVmMy00NjM1LWE1YzAtYjE1MWMxOWE5MTM2"
@@ -81,6 +82,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-29T13:27:47.955953+00:00",
   "@timestamp": "2020-11-29T13:27:47.955953+00:00",
   "viaq_index_name": "infra-write",
   "viaq_msg_id": "MjFlMWIxNGItMTljMi00NjA2LWFhNzUtNDg2OTYzYjQxYzUx"
@@ -125,6 +127,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-28T18:18:17.286517+00:00",
   "@timestamp": "2020-11-28T18:18:17.286517+00:00",
   "viaq_index_name": "infra-write",
   "viaq_msg_id": "ZDY0ZjE4NTAtNGU3ZC00YmQ4LWJjYjctNzVjMTEwMzdlYWIz"
@@ -147,6 +150,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-29T13:16:48.785000+00:00",
   "@timestamp": "2020-11-29T13:16:48.785000+00:00",
   "viaq_index_name": "audit-write",
   "viaq_msg_id": "Y2M1NThmYzUtODYxYS00MzY5LWJmZDQtN2FkYjk4ZDlmYjE3",
@@ -204,6 +208,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-27T19:55:01.798728+00:00",
   "@timestamp": "2020-11-27T19:55:01.798728+00:00",
   "viaq_index_name": "audit-write",
   "viaq_msg_id": "OWU1OGU0MzYtOGQ4YS00MTBhLWIwZGQtMzM1ZDc3ZmIzOTc4",
@@ -261,6 +266,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2020-11-29T13:26:56.978921+00:00",
   "@timestamp": "2020-11-29T13:26:56.978921+00:00",
   "viaq_index_name": "audit-write",
   "viaq_msg_id": "ZTRjMDQ4ZWEtMmVkMy00YTJmLTk0NTUtYTk4YzNjNDFlYjM5",
@@ -280,6 +286,7 @@ const (
       "version": "1.7.4 1.6.0"
     }
   },
+  "timestamp": "2021-07-06T08:26:58.687000+00:00",
   "@timestamp": "2021-07-06T08:26:58.687000+00:00",
   "viaq_index_name": "audit-write",
   "viaq_msg_id": "Y2M1NThmYzUtODYxYS00MzY5LWJmZDQtN2FkYjk4ZDlmYjE3",

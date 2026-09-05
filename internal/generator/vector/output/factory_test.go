@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	. "github.com/onsi/ginkgo"

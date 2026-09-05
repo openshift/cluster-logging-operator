@@ -2,6 +2,7 @@ package apiaudit
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -26,6 +27,11 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	. "k8s.io/apiserver/pkg/apis/audit/v1"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	//go:embed *.json
+	jsonContent embed.FS
 )
 
 func TestVRLGenerator(t *testing.T) {

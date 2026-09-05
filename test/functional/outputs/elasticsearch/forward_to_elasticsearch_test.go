@@ -61,7 +61,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			Expect(len(logs)).To(Equal(2))
 			//sort log by time before matching
 			sort.Slice(logs, func(i, j int) bool {
-				return logs[i].Timestamp.Before(logs[j].Timestamp)
+				return logs[i].TimestampLegacy.Before(logs[j].TimestampLegacy)
 			})
 
 			Expect(logs[0].Message).To(Equal(ukr + jp + ch))
@@ -134,7 +134,6 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 				})
 			defer framework.Cleanup()
 			Expect(framework.Deploy()).To(BeNil())
-
 			// Write app logs
 			timestamp := "2020-11-04T18:13:59.061892+00:00"
 			applicationLogLine := functional.NewCRIOLogMessage(timestamp, "This is my test message", false)
@@ -159,6 +158,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 				output.Elasticsearch.Index = index
 			})
 		defer framework.Cleanup()
+
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Write app logs

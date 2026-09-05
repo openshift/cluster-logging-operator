@@ -160,14 +160,10 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 		selector = spec.Application.Selector
 	}
 	metaID := helpers.MakeID(base, "meta")
+	k8sLogs := source.NewKubernetesLogs(base, includes, excludes)
+	k8sLogs.ExtraLabelSelector = source.LabelSelectorFrom(selector)
 	el := []framework.Element{
-		source.KubernetesLogs{
-			ComponentID:        base,
-			Desc:               "Logs from containers (including openshift containers)",
-			IncludePaths:       includes,
-			ExcludePaths:       excludes,
-			ExtraLabelSelector: source.LabelSelectorFrom(selector),
-		},
+		k8sLogs,
 		NewLogSourceAndType(metaID, logSource, logType, base, func(remap *elements.Remap) {
 			remap.VRL = fmt.Sprintf(
 				`

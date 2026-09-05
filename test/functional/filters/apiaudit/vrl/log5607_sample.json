@@ -1,0 +1,50 @@
+{
+  "kind": "Event",
+  "apiVersion": "audit.k8s.io/v1",
+  "level": "Metadata",
+  "auditID": "60f68506-a3fd-43fc-a715-8c678a8ccf1b",
+  "stage": "ResponseComplete",
+  "requestURI": "/apis/policy.open-cluster-management.io/v1/namespaces/dc01/configurationpolicies/external-secrets-operator-subscription/status",
+  "verb": "update",
+  "user": {
+    "username": "system:serviceaccount:open-cluster-management-agent-addon:config-policy-controller-sa",
+    "uid": "50ecc1d6-1b8f-4cfa-a744-14b57f0f8317",
+    "groups": [
+      "system:serviceaccounts",
+      "system:serviceaccounts:open-cluster-management-agent-addon",
+      "system:authenticated"
+    ],
+    "extra": {
+      "authentication.kubernetes.io/pod-name": [
+        "config-policy-controller-5fd4b7cd47-cslpk"
+      ],
+      "authentication.kubernetes.io/pod-uid": [
+        "8eaafd96-bcf4-40c8-bc03-ba67176ad9f6"
+      ]
+    }
+  },
+  "sourceIPs": [
+    "99.999.999.999"
+  ],
+  "userAgent": "config-policy-controller/v0.0.0 (linux/amd64) kubernetes/$Format",
+  "objectRef": {
+    "resource": "configurationpolicies",
+    "namespace": "dc01",
+    "name": "external-secrets-operator-subscription",
+    "uid": "001b043c-ce9b-4bda-9092-97db0f249748",
+    "apiGroup": "policy.open-cluster-management.io",
+    "apiVersion": "v1",
+    "resourceVersion": "375857666",
+    "subresource": "status"
+  },
+  "responseStatus": {
+    "metadata": {},
+    "code": 200
+  },
+  "requestReceivedTimestamp": "2024-05-29T13:24:55.082960Z",
+  "stageTimestamp": "2024-05-29T13:24:55.110888Z",
+  "annotations": {
+    "authorization.k8s.io/decision": "allow",
+    "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding \"open-cluster-management:config-policy-controller\" of ClusterRole \"open-cluster-management:config-policy-controller\" to ServiceAccount \"config-policy-controller-sa/open-cluster-management-agent-addon\""
+  }
+}

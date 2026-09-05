@@ -112,6 +112,13 @@ func (p *PipelineBuilder) WithMultilineErrorDetectionFilter() *PipelineBuilder {
 	})
 	return p
 }
+func (p *PipelineBuilder) WithLabelsFilter(labels map[string]string) *PipelineBuilder {
+	p.WithFilter(string(obs.FilterTypeOpenshiftLabels), func(spec *obs.FilterSpec) {
+		spec.Type = obs.FilterTypeOpenshiftLabels
+		spec.OpenshiftLabels = labels
+	})
+	return p
+}
 
 func (p *PipelineBuilder) WithParseJson() *PipelineBuilder {
 	p.WithFilter(string(obs.FilterTypeParse), func(spec *obs.FilterSpec) {
@@ -219,7 +226,7 @@ func (p *PipelineBuilder) ToKafkaOutput(visitors ...func(output *obs.OutputSpec)
 		output.Name = string(obs.OutputTypeKafka)
 		output.Type = obs.OutputTypeKafka
 		output.Kafka = &obs.Kafka{
-			URL:   "https://localhost:9093",
+			URL:   "tcp://localhost:9093",
 			Topic: kafka.AppLogsTopic,
 		}
 		output.TLS = &obs.OutputTLSSpec{

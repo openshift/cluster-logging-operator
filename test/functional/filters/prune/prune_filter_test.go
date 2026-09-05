@@ -67,6 +67,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 			Expect(log.Kubernetes).ToNot(BeNil())
 			Expect(log.Openshift).ToNot(BeNil())
 			Expect(log.Timestamp).ToNot(BeNil())
+			Expect(log.TimestampLegacy).ToNot(BeNil())
 			Expect(log.Kubernetes.Annotations).ToNot(BeNil())
 			Expect(log.Kubernetes.PodName).ToNot(BeNil())
 			Expect(log.Kubernetes.Labels).ToNot(ContainElement("foo-bar_baz"))

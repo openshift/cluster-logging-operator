@@ -2,6 +2,7 @@ package observability
 
 import (
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclock "k8s.io/utils/clock"

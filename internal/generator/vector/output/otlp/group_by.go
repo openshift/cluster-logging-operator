@@ -2,9 +2,10 @@ package otlp
 
 import (
 	"fmt"
+	"strings"
+
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"strings"
 )
 
 type Reduce struct {

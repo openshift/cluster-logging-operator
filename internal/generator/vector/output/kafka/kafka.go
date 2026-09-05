@@ -2,9 +2,10 @@ package kafka
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"net/url"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"

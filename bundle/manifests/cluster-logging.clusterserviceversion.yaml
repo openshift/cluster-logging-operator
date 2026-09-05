@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-02-05T14:25:39Z"
+    createdAt: "2026-09-04T15:15:04Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2000,7 +2000,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: cluster-logging-operator
                 - name: RELATED_IMAGE_VECTOR
-                  value: quay.io/openshift-logging/vector:v0.37.1
+                  value: quay.io/openshift-logging/vector:v0.47.0
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:6.0
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
@@ -2047,7 +2047,7 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-  - image: quay.io/openshift-logging/vector:v0.37.1
+  - image: quay.io/openshift-logging/vector:v0.47.0
     name: vector
   - image: quay.io/openshift-logging/log-file-metric-exporter:6.0
     name: log-file-metric-exporter

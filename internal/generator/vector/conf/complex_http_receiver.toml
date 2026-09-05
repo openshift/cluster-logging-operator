@@ -6,8 +6,8 @@ enabled = true
 
 # Load sensitive data from files
 [secret.kubernetes_secret]
-type = "file"
-base_path = "/var/run/ocp-collector/secrets"
+type = "directory"
+path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -216,10 +216,11 @@ if .log_type == "audit" && .log_source == "auditd" {
   if err == null {
     sp, err = split(match2.ts_record,":")
     if err == null && length(sp) == 2 {
-        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
-        envelop |= {"record_id": sp[1]}
-        . |= {"audit.linux" : envelop}
-        . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+          ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+          if ts != "" { .timestamp = ts }
+          ."@timestamp" = format_timestamp(.timestamp, "%+") ?? .timestamp
+          envelop |= {"record_id": sp[1]}
+          . |= {"audit.linux" : envelop}
     }
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
@@ -256,6 +257,7 @@ if .log_type == "audit" && .log_source == "openshiftAPI" {
 }
 if .log_type == "audit" && .log_source == "ovn" {
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  ._internal.message = .message
   del(.file)
   del(.source_type)
   if !exists(.level) {

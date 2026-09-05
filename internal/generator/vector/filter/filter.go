@@ -40,7 +40,7 @@ func NewInternalFilterMap(filters map[string]*obs.FilterSpec) map[string]*adapte
 			}
 		case obs.FilterTypeParse:
 			internalFilter.Factory = func(inputs ...string) types.Transform {
-				return parse.New(inputs...)
+				return parse.New(f.Parse, inputs...)
 			}
 		case obs.FilterTypeDetectMultiline:
 			internalFilter.Factory = multilineexception.New

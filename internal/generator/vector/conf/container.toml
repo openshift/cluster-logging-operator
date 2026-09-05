@@ -387,7 +387,7 @@ source = '''
       del(.kubernetes.node_labels)
       del(.kubernetes.container_image_id)
       del(.kubernetes.pod_ips)
-      if !exists(._internal.structured) {
+      if !exists(._internal.structured) && !exists(._internal.parse_remove_message) {
         .message = ._internal.message
       }
       }

@@ -132,10 +132,11 @@ func (p *PipelineBuilder) WithLabelsFilter(labels map[string]string) *PipelineBu
 	return p
 }
 
-func (p *PipelineBuilder) WithParseJson() *PipelineBuilder {
-	p.WithFilter(string(obs.FilterTypeParse), func(spec *obs.FilterSpec) {
+func (p *PipelineBuilder) WithParseJson(visitors ...FilterSpecVisitor) *PipelineBuilder {
+	visitors = append([]FilterSpecVisitor{func(spec *obs.FilterSpec) {
 		spec.Type = obs.FilterTypeParse
-	})
+	}}, visitors...)
+	p.WithFilter(string(obs.FilterTypeParse), visitors...)
 	return p
 }
 

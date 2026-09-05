@@ -61,7 +61,7 @@ type FilterSpec struct {
 	// 2. drop - Drop whole log records based on the evaluation of a set of regex tests. See field `drop` for configuration.
 	// 3. kubeAPIAudit - Remove unwanted audit events and reduce event size to create a manageable audit trail. See field `kubeAPIaudit` for configuration.
 	// 4. openshiftLabels - Labels to be applied to log records passing through a pipeline. See field `openshiftLabels` for configuration.
-	// 5. parse - Enables parsing of log entries into structured logs. No additional configuration required.
+	// 5. parse - Enables parsing of log entries into structured logs. See field `parse` for optional configuration.
 	// 6. prune - Prune log record fields to reduce the size of logs flowing into a log store. See field `prune` for configuration.
 	//
 	// +kubebuilder:validation:Required
@@ -92,6 +92,31 @@ type FilterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Labels"
 	OpenshiftLabels map[string]string `json:"openshiftLabels,omitempty"`
+
+	// Configuration for parsing JSON log messages.
+	// When omitted, parsed fields are stored under `structured` and the original message is removed.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Parse Filter"
+	Parse *ParseFilterSpec `json:"parse,omitempty"`
+}
+
+// ParseFilterSpec configures how JSON log messages are added to a log record.
+type ParseFilterSpec struct {
+	// AddToRoot merges fields from a parsed JSON object into the log record root instead of storing
+	// the parsed value under `structured`. Existing log record fields take precedence on collision.
+	// Valid JSON values that are not objects remain unparsed in `message`.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Add Parsed Fields to Root"
+	AddToRoot bool `json:"addToRoot,omitempty"`
+
+	// PreserveMessage keeps the original `message` after a JSON object is successfully added to the
+	// log record root. It has no effect unless `addToRoot` is true.
+	//
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Preserve Original Message"
+	PreserveMessage bool `json:"preserveMessage,omitempty"`
 }
 
 type DropTest struct {

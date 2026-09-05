@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	apps "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -16,7 +17,9 @@ import (
 func DaemonSet(k8Client client.Client, desired *apps.DaemonSet) error {
 	ds := runtime.NewDaemonSet(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, ds, func() error {
-		// Update the daemonset with our desired state
+		if err := utils.EnsureCanUpdateOwnedResource(ds, desired.OwnerReferences...); err != nil {
+			return err
+		}
 		ds.Labels = desired.Labels
 		ds.Spec = desired.Spec
 		ds.OwnerReferences = desired.OwnerReferences

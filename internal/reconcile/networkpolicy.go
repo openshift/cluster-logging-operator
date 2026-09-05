@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -16,6 +17,9 @@ import (
 func NetworkPolicy(k8Client client.Client, desired *networkingv1.NetworkPolicy) error {
 	np := runtime.NewNetworkPolicy(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, np, func() error {
+		if err := utils.EnsureCanUpdateOwnedResource(np, desired.OwnerReferences...); err != nil {
+			return err
+		}
 		np.Labels = desired.Labels
 		np.Spec = desired.Spec
 		np.OwnerReferences = desired.OwnerReferences

@@ -103,8 +103,10 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				"kubernetes_labels_prefix_cloud_com_platform_stage": "dev",
 				"kubernetes_host":                                   f.Pod.Spec.NodeName,
 			}
+			want["service_name"] = "unknown_service"
+
 			labels := result[0].Stream
-			Expect(len(labels)).To(Equal(8))
+			Expect(len(labels)).To(Equal(9))
 			Expect(labels).To(BeEquivalentTo(want))
 		})
 
@@ -135,8 +137,12 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 				"log_type":                  string(obs.InputTypeApplication),
 				"openshift_log_type":        string(obs.InputTypeApplication),
 			}
+
+			// quick fix since unable to disable service_name and detected_level discovery via functional test arguments
+			want["service_name"] = f.Pod.Spec.Containers[0].Name
+
 			labels := result[0].Stream
-			Expect(len(labels)).To(Equal(10))
+			Expect(len(labels)).To(Equal(11))
 			Expect(labels).To(BeEquivalentTo(want))
 		})
 	})

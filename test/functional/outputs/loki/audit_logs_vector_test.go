@@ -54,6 +54,8 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			"openshift_log_type": string(obs.InputTypeAudit),
 			"k8s_node_name":      f.Pod.Spec.NodeName,
 		}
+		expLabels["service_name"] = "unknown_service"
+
 		actualLabels := r[0].Stream
 		Expect(actualLabels).To(BeEquivalentTo(expLabels), "Exp. labels to be added to the log record")
 	}

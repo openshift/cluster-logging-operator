@@ -3,6 +3,10 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -10,9 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/common/secrets"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"regexp"
-	"strings"
-	"time"
 )
 
 var _ = Describe("[Functional][OutputConditions][Syslog] Functional tests", func() {

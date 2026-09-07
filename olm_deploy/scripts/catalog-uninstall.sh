@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -eou pipefail
 
 source $(dirname "${BASH_SOURCE[0]}")/env.sh

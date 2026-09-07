@@ -3,6 +3,7 @@ package syslog
 import (
 	_ "embed"
 	"fmt"
+
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"

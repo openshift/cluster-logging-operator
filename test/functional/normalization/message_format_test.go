@@ -2,9 +2,10 @@ package normalization
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

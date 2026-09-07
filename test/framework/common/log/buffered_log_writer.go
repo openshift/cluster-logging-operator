@@ -1,13 +1,14 @@
 package log
 
 import (
-	logger "github.com/ViaQ/logerr/v2/log"
-	"github.com/go-logr/logr"
 	"io"
 	"os"
+	"sync"
+
+	logger "github.com/ViaQ/logerr/v2/log"
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sync"
 )
 
 func init() {

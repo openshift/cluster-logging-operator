@@ -1,11 +1,12 @@
 package matchers_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"time"
 )
 
 var _ = Describe("Log Format matcher tests", func() {

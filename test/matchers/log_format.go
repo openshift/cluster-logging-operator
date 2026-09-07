@@ -2,11 +2,12 @@ package matchers
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/gomega/types"

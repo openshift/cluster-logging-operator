@@ -1,4 +1,4 @@
-FROM registry.redhat.io/openshift/art-images-base:openshift-golang-builder-container-v1.26.5-202607161626.p2.g48af02f.el9 AS builder
+FROM registry.redhat.io/openshift/golang-builder:golang-builder-v1.26-rhel9 AS builder
 
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1

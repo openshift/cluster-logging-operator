@@ -118,5 +118,3 @@ func endpointConfig(s3 *obs.S3) framework.Element {
 		URL: s3.URL,
 	}
 }
-
-

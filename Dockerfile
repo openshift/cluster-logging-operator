@@ -1,38 +1,23 @@
-FROM golang:1.25 AS builder
+FROM golang:1.26.7 AS builder
 
-ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
-ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-.}
-ENV APP_DIR=.
-ENV CACHE_DEPS="true"
-WORKDIR /opt/apt-root/src
+ARG CACHE_DEPS="true"
+WORKDIR /opt/app-root/src
 
 
-COPY ${APP_DIR}/api ./api
-COPY ${APP_DIR}/go.mod ${APP_DIR}/go.sum ./
-RUN if [ -n $CACHE_DEPS ]; then go mod download ; fi
-COPY ${APP_DIR}/.bingo .bingo
-COPY ${APP_DIR}/Makefile ./Makefile
-COPY ${APP_DIR}/version ./version
-COPY ${APP_DIR}/cmd/main.go ./cmd/main.go
-COPY ${APP_DIR}/internal ./internal
+COPY ./api ./api
+COPY ./go.mod ./go.sum ./
+RUN if [ "${CACHE_DEPS}" = "true" ] ; then go mod download ; fi
+COPY ./.bingo .bingo
+COPY ./Makefile ./Makefile
+COPY ./version ./version
+COPY ./cmd/main.go ./cmd/main.go
+COPY ./internal ./internal
+COPY ./must-gather ./must-gather
 
 USER 0
 RUN make build
 
-FROM quay.io/openshift/origin-cli-artifacts:4.16 AS origincli
-
-RUN case $(uname -m) in \
-    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
-    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
-    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
-    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
-    *) echo "Unsupported architecture"; exit 1 ;; \
-esac
-
 FROM registry.access.redhat.com/ubi9/ubi-minimal
-
-ENV APP_DIR=/opt/apt-root/src
-ENV SRC_DIR=./
 
 RUN INSTALL_PKGS=" \
       openssl \
@@ -40,17 +25,16 @@ RUN INSTALL_PKGS=" \
       file \
       xz \
       " && \
-    microdnf install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
+    microdnf install -y ${INSTALL_PKGS} && \
+    rpm -V ${INSTALL_PKGS} && \
     microdnf clean all && \
     mkdir /tmp/ocp-clo && \
     chmod og+w /tmp/ocp-clo
 
-COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder /opt/app-root/src/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder /opt/app-root/src/bin/must-gather /usr/bin/
 
-COPY --from=origincli /tmp/oc /usr/bin/oc
-
-COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
+RUN ln -s /usr/bin/must-gather /usr/bin/gather
 
 USER 1000
 WORKDIR /usr/bin

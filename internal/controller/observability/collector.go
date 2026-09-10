@@ -1,6 +1,9 @@
 package observability
 
 import (
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
@@ -20,8 +23,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, timeout time.Duration) (err error) {

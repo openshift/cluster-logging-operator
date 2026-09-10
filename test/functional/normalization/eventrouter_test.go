@@ -2,10 +2,11 @@ package normalization
 
 import (
 	"encoding/json"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"

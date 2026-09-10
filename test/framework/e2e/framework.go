@@ -3,17 +3,18 @@ package e2e
 import (
 	"context"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
 	"math/rand"
 	"os"
 	"os/exec"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
 	"time"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"

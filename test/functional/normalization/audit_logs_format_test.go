@@ -2,9 +2,10 @@ package normalization
 
 import (
 	"fmt"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"strings"
 	"time"
+
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 

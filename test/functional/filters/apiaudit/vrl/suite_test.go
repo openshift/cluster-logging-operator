@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+
+	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

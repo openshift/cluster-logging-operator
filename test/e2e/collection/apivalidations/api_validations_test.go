@@ -4,12 +4,13 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"os/exec"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
-	"os/exec"
 )
 
 var _ = Describe("", func() {

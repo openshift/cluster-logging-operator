@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-07-15T11:39:59Z"
+    createdAt: "2026-09-11T18:19:14Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2501,7 +2501,12 @@ spec:
           - daemonsets
           - deployments
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - authorization.k8s.io
           resources:
@@ -2530,16 +2535,32 @@ spec:
           - ""
           resources:
           - configmaps
-          - endpoints
-          - events
-          - pods
-          - secrets
+          - services
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - ""
+          resources:
           - serviceaccounts
           - serviceaccounts/finalizers
-          - services
-          - services/finalizers
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
         - apiGroups:
           - ""
           resources:
@@ -2549,36 +2570,57 @@ spec:
           - list
           - watch
         - apiGroups:
+          - ""
+          resources:
+          - pods
+          - nodes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - logging.openshift.io
           resources:
-          - '*'
+          - logfilemetricexporters
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - logging.openshift.io
+          resources:
+          - logfilemetricexporters/status
+          verbs:
+          - update
         - apiGroups:
           - monitoring.coreos.com
           resources:
-          - prometheusrules
           - servicemonitors
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
         - apiGroups:
           - networking.k8s.io
           resources:
           - networkpolicies
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - observability.openshift.io
           resources:
           - clusterlogforwarders
           verbs:
-          - '*'
-        - apiGroups:
-          - observability.openshift.io
-          resources:
-          - clusterlogforwarders/finalizers
-          verbs:
-          - update
+          - get
+          - list
+          - watch
         - apiGroups:
           - observability.openshift.io
           resources:
@@ -2591,11 +2633,25 @@ spec:
           - rbac.authorization.k8s.io
           resources:
           - clusterrolebindings
-          - clusterroles
-          - rolebindings
-          - roles
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - scheduling.k8s.io
           resources:
@@ -2608,9 +2664,16 @@ spec:
           - securitycontextconstraints
           verbs:
           - create
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - logging-scc
+          resources:
+          - securitycontextconstraints
+          verbs:
           - get
-          - use
           - update
+          - use
         - apiGroups:
           - hypershift.openshift.io
           resources:
@@ -2689,6 +2752,25 @@ spec:
                 secret:
                   optional: true
                   secretName: cluster-logging-operator-metrics-certs
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - serviceaccounts
+          - serviceaccounts/finalizers
+          verbs:
+          - create
+        - apiGroups:
+          - ""
+          resourceNames:
+          - logfilesmetricexporter
+          resources:
+          - serviceaccounts
+          - serviceaccounts/finalizers
+          verbs:
+          - update
+        serviceAccountName: cluster-logging-operator
     strategy: deployment
   installModes:
   - supported: true

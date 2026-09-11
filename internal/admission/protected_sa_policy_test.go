@@ -77,18 +77,44 @@ var _ = Describe("Protected collector SA ValidatingAdmissionPolicies", func() {
 		Expect(data).To(HaveKey("sa_team-b_collector-b"))
 		Expect(data).ToNot(HaveKey("sa_team-c_")) // empty SA name skipped
 
-		Expect(strings.Split(data[protectedSAPodCreatorsKey], ",")).To(ConsistOf(
-			kubeSystemDaemonSetControllerUser,
-			kubeSystemReplicaSetControllerUser,
-			kubeSystemStatefulSetControllerUser,
-			kubeSystemJobControllerUser,
-			kubeSystemReplicationControllerUser,
-		))
+		Expect(strings.Split(data[protectedSAPodCreatorsKey], ",")).To(ConsistOf(podControllers))
 		Expect(strings.Split(data[protectedSAWorkloadCreatorsKey], ",")).To(ConsistOf(
-			"system:serviceaccount:openshift-logging:cluster-logging-operator",
-			kubeSystemDeploymentControllerUser,
-			kubeSystemCronJobControllerUser,
+			append([]string{"system:serviceaccount:openshift-logging:cluster-logging-operator"}, workloadControllers...),
 		))
+	})
+
+	It("recreates the ConfigMap after external deletion", func() {
+		fakeClient = newClient(clf("app-logging", "team-a", "collector-a"))
+		Expect(SyncProtectedServiceAccounts(ctx, fakeClient, operatorNS)).To(Succeed())
+		Expect(getCM(fakeClient).Data).To(HaveKey("sa_team-a_collector-a"))
+
+		Expect(fakeClient.Delete(ctx, getCM(fakeClient))).To(Succeed())
+
+		cm := &corev1.ConfigMap{}
+		Expect(fakeClient.Get(ctx, client.ObjectKey{Name: ProtectedSAConfigMapName, Namespace: operatorNS}, cm)).ToNot(Succeed())
+
+		Expect(SyncProtectedServiceAccounts(ctx, fakeClient, operatorNS)).To(Succeed())
+		data := getCM(fakeClient).Data
+		Expect(data).To(HaveKey("sa_team-a_collector-a"))
+		Expect(data).To(HaveKey(protectedSAPodCreatorsKey))
+		Expect(data).To(HaveKey(protectedSAWorkloadCreatorsKey))
+	})
+
+	It("reverts unauthorized ConfigMap edits on re-sync", func() {
+		fakeClient = newClient(clf("app-logging", "team-a", "collector-a"))
+		Expect(SyncProtectedServiceAccounts(ctx, fakeClient, operatorNS)).To(Succeed())
+
+		cm := getCM(fakeClient)
+		cm.Data["sa_rogue-ns_rogue-sa"] = ""
+		cm.Data[protectedSAPodCreatorsKey] = "system:serviceaccount:evil:hacker"
+		Expect(fakeClient.Update(ctx, cm)).To(Succeed())
+		Expect(getCM(fakeClient).Data).To(HaveKey("sa_rogue-ns_rogue-sa"))
+
+		Expect(SyncProtectedServiceAccounts(ctx, fakeClient, operatorNS)).To(Succeed())
+		data := getCM(fakeClient).Data
+		Expect(data).ToNot(HaveKey("sa_rogue-ns_rogue-sa"))
+		Expect(data).To(HaveKey("sa_team-a_collector-a"))
+		Expect(strings.Split(data[protectedSAPodCreatorsKey], ",")).ToNot(ContainElement("system:serviceaccount:evil:hacker"))
 	})
 
 	It("removes an SA from the ConfigMap when its CLF is deleted (rebuild-from-list)", func() {

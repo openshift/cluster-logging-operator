@@ -13,7 +13,7 @@ import (
 	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	admissioncontroller "github.com/openshift/cluster-logging-operator/internal/controller/admission"
+	internalcontroller "github.com/openshift/cluster-logging-operator/internal/controller"
 	internaltls "github.com/openshift/cluster-logging-operator/internal/tls"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
@@ -261,7 +261,7 @@ func main() {
 	}
 
 	operatorNS := internaladmission.OperatorNamespace()
-	if err = (&admissioncontroller.ProtectedSAReconciler{
+	if err = (&internalcontroller.ProtectedSAReconciler{
 		Client:     mgr.GetClient(),
 		OperatorNS: operatorNS,
 	}).SetupWithManager(mgr); err != nil {
@@ -271,7 +271,7 @@ func main() {
 
 	//+kubebuilder:scaffold:builder
 
-	if err := mgr.Add(admissioncontroller.NewProtectedSAAdmissionRunnable(k8sClient, operatorNS)); err != nil {
+	if err := mgr.Add(internalcontroller.NewProtectedSAAdmissionRunnable(k8sClient, operatorNS)); err != nil {
 		log.Error(err, "unable to register protected SA admission runnable")
 		os.Exit(1)
 	}

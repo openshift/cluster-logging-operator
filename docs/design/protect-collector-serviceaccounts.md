@@ -10,7 +10,7 @@ Scope: Cluster Logging Operator (observability.openshift.io/v1 `ClusterLogForwar
 
 Key files:
 `internal/admission/protected_sa_policy.go`, `internal/admission/protected-sa-{pods,workloads}{,-binding}.yaml`,
-`internal/controller/admission/protected_sa_controller.go` / `_runnable.go`;
+`internal/controller/protected_sa_controller.go` / `_runnable.go`;
 manual test `hack/test-protected-sa.sh`. Validated end-to-end against a live
 OpenShift API server via `hack/test-protected-sa.sh`: a restricted user is
 denied creating a Pod and a Deployment as a protected collector SA even when
@@ -329,8 +329,8 @@ metadata:
   namespace: openshift-logging      # operator namespace
 data:
   "sa_app-logging_collector-sa": "" # one key per sa_<clf-ns>_<sa-name>
-  podCreators: "system:serviceaccount:kube-system:daemon-set-controller,system:serviceaccount:kube-system:replicaset-controller"
-  workloadCreators: "system:serviceaccount:openshift-logging:cluster-logging-operator,system:serviceaccount:kube-system:deployment-controller"
+  podCreators: "system:serviceaccount:kube-system:daemon-set-controller,system:serviceaccount:kube-system:replicaset-controller,system:serviceaccount:kube-system:statefulset-controller,system:serviceaccount:kube-system:job-controller,system:serviceaccount:kube-system:replication-controller"
+  workloadCreators: "system:serviceaccount:openshift-logging:cluster-logging-operator,system:serviceaccount:kube-system:deployment-controller,system:serviceaccount:kube-system:cronjob-controller"
 ```
 
 Policy A — Pods (see `internal/admission/protected-sa-pods.yaml`):

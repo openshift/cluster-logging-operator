@@ -2,7 +2,6 @@ package admission
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
@@ -10,11 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,7 +67,7 @@ var _ = Describe("Protected SA VAP enforcement (envtest)", Ordered, func() {
 
 		grantWorkloadRBAC(ctx, adminClient,
 			restrictedUser,
-			kubeSystemDaemonSetControllerUser,
+			podControllers[0],
 			operatorServiceAccountUser(operatorNS))
 
 		cm := internalruntime.NewConfigMap(operatorNS, ProtectedSAConfigMapName, nil)
@@ -80,7 +79,7 @@ var _ = Describe("Protected SA VAP enforcement (envtest)", Ordered, func() {
 		installPolicyAndBinding(ctx, adminClient, protectedSAWorkloadsPolicy, protectedSAWorkloadsBinding, operatorNS)
 
 		Eventually(func(g Gomega) {
-			err := restricted.Create(ctx, newTestPod(podNS, uniqueName("canary"), collectorSA))
+			err := restricted.Create(ctx, newTestPod(podNS, test.UniqueName("canary"), collectorSA))
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring("protected ServiceAccount"))
 		}, 90*time.Second, time.Second).Should(Succeed(), "protected-SA Pod policy never became active")
@@ -93,38 +92,31 @@ var _ = Describe("Protected SA VAP enforcement (envtest)", Ordered, func() {
 	})
 
 	It("denies a Pod referencing the protected SA created by a restricted user", func() {
-		err := restricted.Create(ctx, newTestPod(podNS, uniqueName("evil-pod"), collectorSA))
+		err := restricted.Create(ctx, newTestPod(podNS, test.UniqueName("evil-pod"), collectorSA))
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("protected ServiceAccount"))
 	})
 
 	It("denies a Deployment referencing the protected SA created by a restricted user", func() {
-		err := restricted.Create(ctx, newTestDeployment(podNS, uniqueName("evil-deploy"), collectorSA))
+		err := restricted.Create(ctx, newTestDeployment(podNS, test.UniqueName("evil-deploy"), collectorSA))
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("protected ServiceAccount"))
 	})
 
 	It("allows a Pod referencing an unprotected SA", func() {
-		Expect(restricted.Create(ctx, newTestPod(podNS, uniqueName("plain-pod"), unprotectedSA))).To(Succeed())
+		Expect(restricted.Create(ctx, newTestPod(podNS, test.UniqueName("plain-pod"), unprotectedSA))).To(Succeed())
 	})
 
 	It("allows a Pod referencing the protected SA when created by an allowed controller", func() {
-		daemonSetController := clientAsUser(cfg, scheme, kubeSystemDaemonSetControllerUser)
-		Expect(daemonSetController.Create(ctx, newTestPod(podNS, uniqueName("collector-pod"), collectorSA))).To(Succeed())
+		daemonSetController := clientAsUser(cfg, scheme, podControllers[0])
+		Expect(daemonSetController.Create(ctx, newTestPod(podNS, test.UniqueName("collector-pod"), collectorSA))).To(Succeed())
 	})
 
 	It("allows a Deployment referencing the protected SA when created by the operator", func() {
 		operator := clientAsUser(cfg, scheme, operatorServiceAccountUser(operatorNS))
-		Expect(operator.Create(ctx, newTestDeployment(podNS, uniqueName("collector-deploy"), collectorSA))).To(Succeed())
+		Expect(operator.Create(ctx, newTestDeployment(podNS, test.UniqueName("collector-deploy"), collectorSA))).To(Succeed())
 	})
 })
-
-var envtestNameCounter int
-
-func uniqueName(prefix string) string {
-	envtestNameCounter++
-	return fmt.Sprintf("%s-%d", prefix, envtestNameCounter)
-}
 
 func clientAsUser(cfg *rest.Config, scheme *apiruntime.Scheme, username string) client.Client {
 	impersonated := rest.CopyConfig(cfg)
@@ -152,7 +144,7 @@ func grantWorkloadRBAC(ctx context.Context, c client.Client, users ...string) {
 		subjects = append(subjects, rbacv1.Subject{APIGroup: rbacv1.GroupName, Kind: "User", Name: u})
 	}
 	crb := internalruntime.NewClusterRoleBinding("workload-creator-binding",
-		rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: role.Name},
+		internalruntime.NewClusterRoleRef(role.Name),
 		subjects...,
 	)
 	Expect(c.Create(ctx, crb)).To(Succeed())
@@ -180,18 +172,15 @@ func newTestDeployment(namespace, name, sa string) *appsv1.Deployment {
 	labels := map[string]string{"app": name}
 	replicas := int32(1)
 	deploy := internalruntime.NewDeployment(namespace, name)
-	deploy.Spec = appsv1.DeploymentSpec{
-		Replicas: &replicas,
-		Selector: &metav1.LabelSelector{MatchLabels: labels},
-		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: labels},
-			Spec: corev1.PodSpec{
-				ServiceAccountName: sa,
-				Containers: []corev1.Container{
-					*internalruntime.NewContainer("c", "registry.redhat.io/ubi9/ubi-minimal:latest", corev1.PullIfNotPresent, nil),
-				},
+	internalruntime.NewDeploymentBuilder(deploy).
+		WithReplicas(&replicas).
+		WithSelector(labels).
+		WithTemplateLabels(labels).
+		WithPodSpec(corev1.PodSpec{
+			ServiceAccountName: sa,
+			Containers: []corev1.Container{
+				*internalruntime.NewContainer("c", "registry.redhat.io/ubi9/ubi-minimal:latest", corev1.PullIfNotPresent, nil),
 			},
-		},
-	}
+		})
 	return deploy
 }

@@ -1,0 +1,41 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: clo-protected-sa-workloads
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: v1
+    kind: ConfigMap
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+      - apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["jobs", "cronjobs"]
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["replicationcontrollers"]
+  variables:
+    - name: podSpec
+      expression: >-
+        request.kind.kind == 'CronJob'
+          ? object.spec.jobTemplate.spec.template.spec
+          : object.spec.template.spec
+    - name: sa
+      expression: "has(variables.podSpec.serviceAccountName) ? variables.podSpec.serviceAccountName : 'default'"
+    - name: saKey
+      expression: "'sa_' + request.namespace + '_' + variables.sa"
+    - name: isProtected
+      expression: "has(params.data) && (variables.saKey in params.data)"
+    - name: allowedCreators
+      expression: "(has(params.data) && ('workloadCreators' in params.data)) ? params.data['workloadCreators'].split(',') : []"
+  validations:
+    - expression: "!variables.isProtected || (request.userInfo.username in variables.allowedCreators)"
+      messageExpression: "'Workload uses protected ServiceAccount \"' + request.namespace + '/' + variables.sa + '\" which is only allowed for use by authorized ClusterLogForwarders'"
+      reason: Forbidden

@@ -1,4 +1,4 @@
-package admission
+package controller
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
+	internalreconcile "github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,7 +31,7 @@ func (r *protectedSAAdmissionRunnable) Start(ctx context.Context) error {
 		if err == nil {
 			return nil
 		}
-		if internaladmission.IsUnsupportedAdmissionPolicyAPI(err) {
+		if internalreconcile.IsUnsupportedAdmissionPolicyAPI(err) {
 			return nil
 		}
 		delay := backoff.Step()

@@ -19,7 +19,7 @@ Source of truth (read alongside this doc):
 - `internal/admission/protected-sa-pods.yaml` + `-binding.yaml`
 - `internal/admission/protected-sa-workloads.yaml` + `-binding.yaml`
 - `internal/admission/protected_sa_policy.go` (reconcile + param ConfigMap)
-- `internal/controller/admission/protected_sa_controller.go` / `_runnable.go` (when it runs)
+- `internal/controller/protected_sa_controller.go` / `_runnable.go` (when it runs)
 
 ---
 

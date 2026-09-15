@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-07-15T11:39:59Z"
+    createdAt: "2026-09-01T18:57:04Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -934,6 +934,13 @@ spec:
         path: outputs[0].elasticsearch.authentication.username.secretName
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:text
+      - description: |-
+          Endpoints is a list of Elasticsearch endpoints to send log records to.
+          Vector distributes events across endpoints using load balancing with
+          automatic failover. When both URL and Endpoints are provided, URL is
+          prepended to the Endpoints list.
+        displayName: Elasticsearch Endpoints
+        path: outputs[0].elasticsearch.endpoints
       - description: Headers specify optional headers to be sent with the request
         displayName: Headers
         path: outputs[0].elasticsearch.headers

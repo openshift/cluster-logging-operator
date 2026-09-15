@@ -46,6 +46,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 			"type":      "k8s_node",
 			"node_name": "{{hostname}}",
 		}
+		s.DangerouslyAllowUnconfinedTemplateResolution = true
 	}, gclSeverityID)
 	return id, sink, tfs
 }

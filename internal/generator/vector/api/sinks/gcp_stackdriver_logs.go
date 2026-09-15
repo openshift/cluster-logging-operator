@@ -18,6 +18,8 @@ type GcpStackdriverLogs struct {
 	ProjectId        string         `json:"project_id,omitempty" yaml:"project_id,omitempty" toml:"project_id,omitempty"`
 	OrganizationId   string         `json:"organization_id,omitempty" yaml:"organization_id,omitempty" toml:"organization_id,omitempty"`
 
+	DangerouslyAllowUnconfinedTemplateResolution bool `json:"dangerously_allow_unconfined_template_resolution,omitempty" yaml:"dangerously_allow_unconfined_template_resolution,omitempty" toml:"dangerously_allow_unconfined_template_resolution,omitempty"`
+
 	// Resource must include 'type'
 	Resource map[string]string `json:"resource,omitempty" yaml:"resource,omitempty" toml:"resource,omitempty"`
 	// TODO: Replace the following with BaseSink?  The public API does not mention

@@ -36,6 +36,8 @@ stream_name = "{{ stream_name }}"
 endpoint = "http://mylogreceiver"
 compression = "none"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.cw.encoding]
 codec = "json"
 except_fields = ["_internal"]

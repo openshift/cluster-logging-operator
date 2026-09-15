@@ -52,6 +52,7 @@ const (
 	LokistackName       = "lokistack-dev"
 	lokiOperatorChannel = "stable-6.1"
 	minioName           = "minio"
+	minioImage          = "quay.io/minio/minio:latest"
 )
 
 type LokistackLogStore struct {
@@ -132,7 +133,7 @@ minio server /data --console-address ":9001"
 				Value: "minio123",
 			},
 		},
-		Image: "docker.io/minio/minio:latest",
+		Image: minioImage,
 		Name:  minioName,
 		Ports: []corev1.ContainerPort{
 			{

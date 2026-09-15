@@ -99,7 +99,7 @@ if exists(kv.msg) {
   } else {
     msg_str = kv.msg 
   }
-  trimmed = slice!(msg_str, find!(msg_str, "(") + 1, -2)
+  trimmed = slice!(msg_str, find(msg_str, "(") + 1, -2)
   parts = split!(trimmed, ":")
   r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": parts[1] }})
 }

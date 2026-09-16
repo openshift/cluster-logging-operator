@@ -119,6 +119,7 @@ type DropCondition struct {
 	// Must define only one of matches OR notMatches
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^[^'\n\r]*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Drop Match Expression"
 	Matches string `json:"matches,omitempty"`
 
@@ -127,6 +128,7 @@ type DropCondition struct {
 	// Must define only one of matches or notMatches
 	//
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern:=`^[^'\n\r]*$`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Keep Match Expression"
 	NotMatches string `json:"notMatches,omitempty"`
 }

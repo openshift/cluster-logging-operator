@@ -95,6 +95,45 @@ var _ = Describe("[internal][validations][observability][filters]", func() {
 				},
 				"[matches/notMatches must be a valid regular expression.]",
 			),
+			Entry("should fail validation if notMatches contains an invalid regular expression",
+				[]obs.DropTest{
+					{
+						DropConditions: []obs.DropCondition{
+							{
+								Field:      ".kubernetes.namespace_name",
+								NotMatches: "[invalid",
+							},
+						},
+					},
+				},
+				"[matches/notMatches must be a valid regular expression.]",
+			),
+			Entry("should fail validation if matches contains a single quote",
+				[]obs.DropTest{
+					{
+						DropConditions: []obs.DropCondition{
+							{
+								Field:   ".kubernetes.namespace_name",
+								Matches: "foo'bar",
+							},
+						},
+					},
+				},
+				"[matches/notMatches must not contain single quotes, newlines, or carriage returns]",
+			),
+			Entry("should fail validation if notMatches contains a single quote",
+				[]obs.DropTest{
+					{
+						DropConditions: []obs.DropCondition{
+							{
+								Field:      ".kubernetes.namespace_name",
+								NotMatches: "x'''[sources.evil]",
+							},
+						},
+					},
+				},
+				"[matches/notMatches must not contain single quotes, newlines, or carriage returns]",
+			),
 		)
 
 		DescribeTable("valid drop filter spec", func(dropTests []obs.DropTest) {

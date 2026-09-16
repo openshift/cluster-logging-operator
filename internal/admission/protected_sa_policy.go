@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	internalreconcile "github.com/openshift/cluster-logging-operator/internal/reconcile"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	runtimeobs "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
+	"github.com/openshift/cluster-logging-operator/internal/runtime/clusterlogforwarder"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,6 +71,13 @@ func init() {
 	protectedSAPodsBinding = internalruntime.Decode(protectedSAPodsBindingYAML).(*admissionregistrationv1.ValidatingAdmissionPolicyBinding)
 	protectedSAWorkloadsPolicy = internalruntime.Decode(protectedSAWorkloadsPolicyYAML).(*admissionregistrationv1.ValidatingAdmissionPolicy)
 	protectedSAWorkloadsBinding = internalruntime.Decode(protectedSAWorkloadsBindingYAML).(*admissionregistrationv1.ValidatingAdmissionPolicyBinding)
+
+	for _, obj := range []internalruntime.Object{
+		protectedSAPodsPolicy, protectedSAPodsBinding,
+		protectedSAWorkloadsPolicy, protectedSAWorkloadsBinding,
+	} {
+		internalruntime.SetCommonLabels(obj, constants.ClusterLogging, ProtectedSAConfigMapName, "admission")
+	}
 }
 
 // OperatorNamespace returns the namespace the operator pod runs in.
@@ -98,9 +105,6 @@ func operatorServiceAccountUser(operatorNS string) string {
 // their bindings exist, and that the param ConfigMap exists with the allowed
 // creator identities populated.
 func ReconcileProtectedSAPolicies(ctx context.Context, k8sClient client.Client, operatorNS string) error {
-	if err := ensureProtectedSAConfigMap(k8sClient, operatorNS); err != nil {
-		return err
-	}
 	if err := SyncProtectedServiceAccounts(ctx, k8sClient, operatorNS); err != nil {
 		log.V(1).Info("initial protected ServiceAccount sync failed; will resync on CLF events", "error", err)
 	}
@@ -113,10 +117,6 @@ func ReconcileProtectedSAPolicies(ctx context.Context, k8sClient client.Client, 
 		{protectedSAWorkloadsPolicy, protectedSAWorkloadsBinding},
 	} {
 		if err := internalreconcile.ValidatingAdmissionPolicy(ctx, k8sClient, p.policy); err != nil {
-			if internalreconcile.IsUnsupportedAdmissionPolicyAPI(err) {
-				log.Info("ValidatingAdmissionPolicy API is unavailable; skipping", "name", p.policy.Name)
-				return nil
-			}
 			return err
 		}
 		binding := p.binding.DeepCopy()
@@ -124,23 +124,8 @@ func ReconcileProtectedSAPolicies(ctx context.Context, k8sClient client.Client, 
 			binding.Spec.ParamRef.Namespace = operatorNS
 		}
 		if err := internalreconcile.ValidatingAdmissionPolicyBinding(ctx, k8sClient, binding); err != nil {
-			if internalreconcile.IsUnsupportedAdmissionPolicyAPI(err) {
-				log.Info("ValidatingAdmissionPolicyBinding API is unavailable; skipping", "name", binding.Name)
-				return nil
-			}
 			return err
 		}
-	}
-	return nil
-}
-
-func ensureProtectedSAConfigMap(k8sClient client.Client, operatorNS string) error {
-	cm := internalruntime.NewConfigMap(operatorNS, ProtectedSAConfigMapName, nil)
-	internalruntime.SetCommonLabels(cm, constants.ClusterLogging, ProtectedSAConfigMapName, "admission")
-	cm.Data = map[string]string{}
-	setCreatorKeys(cm.Data, operatorNS)
-	if err := internalreconcile.Configmap(k8sClient, k8sClient, cm, comparators.CompareLabels); err != nil {
-		return fmt.Errorf("ensure protected SA ConfigMap %s/%s: %w", operatorNS, ProtectedSAConfigMapName, err)
 	}
 	return nil
 }
@@ -151,10 +136,10 @@ func setCreatorKeys(data map[string]string, operatorNS string) {
 		append([]string{operatorServiceAccountUser(operatorNS)}, workloadControllers...), ",")
 }
 
-// SyncProtectedServiceAccounts rebuilds the param ConfigMap's protected-SA
-// membership from the full set of ClusterLogForwarders.
+// SyncProtectedServiceAccounts rebuilds the param ConfigMap from the full set
+// of ClusterLogForwarders. The ConfigMap is created if it does not exist.
 func SyncProtectedServiceAccounts(ctx context.Context, k8sClient client.Client, operatorNS string) error {
-	refs, err := runtimeobs.CollectorServiceAccounts(ctx, k8sClient)
+	refs, err := clusterlogforwarder.ListServiceAccounts(ctx, k8sClient)
 	if err != nil {
 		return err
 	}

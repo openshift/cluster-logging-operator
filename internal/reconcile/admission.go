@@ -24,6 +24,7 @@ func ValidatingAdmissionPolicy(ctx context.Context, k8sClient client.Client, des
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, k8sClient, current, func() error {
+		current.Labels = desired.Labels
 		current.Spec = desired.Spec
 		return nil
 	})
@@ -44,6 +45,7 @@ func ValidatingAdmissionPolicyBinding(ctx context.Context, k8sClient client.Clie
 	}
 
 	op, err := controllerutil.CreateOrUpdate(ctx, k8sClient, current, func() error {
+		current.Labels = desired.Labels
 		current.Spec = desired.Spec
 		return nil
 	})
@@ -53,6 +55,15 @@ func ValidatingAdmissionPolicyBinding(ctx context.Context, k8sClient client.Clie
 
 	log.V(3).Info("reconciled ValidatingAdmissionPolicyBinding", "name", desired.Name, "operation", op)
 	return nil
+}
+
+// IsAdmissionPolicyAPIAvailable probes whether the ValidatingAdmissionPolicy
+// API is registered on the cluster. Call once at startup to gate controller
+// registration.
+func IsAdmissionPolicyAPIAvailable(k8sClient client.Client) bool {
+	list := &admissionregistrationv1.ValidatingAdmissionPolicyList{}
+	err := k8sClient.List(context.Background(), list, client.Limit(1))
+	return !IsUnsupportedAdmissionPolicyAPI(err)
 }
 
 // IsUnsupportedAdmissionPolicyAPI returns true when the error indicates the
@@ -68,5 +79,12 @@ func IsUnsupportedAdmissionPolicyAPI(err error) bool {
 		return true
 	}
 	var groupDiscoveryErr *discovery.ErrGroupDiscoveryFailed
-	return errors.As(err, &groupDiscoveryErr)
+	if errors.As(err, &groupDiscoveryErr) {
+		for gv := range groupDiscoveryErr.Groups {
+			if gv.Group == admissionregistrationv1.GroupName {
+				return true
+			}
+		}
+	}
+	return false
 }

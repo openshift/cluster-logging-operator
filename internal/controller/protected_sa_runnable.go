@@ -6,7 +6,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
-	internalreconcile "github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,9 +28,6 @@ func (r *protectedSAAdmissionRunnable) Start(ctx context.Context) error {
 	for {
 		err := internaladmission.ReconcileProtectedSAPolicies(ctx, r.client, r.operatorNS)
 		if err == nil {
-			return nil
-		}
-		if internalreconcile.IsUnsupportedAdmissionPolicyAPI(err) {
 			return nil
 		}
 		delay := backoff.Step()

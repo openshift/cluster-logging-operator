@@ -33,5 +33,10 @@ var _ = Describe("admission policy helpers", func() {
 			},
 		})).To(BeTrue())
 		Expect(internalreconcile.IsUnsupportedAdmissionPolicyAPI(fmt.Errorf("forbidden"))).To(BeFalse())
+		Expect(internalreconcile.IsUnsupportedAdmissionPolicyAPI(&discovery.ErrGroupDiscoveryFailed{
+			Groups: map[schema.GroupVersion]error{
+				{Group: "monitoring.coreos.com", Version: "v1"}: fmt.Errorf("discovery failed"),
+			},
+		})).To(BeFalse(), "unrelated group discovery failure must not be treated as unsupported admission API")
 	})
 })

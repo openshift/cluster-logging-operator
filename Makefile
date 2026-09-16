@@ -28,7 +28,7 @@ export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 export LOKI_OPERATOR_CHANNEL?=stable-6.4
 
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.54.0
+IMAGE_LOGGING_VECTOR=quay.io/vparfono/vector:v0.57.0
 IMAGE_VECTOR_RECEIVER?=quay.io/openshift-logging/vector:v0.54.0-devel
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:latest
 IMAGE_LOGGING_EVENTROUTER?=quay.io/openshift-logging/eventrouter:v0.5.0
@@ -243,7 +243,7 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker-vector
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR="quay.io/vparfono/vector:v0.57.0" \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race \
@@ -262,11 +262,11 @@ test-forwarder-generator: bin/forwarder-generator
 
 test-functional-benchmarker-vector: bin/functional-benchmarker
 	@rm -rf /tmp/benchmark-test-vector
-	@out=$$(RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+	@out=$$(RELATED_IMAGE_VECTOR="quay.io/vparfono/vector:v0.57.0" IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) bin/functional-benchmarker --image=$(IMAGE_LOGGING_VECTOR) --artifact-dir=/tmp/benchmark-test-vector 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator test-unit-api
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR="quay.io/vparfono/vector:v0.57.0" \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -coverprofile=test.cov -race ./api/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|framework|client|helpers)'`
@@ -336,7 +336,7 @@ test-upgrade: $(JUNITREPORT)
 
 .PHONY: test-e2e-from-ci-bundle
 test-e2e-from-ci-bundle: $(JUNITREPORT)
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR="quay.io/vparfono/vector:v0.57.0" \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \
@@ -345,7 +345,7 @@ test-e2e-from-ci-bundle: $(JUNITREPORT)
 
 .PHONY: test-e2e
 test-e2e: $(JUNITREPORT)
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_VECTOR="quay.io/vparfono/vector:v0.57.0" \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	IMAGE_LOGGING_EVENTROUTER=$(IMAGE_LOGGING_EVENTROUTER) \

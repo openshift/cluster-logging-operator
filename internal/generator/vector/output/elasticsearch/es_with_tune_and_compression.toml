@@ -12,6 +12,8 @@ endpoints = ["https://es.svc.infra.cluster:9200"]
 api_version = "v8"
 compression = "gzip"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.es_1.bulk]
 index = "{{ _internal.es_1_index }}"
 action = "create"

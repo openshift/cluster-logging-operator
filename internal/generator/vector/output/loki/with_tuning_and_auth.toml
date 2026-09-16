@@ -27,6 +27,8 @@ endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 compression = "gzip"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.loki_receiver.healthcheck]
 enabled = false
 

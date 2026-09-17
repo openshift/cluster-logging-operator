@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/metrics"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/namespace"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/ui"
+	"github.com/openshift/cluster-logging-operator/must-gather/internal/version"
 )
 
 var (
@@ -101,6 +102,9 @@ func (g *Gather) Run(ctx context.Context) error {
 // createCollectors creates all collectors needed for the gathering
 func (g *Gather) createCollectors() []api.Collector {
 	collectors := make([]api.Collector, 0)
+
+	// Version collector
+	collectors = append(collectors, version.NewCollector(g.logger, g.config.DestDir))
 
 	// Cluster-scoped resources collector
 	collectors = append(collectors, cluster.NewCollector(g.client, g.logger, g.config.DestDir))

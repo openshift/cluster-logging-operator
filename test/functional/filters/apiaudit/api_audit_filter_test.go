@@ -4,9 +4,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
+
+	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,14 +65,28 @@ var _ = Describe("API audit filter", func() {
 			Expect(json.Unmarshal([]byte(array), &events)).To(Succeed())
 			return events
 		}
+		fixtureTimestamp := "2023-06-12T13:30:25"
+		currentTimestamp := time.Now().UTC().Add(-time.Minute).Format("2006-01-02T15:04:05")
+		input := []byte(strings.ReplaceAll(string(eventsIn), fixtureTimestamp, currentTimestamp))
+		wantLog := strings.ReplaceAll(auditWantLog, fixtureTimestamp, currentTimestamp)
+		want := decode(strings.Split(strings.TrimSpace(wantLog), "\n"))
 		Expect(f.Deploy()).To(Succeed())
-		Expect(f.WriteLog(filepath.Join(functional.K8sAuditLogDir, "audit.log"), eventsIn)).To(Succeed())
-		want := decode(strings.Split(strings.TrimSpace(string(auditWantLog)), "\n"))
+		Expect(f.WriteLog(filepath.Join(functional.K8sAuditLogDir, "audit.log"), input)).To(Succeed())
 
 		// Get actual events from Loki
 		result, err := l.QueryUntil(`{log_type="audit"}`, "", len(want))
 		Expect(err).To(Succeed())
 		got := decode(result[0].Lines())
 		Expect(got).To(EqualDiff(want))
+		expectLokiTimestamps(result[0].Values, want)
 	})
 })
+
+// expectLokiTimestamps verifies that the first value in each Loki [timestamp, line] pair uses the audit event's stage timestamp.
+func expectLokiTimestamps(values [][]string, events []auditv1.Event) {
+	for i, value := range values {
+		nanos, err := strconv.ParseInt(value[0], 10, 64)
+		Expect(err).To(Succeed())
+		Expect(time.Unix(0, nanos).Equal(events[i].StageTimestamp.Time)).To(BeTrue())
+	}
+}

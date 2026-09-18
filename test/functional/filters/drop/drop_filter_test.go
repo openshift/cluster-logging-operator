@@ -2,9 +2,11 @@ package drop
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
@@ -69,7 +71,7 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 			Expect(f.WriteMessagesToApplicationLog(msg3, 1)).To(BeNil())
 			Expect(f.WritesApplicationLogs(5)).To(Succeed())
 
-			Eventually(func() bool {
+			verifyLogs := func() bool {
 				logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
 				if err != nil || len(logs) == 0 {
 					return false
@@ -77,7 +79,7 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 				hasInfoMessage := false
 				for _, msg := range logs {
 					// Should not have dropped messages
-					if msg.ViaQCommon.Message == "my error message" || msg.ViaQCommon.Message == "debug message" {
+					if msg.Message == "my error message" || msg.Message == "debug message" {
 						return false
 					}
 					if msg.Message == "information message" {
@@ -85,7 +87,9 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 					}
 				}
 				return hasInfoMessage
-			}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected to find 'information message' and not find dropped messages")
+			}
+			Eventually(verifyLogs, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected to find 'information message' and not find dropped messages")
+			Consistently(verifyLogs, 30*time.Second, 5*time.Second).Should(BeTrue(), "Dropped messages must remain absent after all writes")
 		})
 
 		It("should drop logs that have `.responseStatus.code` not equals 403", func() {
@@ -110,17 +114,18 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 
 			Expect(f.Deploy()).To(BeNil())
 
-			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(403), 10)).To(BeNil())
-			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(404), 10)).To(BeNil())
-			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(200), 10)).To(BeNil())
+			// Keep all writes below the reader's ten-result limit, including dropped records.
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(403), 2)).To(BeNil())
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(404), 2)).To(BeNil())
+			Expect(f.WriteMessagesToOpenshiftAuditLog(makeLog(200), 2)).To(BeNil())
 
-			Eventually(func() bool {
+			verifyLogs := func() bool {
 				logs, err := f.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
 				if err != nil || len(logs) == 0 {
 					return false
 				}
-				// Should have exactly 10 logs (all with code 403)
-				if len(logs) != 10 {
+				// Should have exactly two logs (both with code 403).
+				if len(logs) != 2 {
 					return false
 				}
 				var auditLogs []types.OpenshiftAuditLog
@@ -135,8 +140,121 @@ var _ = Describe("[Functional][Filters][Drop] Drop filter", func() {
 					}
 				}
 				return true
-			}, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected exactly 10 audit logs with responseStatus.code=403")
+			}
+			Eventually(verifyLogs, 2*time.Minute, 10*time.Second).Should(BeTrue(), "Expected exactly two audit logs with responseStatus.code=403")
+			Consistently(verifyLogs, 30*time.Second, 5*time.Second).Should(BeTrue(), "Dropped audit records must remain absent after all writes")
 		})
+
+		DescribeTable("should apply olderThan and field conditions", func(inputType obs.InputType, useInfrastructureNamespace bool) {
+			const olderThan = "2026-09-16T00:00:00Z"
+
+			options := []client.TestOption{}
+			if useInfrastructureNamespace {
+				options = append(options, client.UseInfraNamespaceTestOption)
+			}
+			f = functional.NewCollectorFunctionalFramework(options...)
+			testruntime.NewClusterLogForwarderBuilder(f.Forwarder).
+				FromInput(inputType).
+				WithFilter(dropFilterName, func(spec *obs.FilterSpec) {
+					spec.Type = obs.FilterTypeDrop
+					spec.DropTestsSpec = []obs.DropTest{
+						{
+							DropConditions: []obs.DropCondition{
+								{OlderThan: olderThan},
+								{Field: ".message", Matches: "drop-historical-"},
+							},
+						},
+					}
+				}).
+				ToElasticSearchOutput()
+
+			Expect(f.Deploy()).To(Succeed())
+
+			cutoff, err := time.Parse(time.RFC3339, olderThan)
+			Expect(err).NotTo(HaveOccurred())
+			newCRIRecord := func(eventTime time.Time, message string) string {
+				return functional.NewFullCRIOLogMessage(functional.CRIOTime(eventTime), message)
+			}
+			var (
+				sourceName string
+				write      func(string, int) error
+				record     func(time.Time, string) string
+				read       func() ([]string, error)
+			)
+			switch inputType {
+			case obs.InputTypeApplication:
+				sourceName, write, record = "application", f.WriteMessagesToApplicationLog, newCRIRecord
+				read = func() ([]string, error) {
+					logs, err := f.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+					if err != nil {
+						return nil, err
+					}
+					messages := make([]string, 0, len(logs))
+					for _, log := range logs {
+						messages = append(messages, log.Message)
+					}
+					return messages, nil
+				}
+			case obs.InputTypeInfrastructure:
+				sourceName, write, record = "infrastructure-container", f.WriteMessagesToInfraContainerLog, newCRIRecord
+				read = func() ([]string, error) {
+					return f.ReadInfrastructureLogsFrom(string(obs.OutputTypeElasticsearch))
+				}
+			case obs.InputTypeAudit:
+				sourceName, write = "auditd", f.WriteMessagesToAuditLog
+				record = func(eventTime time.Time, message string) string {
+					return functional.NewAuditHostLog(eventTime) + " " + message
+				}
+				read = func() ([]string, error) {
+					return f.ReadAuditLogsFrom(string(obs.OutputTypeElasticsearch))
+				}
+			}
+
+			// Each index receives only four records, even if the filter drops none.
+			for _, entry := range []struct {
+				eventTime time.Time
+				message   string
+			}{
+				{cutoff.Add(-time.Second), "drop-historical-" + sourceName + "-older"},
+				{cutoff, "drop-historical-" + sourceName + "-equal"},
+				{cutoff.Add(-time.Second), "keep-historical-" + sourceName},
+				// This retained record is last so the source must drain before absence is checked.
+				{cutoff.Add(time.Second), "drop-historical-" + sourceName + "-newer"},
+			} {
+				Expect(write(record(entry.eventTime, entry.message), 1)).To(Succeed())
+			}
+
+			verifyRecords := func(records []string) error {
+				received := strings.Join(records, "\n")
+				for _, expected := range []string{
+					"drop-historical-" + sourceName + "-equal",
+					"drop-historical-" + sourceName + "-newer",
+					"keep-historical-" + sourceName,
+				} {
+					if !strings.Contains(received, expected) {
+						return fmt.Errorf("expected retained record %q in collector output", expected)
+					}
+				}
+				dropped := "drop-historical-" + sourceName + "-older"
+				if strings.Contains(received, dropped) {
+					return fmt.Errorf("expected dropped record %q to be absent from collector output", dropped)
+				}
+				return nil
+			}
+			verifyLogs := func() error {
+				logs, err := read()
+				if err != nil {
+					return err
+				}
+				return verifyRecords(logs)
+			}
+			Eventually(verifyLogs, 2*time.Minute, 10*time.Second).Should(Succeed())
+			Consistently(verifyLogs, 30*time.Second, 5*time.Second).Should(Succeed(), "Dropped records must remain absent after the source's final record arrives")
+		},
+			Entry("application records", obs.InputTypeApplication, false),
+			Entry("infrastructure container records", obs.InputTypeInfrastructure, true),
+			Entry("auditd records", obs.InputTypeAudit, false),
+		)
 
 	})
 

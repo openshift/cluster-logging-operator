@@ -1124,11 +1124,21 @@ spec:
                                     Must define only one of matches or notMatches
                                   pattern: ^[^'\n\r]*$
                                   type: string
+                                olderThan:
+                                  description: |-
+                                    Drop records whose timestamps are older than this date or timestamp.
+                                    Accepts YYYY-MM-DD or an RFC3339 timestamp with an explicit offset.
+                                    Date-only values are interpreted as midnight UTC.
+                                  pattern: ^\d{4}-\d{2}-\d{2}(T[0-2]\d:[0-5]\d:[0-5]\d(\.\d+)?(Z|[+-][0-2]\d:[0-5]\d))?$
+                                  type: string
                               type: object
                               x-kubernetes-validations:
-                              - message: only one of matches or notMatches can be
-                                  defined per field
-                                rule: '!(has(self.matches) && has(self.notMatches))'
+                              - message: must define exactly one of olderThan or field
+                                rule: has(self.olderThan) != has(self.field)
+                              - message: a field requires exactly one match expression,
+                                  and match expressions cannot be used without a field
+                                rule: 'has(self.field) ? (has(self.matches) != has(self.notMatches))
+                                  : (!has(self.matches) && !has(self.notMatches))'
                             minItems: 1
                             type: array
                         required:

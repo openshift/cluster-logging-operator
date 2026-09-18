@@ -116,4 +116,12 @@ source = '''
   }
   ._internal.level = level
 }
+
+  ovn_parts, ovn_err = parse_regex(._internal.message, r'^(?P<timestamp>[^|]+)\|')
+  if ovn_err == null {
+    ovn_time, ovn_err = parse_timestamp(ovn_parts.timestamp, "%+")
+    if ovn_err == null {
+      ._internal.timestamp = ovn_time
+    }
+  }
 '''

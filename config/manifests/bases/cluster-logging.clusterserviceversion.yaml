@@ -140,6 +140,12 @@ spec:
           Must define only one of matches or notMatches
         displayName: Keep Match Expression
         path: filters[0].drop[0].test[0].notMatches
+      - description: |-
+          Drop records whose timestamps are older than this date or timestamp.
+          Accepts YYYY-MM-DD or an RFC3339 timestamp with an explicit offset.
+          Date-only values are interpreted as midnight UTC.
+        displayName: Older Than
+        path: filters[0].drop[0].test[0].olderThan
       - displayName: Kubernetes API Audit Filter
         path: filters[0].kubeAPIAudit
       - description: Name used to refer to the filter from a "pipeline".

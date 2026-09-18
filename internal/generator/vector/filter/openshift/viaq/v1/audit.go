@@ -20,14 +20,24 @@ match2, err = parse_regex(._internal.message, r'msg=audit\((?P<ts_record>[^ ]+)\
 if err == null {
   sp, err = split(match2.ts_record,":")
   if err == null && length(sp) == 2 {
-      ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
-      if ts != "" { ._internal.timestamp = ts }
+      host_audit_time, host_audit_err = parse_timestamp(sp[0], "%s.%3f")
+      if host_audit_err == null {
+        ._internal.timestamp = host_audit_time
+      }
       envelop |= {"record_id": sp[1]}
       ._internal |= {"audit.linux" : envelop}
-      ._internal.timestamp =  format_timestamp(ts,"%+") ?? ""
   }
 } else {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
+}
+`
+	ParseOVNAuditLogTimestamp = `
+ovn_parts, ovn_err = parse_regex(._internal.message, r'^(?P<timestamp>[^|]+)\|')
+if ovn_err == null {
+  ovn_time, ovn_err = parse_timestamp(ovn_parts.timestamp, "%+")
+  if ovn_err == null {
+    ._internal.timestamp = ovn_time
+  }
 }
 `
 	SetK8sAuditLevel       = `.k8s_audit_level = ._internal.structured.level`

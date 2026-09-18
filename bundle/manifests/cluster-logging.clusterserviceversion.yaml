@@ -82,7 +82,7 @@ metadata:
     categories: OpenShift Optional, Logging & Tracing, Observability
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-07-15T11:39:59Z"
+    createdAt: "2026-09-18T21:15:15Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -217,6 +217,12 @@ spec:
           Must define only one of matches or notMatches
         displayName: Keep Match Expression
         path: filters[0].drop[0].test[0].notMatches
+      - description: |-
+          Drop records whose timestamps are older than this date or timestamp.
+          Accepts YYYY-MM-DD or an RFC3339 timestamp with an explicit offset.
+          Date-only values are interpreted as midnight UTC.
+        displayName: Older Than
+        path: filters[0].drop[0].test[0].olderThan
       - displayName: Kubernetes API Audit Filter
         path: filters[0].kubeAPIAudit
       - description: Name used to refer to the filter from a "pipeline".

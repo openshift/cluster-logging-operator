@@ -26,6 +26,13 @@ if match_any(string(._internal.kubernetes.namespace_name) ?? "", [r'^default$', 
 ._internal.structured = parse_json!(string!(._internal.message))
 ._internal = merge!(._internal,._internal.structured)
 `
+	parseStructuredAuditTimestamp = `
+audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
+if audit_err != null {
+  audit_time, audit_err = parse_timestamp(to_string(._internal.requestReceivedTimestamp) ?? "", "%+")
+}
+if audit_err == null { ._internal.timestamp = audit_time }
+`
 
 	setClusterID                   = `._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}`
 	setOpenshiftSequence           = `._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")`
@@ -54,7 +61,7 @@ if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
 func NewAuditInternalNormalization(logSource obs.AuditSource, inputs string, parseIntoStructured bool, addVRLs ...string) types.Transform {
 	vrls := []string{setEnvelope}
 	if parseIntoStructured {
-		vrls = append(vrls, parseStructured)
+		vrls = append(vrls, parseStructured, parseStructuredAuditTimestamp)
 	}
 	vrls = append(vrls,
 		fmt.Sprintf(fmtLogSource, logSource),

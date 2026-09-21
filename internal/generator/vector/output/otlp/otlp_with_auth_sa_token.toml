@@ -337,7 +337,7 @@ if exists(kv.msg) {
     }
     after_paren = split(msg_str, "(", limit: 2)
     if length(after_paren) > 1 {
-      inner = replace!(after_paren[1], r').*', "")
+      inner = replace!(after_paren[1], r'\).*', "")
       parts = split(inner, ":")
       if length(parts) > 1 {
         r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": to_string(parts[1])}})

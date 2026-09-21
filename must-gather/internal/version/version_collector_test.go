@@ -26,7 +26,7 @@ var _ = Describe("VersionCollector", func() {
 	})
 
 	AfterEach(func() {
-		os.RemoveAll(tmpDir)
+		Expect(os.RemoveAll(tmpDir)).To(Succeed())
 	})
 
 	It("should write a version file with the product name and version", func() {

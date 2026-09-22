@@ -1,0 +1,89 @@
+# Dependabot configuration for automated dependency updates
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Go modules - main dependencies
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    # Group updates to reduce PR noise
+    groups:
+      # Group AWS SDK updates together
+      aws-sdk:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group Kubernetes/OpenShift updates together
+      k8s-ecosystem:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+          - "github.com/openshift/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group testing dependencies
+      testing:
+        patterns:
+          - "github.com/onsi/ginkgo*"
+          - "github.com/onsi/gomega*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group OpenTelemetry dependencies
+      opentelemetry:
+        patterns:
+          - "go.opentelemetry.io/otel*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group Go extended libraries
+      golang-x:
+        patterns:
+          - "golang.org/x/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group OpenAPI libraries
+      go-openapi:
+        patterns:
+          - "github.com/go-openapi/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all remaining patch updates together (must be last - catches everything else)
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "jcantrill"
+      - "vparfonov"
+      - "Clee2691"
+    assignees:
+      - "jcantrill"
+    labels:
+      - "dependencies"
+      - "go"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Rebase strategy: auto-rebase PRs when base branch is updated
+    rebase-strategy: "auto"
+    # Allow both direct and indirect dependency updates
+    # Indirect deps (transitive dependencies) will only create PRs for:
+    # - Security vulnerabilities (always, regardless of this config)
+    # - Version updates that are explicitly allowed below
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"

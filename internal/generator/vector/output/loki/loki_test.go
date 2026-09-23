@@ -21,6 +21,16 @@ var _ = Describe("Loki generator helpers", func() {
 		Entry(" for a label without kubernetes.labels prefix", "kubernetes.host", `kubernetes.host`),
 	)
 
+	DescribeTable("#MissingVerbLabelFallback", func(lokiSpec *obs.Loki, want string) {
+		Expect(MissingVerbLabelFallback(lokiSpec)).To(Equal(want))
+	},
+		Entry("nil spec", nil, ""),
+		Entry("no label keys", &obs.Loki{}, ""),
+		Entry("other keys only", &obs.Loki{LabelKeys: []string{"log_type"}}, ""),
+		Entry("includes verb", &obs.Loki{LabelKeys: []string{"log_type", VerbLabelKey}},
+			"\nif !(exists(.verb) && !is_null(.verb)) {\n  .verb = \"unknown\"\n}"),
+	)
+
 	DescribeTable("#lokiLabels should correctly format labels", func(label, expKey, expValue string) {
 		lo := &obs.Loki{
 			LabelKeys: []string{label},

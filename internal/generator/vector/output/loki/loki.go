@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -26,7 +27,10 @@ const (
 	lokiLabelKubernetesPodName       = "kubernetes.pod_name"
 	lokiLabelKubernetesHost          = "kubernetes.host"
 	lokiLabelKubernetesContainerName = "kubernetes.container_name"
-	podNamespace                     = "kubernetes.namespace_name"
+	// VerbLabelKey is the audit API verb field used as a Loki stream label.
+	VerbLabelKey     = "verb"
+	unknownVerbLabel = "unknown"
+	podNamespace     = "kubernetes.namespace_name"
 
 	// OTel
 	otellogType                          = "openshift.log_type"
@@ -72,12 +76,15 @@ var (
 	}
 )
 
-func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {
+// New generates Vector config to forward logs to a Loki endpoint.
+// extraLabelRemap is concatenated into remap_label at creation; generic Loki
+// sinks pass empty so the missing-verb fallback stays LokiStack audit-only.
+func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options, extraLabelRemap string) (string, types.Sink, api.Transforms) {
 	tfs := api.Transforms{}
 	componentID := vectorhelpers.MakeID(id, "remap")
 	tfs[componentID] = CleanupFields(inputs...)
 	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
-	tfs[remapLabelID] = RemapLabels(componentID)
+	tfs[remapLabelID] = RemapLabels(extraLabelRemap, componentID)
 
 	sink := sinks.NewLoki(o.Loki.URL, func(s *sinks.Loki) {
 		s.OutOfOrderAction = sinks.LokiOutOfOrderActionAccept
@@ -198,8 +205,23 @@ func formatLokiLabelValue(value string) string {
 	return fmt.Sprintf("{{%s}}", value)
 }
 
-func RemapLabels(inputs ...string) types.Transform {
-	return transforms.NewRemap(remapLabelsVrl(containerLabels), inputs...)
+// RemapLabels creates the remap_label transform with missing container-name
+// defaults, concatenated with any extra VRL at creation.
+func RemapLabels(extraSource string, inputs ...string) types.Transform {
+	return transforms.NewRemap(remapLabelsVrl(containerLabels)+extraSource, inputs...)
+}
+
+// MissingVerbLabelFallback returns VRL that sets .verb to "unknown" when the
+// field is absent or null. It is empty unless the Loki spec uses verb as a
+// stream label.
+func MissingVerbLabelFallback(lokiSpec *obs.Loki) string {
+	if lokiSpec == nil || !slices.Contains(lokiSpec.LabelKeys, VerbLabelKey) {
+		return ""
+	}
+	return fmt.Sprintf(
+		"\nif !(exists(.%s) && !is_null(.%s)) {\n  .%s = %q\n}",
+		VerbLabelKey, VerbLabelKey, VerbLabelKey, unknownVerbLabel,
+	)
 }
 
 func hasTenantKey(l *obs.Loki) bool {

@@ -45,8 +45,18 @@ func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
 			Token: ls.Authentication.Token,
 		},
 		Tuning:    ls.Tuning,
-		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
+		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, defaultLabelKeysForTenant(tenant)),
 	}
+}
+
+// defaultLabelKeysForTenant returns the ViaQ Loki stream label keys used when a
+// tenant does not customize labelKeys. Audit includes verb so common filters
+// such as {verb="create"} do not require parsing every log line as JSON.
+func defaultLabelKeysForTenant(tenant string) []string {
+	if obs.InputType(tenant) != obs.InputTypeAudit {
+		return lokioutput.DefaultLabelKeys
+	}
+	return append(slices.Clone(lokioutput.DefaultLabelKeys), lokioutput.VerbLabelKey)
 }
 
 // GenerateOtlpSpec generates and returns an OTLP spec for the defined lokistack output
@@ -62,6 +72,8 @@ func GenerateOtlpSpec(ls *obs.LokiStack, tenant string) *obs.OTLP {
 	}
 }
 
+// lokiStackURL returns the tenant gateway URL, or empty when the tenant is
+// not a reserved input type.
 func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string, otlp bool) string {
 	service := lokiStackGatewayService(lokiStackSpec.Target.Name)
 	if !internalobs.ReservedInputTypes.Has(tenant) {
@@ -76,15 +88,19 @@ func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string, otlp bool) string
 	return baseURL
 }
 
+// lokiStackGatewayService returns the HTTP gateway service name for a LokiStack.
 func lokiStackGatewayService(lokiStackServiceName string) string {
 	return fmt.Sprintf("%s-gateway-http", lokiStackServiceName)
 }
 
 // lokiStackLabelKeysForTenant returns the per-tenant labelKeys for a Loki output based on the LokiStack configuration.
-// A return value of "nil" indicates that the defaults of the Loki output should be used.
+// A nil return means the Loki sink should use loki.DefaultLabelKeys: the CLO Loki
+// output defaults, not LokiStack server configuration. Audit is an exception:
+// those defaults omit verb, so unconfigured audit tenants return defaultKeys
+// (DefaultLabelKeys plus verb) explicitly.
 func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant string, defaultKeys []string) []string {
 	if labelKeys == nil {
-		return nil
+		return unconfiguredTenantLabelKeys(tenant, defaultKeys)
 	}
 
 	var tenantConfig *obs.LokiStackTenantLabelKeys
@@ -117,10 +133,30 @@ func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant strin
 		}
 	}
 
+	if len(keys) == 0 {
+		if ignoreGlobal {
+			return keys
+		}
+		return unconfiguredTenantLabelKeys(tenant, defaultKeys)
+	}
+
 	if len(keys) > 1 {
 		slices.Sort(keys)
 		keys = slices.Compact(keys)
 	}
 
 	return keys
+}
+
+// unconfiguredTenantLabelKeys returns label keys when the LokiStack spec does
+// not customize them. Application and infrastructure return nil so the Loki
+// output defaults apply. Audit returns defaultKeys because those defaults omit
+// verb.
+func unconfiguredTenantLabelKeys(tenant string, defaultKeys []string) []string {
+	if obs.InputType(tenant) != obs.InputTypeAudit {
+		return nil
+	}
+	keys := slices.Clone(defaultKeys)
+	slices.Sort(keys)
+	return slices.Compact(keys)
 }

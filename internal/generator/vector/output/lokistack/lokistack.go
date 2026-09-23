@@ -57,6 +57,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	return sinks, tfs
 }
 
+// determineTenants returns the LokiStack tenants implied by the input specs.
 func determineTenants(inputSpecs []obs.InputSpec) *sets.String {
 	tenants := sets.NewString()
 
@@ -79,6 +80,8 @@ func determineTenants(inputSpecs []obs.InputSpec) *sets.String {
 	return tenants
 }
 
+// getTenantForReceiver maps a receiver type to the LokiStack tenant that
+// stores its logs.
 func getTenantForReceiver(receiverType obs.ReceiverType) string {
 	if receiverType == obs.ReceiverTypeHTTP {
 		return string(obs.InputTypeAudit)
@@ -86,6 +89,7 @@ func getTenantForReceiver(receiverType obs.ReceiverType) string {
 	return string(obs.InputTypeInfrastructure)
 }
 
+// buildRoutes returns Vector route conditions keyed by LokiStack tenant.
 func buildRoutes(tenants *sets.String) map[string]string {
 	routes := make(map[string]string, tenants.Len())
 	for _, tenant := range tenants.List() {
@@ -94,6 +98,8 @@ func buildRoutes(tenants *sets.String) map[string]string {
 	return routes
 }
 
+// generateSinkForTenant migrates the LokiStack output to a Loki or OTLP sink
+// for one tenant.
 func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inputSpecs []obs.InputSpec,
 	secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {
 
@@ -111,15 +117,23 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)
 	}
 
-	return loki.New(outputID, adapters.NewOutput(migratedOutput), []string{factoryInput}, secrets, op)
+	extraLabelRemap := ""
+	if obs.InputType(inputType) == obs.InputTypeAudit {
+		extraLabelRemap = loki.MissingVerbLabelFallback(migratedOutput.Loki)
+	}
+	return loki.New(outputID, adapters.NewOutput(migratedOutput), []string{factoryInput}, secrets, op, extraLabelRemap)
 }
 
+// getInputSources returns the log sources that feed a LokiStack tenant,
+// including receivers.
 func getInputSources(inputSpecs []obs.InputSpec, inputType obs.InputType) []string {
 	inputSources := observability.Inputs(inputSpecs).InputSources(inputType)
 	addReceiverSources(&inputSources, inputSpecs, inputType)
 	return inputSources
 }
 
+// addReceiverSources appends HTTP and syslog receiver sources that map to
+// the tenant.
 func addReceiverSources(inputSources *[]string, inputSpecs []obs.InputSpec, inputType obs.InputType) {
 	for _, is := range inputSpecs {
 		if is.Type != obs.InputTypeReceiver {

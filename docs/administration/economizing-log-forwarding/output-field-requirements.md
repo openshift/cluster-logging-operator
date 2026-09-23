@@ -22,6 +22,7 @@ Fields that the ClusterLogForwarder **always** requires regardless of output
 | `.kubernetes.pod_name` | Used in `loki.go` as default Loki stream label (`lokiLabelKubernetesPodName`) |
 | `.kubernetes.container_name` | Used in `loki.go` as default Loki stream label (`lokiLabelKubernetesContainerName`) for container logs |
 | `.hostname` | Used in `loki.go` as Loki stream label (`lokiLabelKubernetesHost`), mapped to `${VECTOR_SELF_NODE_NAME}` |
+| `.verb` | Used in `init_lokiStack.go` as a default Loki stream label for the audit tenant (ViaQ data model) |
 
 **Safe to prune:** All other fields. Loki indexes by labels only; pruned fields
 reduce storage cost without affecting queryability by the label dimensions.
@@ -30,6 +31,7 @@ reduce storage cost without affecting queryability by the label dimensions.
 - If `labelKeys` is customized in the LokiStack spec, those custom label fields become required
 - OTel-flavored labels (e.g., `k8s.namespace_name`, `openshift.log_type`) are automatically added when corresponding ViAQ labels are present
 - The `RemapLabels` transform in `loki.go` creates empty string values for missing container labels to prevent stream label gaps
+- `.verb` is a default stream label only for the LokiStack audit tenant with the ViaQ data model. Application and infrastructure tenants, OTel, and generic Loki outputs do not add it by default.
 
 ## Google Cloud Logging
 

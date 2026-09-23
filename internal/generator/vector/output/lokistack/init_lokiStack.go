@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	lokiOtlpEndpoint = "/otlp/v1/logs"
+	lokiOtlpEndpoint  = "/otlp/v1/logs"
+	auditVerbLabelKey = "verb"
+	unknownAuditVerb  = "unknown"
 )
 
 // GenerateOutput returns either a Loki or OTLP output spec when migrating Lokistacks
@@ -45,8 +47,18 @@ func GenerateLokiSpec(ls *obs.LokiStack, tenant string) *obs.Loki {
 			Token: ls.Authentication.Token,
 		},
 		Tuning:    ls.Tuning,
-		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, lokioutput.DefaultLabelKeys),
+		LabelKeys: lokiStackLabelKeysForTenant(ls.LabelKeys, tenant, defaultLabelKeysForTenant(tenant)),
 	}
+}
+
+// defaultLabelKeysForTenant returns the ViaQ Loki stream label keys used when a
+// tenant does not customize labelKeys. Audit includes verb so common filters
+// such as {verb="create"} do not require parsing every log line as JSON.
+func defaultLabelKeysForTenant(tenant string) []string {
+	if obs.InputType(tenant) != obs.InputTypeAudit {
+		return lokioutput.DefaultLabelKeys
+	}
+	return append(slices.Clone(lokioutput.DefaultLabelKeys), auditVerbLabelKey)
 }
 
 // GenerateOtlpSpec generates and returns an OTLP spec for the defined lokistack output
@@ -82,9 +94,11 @@ func lokiStackGatewayService(lokiStackServiceName string) string {
 
 // lokiStackLabelKeysForTenant returns the per-tenant labelKeys for a Loki output based on the LokiStack configuration.
 // A return value of "nil" indicates that the defaults of the Loki output should be used.
+// Audit is an exception: its defaults include verb in addition to the Loki output
+// defaults, so unconfigured audit tenants return those keys explicitly.
 func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant string, defaultKeys []string) []string {
 	if labelKeys == nil {
-		return nil
+		return unconfiguredTenantLabelKeys(tenant, defaultKeys)
 	}
 
 	var tenantConfig *obs.LokiStackTenantLabelKeys
@@ -117,10 +131,26 @@ func lokiStackLabelKeysForTenant(labelKeys *obs.LokiStackLabelKeys, tenant strin
 		}
 	}
 
+	if len(keys) == 0 {
+		if ignoreGlobal {
+			return keys
+		}
+		return unconfiguredTenantLabelKeys(tenant, defaultKeys)
+	}
+
 	if len(keys) > 1 {
 		slices.Sort(keys)
 		keys = slices.Compact(keys)
 	}
 
 	return keys
+}
+
+func unconfiguredTenantLabelKeys(tenant string, defaultKeys []string) []string {
+	if obs.InputType(tenant) != obs.InputTypeAudit {
+		return nil
+	}
+	keys := slices.Clone(defaultKeys)
+	slices.Sort(keys)
+	return slices.Compact(keys)
 }

@@ -87,6 +87,8 @@ NOTE: The `-z` flag used above creates a cluster role binding to the service acc
 <2> `lokiStack.target` name and namespace must match your LokiStack instance name
 <3> TLS configuration `key` and `configMapName` uses the existing openshift service config map
 
+NOTE: When using the ViaQ data model, audit logs include `verb` as a default Loki stream label (in addition to the global defaults). This allows queries such as `{log_type="audit", verb="create"}` without parsing every log line as JSON. Users who fully replace audit `labelKeys` with `ignoreGlobal: true` must add `verb` themselves if they still want that stream label.
+
 
 == Alternatively using custom outputs and pipelines
 

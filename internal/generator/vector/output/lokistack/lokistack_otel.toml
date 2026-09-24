@@ -233,6 +233,7 @@ source = '''
 [sinks.output_default_lokistack_application]
 type = "opentelemetry"
 inputs = ["output_default_lokistack_application_resource_logs"]
+dangerously_allow_unconfined_template_resolution = true
 
 [sinks.output_default_lokistack_application.protocol]
 uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp/v1/logs"
@@ -329,13 +330,18 @@ if exists(kv.type) {
 if exists(kv.msg) {
     msg_str = ""
     if is_array(kv.msg) {
-        msg_str = kv.msg[0]
+      msg_str = to_string(kv.msg[0])
     } else {
-        msg_str = kv.msg
+      msg_str = to_string!(kv.msg)
     }
-    trimmed = slice!(msg_str, find!(msg_str, "(") + 1, -2)
-    parts = split!(trimmed, ":")
-    r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": parts[1] }})
+    after_paren = split(msg_str, "(", limit: 2)
+    if length(after_paren) > 1 {
+      inner = replace!(after_paren[1], r'\).*', "")
+      parts = split(inner, ":")
+      if length(parts) > 1 {
+        r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": to_string(parts[1])}})
+      }
+    }
 }
 # Openshift object for grouping (dropped before sending)
 o = {
@@ -579,6 +585,7 @@ source = '''
 [sinks.output_default_lokistack_audit]
 type = "opentelemetry"
 inputs = ["output_default_lokistack_audit_resource_logs"]
+dangerously_allow_unconfined_template_resolution = true
 
 [sinks.output_default_lokistack_audit.protocol]
 uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp/v1/logs"
@@ -823,6 +830,7 @@ source = '''
 [sinks.output_default_lokistack_infrastructure]
 type = "opentelemetry"
 inputs = ["output_default_lokistack_infrastructure_resource_logs"]
+dangerously_allow_unconfined_template_resolution = true
 
 [sinks.output_default_lokistack_infrastructure.protocol]
 uri = "https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp/v1/logs"

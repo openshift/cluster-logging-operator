@@ -858,6 +858,7 @@ type = "kafka"
 inputs = ["output_kafka_receiver_topic"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "{{ _internal.output_kafka_receiver_topic }}"
+dangerously_allow_unconfined_template_resolution = true
 
 [sinks.output_kafka_receiver.healthcheck]
 enabled = false

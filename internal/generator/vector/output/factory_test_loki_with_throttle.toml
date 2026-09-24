@@ -31,6 +31,7 @@ type = "loki"
 inputs = ["output_default_loki_apps_remap_label"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
+dangerously_allow_unconfined_template_resolution = true
 
 [sinks.output_default_loki_apps.healthcheck]
 enabled = false

@@ -43,6 +43,9 @@ source = '''
     if !exists(.kubernetes.container_name) {
       .kubernetes.container_name = ""
     }
+    if !(exists(.verb) && !is_null(.verb)) {
+      .verb = "unknown"
+    }
   '''
 
 [sinks.output_default_lokistack_audit]
@@ -76,6 +79,7 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 openshift_log_type = "{{log_type}}"
+verb = "{{verb}}"
 
 
 

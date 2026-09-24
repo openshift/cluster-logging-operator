@@ -2,6 +2,7 @@ package lokistack
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -111,7 +112,31 @@ func generateSinkForTenant(id, routeID, inputType string, o obs.OutputSpec, inpu
 		return otlp.New(outputID, adapter, []string{factoryInput}, secrets, op)
 	}
 
-	return loki.New(outputID, adapters.NewOutput(migratedOutput), []string{factoryInput}, secrets, op)
+	tenantID, sink, tfs := loki.New(outputID, adapters.NewOutput(migratedOutput), []string{factoryInput}, secrets, op)
+	applyMissingAuditVerbFallback(outputID, inputType, migratedOutput.Loki, tfs)
+	return tenantID, sink, tfs
+}
+
+// applyMissingAuditVerbFallback sets .verb to "unknown" when the field is
+// missing or null so ViaQ audit streams stay labeled without changing the
+// shared Loki remap used by application and infrastructure sinks.
+func applyMissingAuditVerbFallback(outputID, inputType string, lokiSpec *obs.Loki, tfs api.Transforms) {
+	if obs.InputType(inputType) != obs.InputTypeAudit {
+		return
+	}
+	if lokiSpec == nil || !slices.Contains(lokiSpec.LabelKeys, auditVerbLabelKey) {
+		return
+	}
+	remapLabelID := vectorhelpers.MakeID(outputID, "remap_label")
+	remap, ok := tfs[remapLabelID].(*transforms.Remap)
+	if !ok {
+		panic(fmt.Sprintf("expected remap transform %q for audit LokiStack sink", remapLabelID))
+	}
+	vrl := fmt.Sprintf(
+		"\nif !(exists(.%s) && !is_null(.%s)) {\n  .%s = %q\n}",
+		auditVerbLabelKey, auditVerbLabelKey, auditVerbLabelKey, unknownAuditVerb,
+	)
+	tfs[remapLabelID] = transforms.NewRemap(string(remap.Source)+vrl, remap.Inputs...)
 }
 
 func getInputSources(inputSpecs []obs.InputSpec, inputType obs.InputType) []string {

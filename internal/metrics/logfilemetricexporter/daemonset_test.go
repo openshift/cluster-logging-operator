@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -61,6 +62,37 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits).To(BeNil())
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(BeNil())
+	})
+
+	It("should run the exporter container with a minimal, non-root security context", func() {
+
+		// Reconcile the exporter daemonset
+		Expect(ReconcileDaemonset(*lfmeInstance,
+			reqClient,
+			constants.OpenshiftNS,
+			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+
+		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
+		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+		sc := dsInstance.Spec.Template.Spec.Containers[0].SecurityContext
+		Expect(sc).ToNot(BeNil())
+		Expect(sc.SELinuxOptions).ToNot(BeNil())
+		Expect(sc.SELinuxOptions.Type).To(Equal("container_logwriter_t"))
+		Expect(sc.RunAsUser).ToNot(BeNil())
+		Expect(*sc.RunAsUser).To(Equal(int64(1000)))
+		Expect(sc.RunAsNonRoot).ToNot(BeNil())
+		Expect(*sc.RunAsNonRoot).To(BeTrue())
+		Expect(sc.ReadOnlyRootFilesystem).ToNot(BeNil())
+		Expect(*sc.ReadOnlyRootFilesystem).To(BeTrue())
+		Expect(sc.AllowPrivilegeEscalation).ToNot(BeNil())
+		Expect(*sc.AllowPrivilegeEscalation).To(BeFalse())
+		Expect(sc.Capabilities).ToNot(BeNil())
+		Expect(sc.Capabilities.Drop).To(Equal(auth.RequiredDropCapabilities))
+		Expect(sc.SeccompProfile).ToNot(BeNil())
+		Expect(sc.SeccompProfile.Type).To(Equal(corev1.SeccompProfileTypeRuntimeDefault))
+		// The exporter only stats world-traversable log dirs, so no elevated group access is needed.
+		Expect(dsInstance.Spec.Template.Spec.SecurityContext).To(BeNil())
 	})
 
 	It("should reconcile successfully a daemonset with specified resources.requests", func() {

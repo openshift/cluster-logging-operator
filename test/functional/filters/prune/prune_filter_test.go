@@ -186,6 +186,7 @@ var _ = Describe("[Functional][Filters][Prune] Prune filter", func() {
 							".log_type",
 							".log_source",
 							".k8s_audit_level",
+							".message",
 						},
 					}
 				}).ToHttpOutput()

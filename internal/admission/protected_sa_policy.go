@@ -25,7 +25,6 @@ const (
 	ProtectedSAWorkloadsPolicyName  = "clo-protected-sa-workloads"
 	ProtectedSAWorkloadsBindingName = "clo-protected-sa-workloads-binding"
 
-	protectedSAKeyPrefix           = "sa_"
 	protectedSAPodCreatorsKey      = "podCreators"
 	protectedSAWorkloadCreatorsKey = "workloadCreators"
 )
@@ -39,31 +38,31 @@ var podControllers = []string{
 	"system:serviceaccount:kube-system:job-controller",
 	"system:serviceaccount:kube-system:replication-controller",
 }
-
-// workloadControllers lists kube-system controllers that create intermediate
-// workload resources (e.g. Deployment → ReplicaSet, CronJob → Job).
-var workloadControllers = []string{
-	"system:serviceaccount:kube-system:deployment-controller",
-	"system:serviceaccount:kube-system:cronjob-controller",
-}
-
-//go:embed protected-sa-pods.yaml
-var protectedSAPodsPolicyYAML string
-
-//go:embed protected-sa-pods-binding.yaml
-var protectedSAPodsBindingYAML string
-
-//go:embed protected-sa-workloads.yaml
-var protectedSAWorkloadsPolicyYAML string
-
-//go:embed protected-sa-workloads-binding.yaml
-var protectedSAWorkloadsBindingYAML string
-
 var (
-	protectedSAPodsPolicy       *admissionregistrationv1.ValidatingAdmissionPolicy
-	protectedSAPodsBinding      *admissionregistrationv1.ValidatingAdmissionPolicyBinding
-	protectedSAWorkloadsPolicy  *admissionregistrationv1.ValidatingAdmissionPolicy
-	protectedSAWorkloadsBinding *admissionregistrationv1.ValidatingAdmissionPolicyBinding
+	// workloadControllers lists kube-system controllers that create intermediate
+	// workload resources (e.g. Deployment → ReplicaSet, CronJob → Job).
+	workloadControllers = []string{
+		"system:serviceaccount:kube-system:deployment-controller",
+		"system:serviceaccount:kube-system:cronjob-controller",
+	}
+	// podCreatorsValue is the pre-joined comma-separated list of pod creators.
+	podCreatorsValue string
+	// workloadCreatorsTemplate is the pre-joined workload controllers, to be
+	// prefixed with the operator SA at runtime.
+	workloadCreatorsTemplate string
+	//go:embed protected-sa-pods.yaml
+	protectedSAPodsPolicyYAML string
+	//go:embed protected-sa-pods-binding.yaml
+	protectedSAPodsBindingYAML string
+	//go:embed protected-sa-workloads.yaml
+	protectedSAWorkloadsPolicyYAML string
+
+	//go:embed protected-sa-workloads-binding.yaml
+	protectedSAWorkloadsBindingYAML string
+	protectedSAPodsPolicy           *admissionregistrationv1.ValidatingAdmissionPolicy
+	protectedSAPodsBinding          *admissionregistrationv1.ValidatingAdmissionPolicyBinding
+	protectedSAWorkloadsPolicy      *admissionregistrationv1.ValidatingAdmissionPolicy
+	protectedSAWorkloadsBinding     *admissionregistrationv1.ValidatingAdmissionPolicyBinding
 )
 
 func init() {
@@ -78,6 +77,10 @@ func init() {
 	} {
 		internalruntime.SetCommonLabels(obj, constants.ClusterLogging, ProtectedSAConfigMapName, "admission")
 	}
+
+	// Pre-compute static creator identity lists.
+	podCreatorsValue = strings.Join(podControllers, ",")
+	workloadCreatorsTemplate = strings.Join(workloadControllers, ",")
 }
 
 // OperatorNamespace returns the namespace the operator pod runs in.
@@ -131,9 +134,8 @@ func ReconcileProtectedSAPolicies(ctx context.Context, k8sClient client.Client, 
 }
 
 func setCreatorKeys(data map[string]string, operatorNS string) {
-	data[protectedSAPodCreatorsKey] = strings.Join(podControllers, ",")
-	data[protectedSAWorkloadCreatorsKey] = strings.Join(
-		append([]string{operatorServiceAccountUser(operatorNS)}, workloadControllers...), ",")
+	data[protectedSAPodCreatorsKey] = podCreatorsValue
+	data[protectedSAWorkloadCreatorsKey] = operatorServiceAccountUser(operatorNS) + "," + workloadCreatorsTemplate
 }
 
 // SyncProtectedServiceAccounts rebuilds the param ConfigMap from the full set
@@ -146,7 +148,9 @@ func SyncProtectedServiceAccounts(ctx context.Context, k8sClient client.Client, 
 
 	data := map[string]string{}
 	for _, ref := range refs {
-		data[protectedSAKeyPrefix+ref.Namespace+"_"+ref.Name] = ""
+		// Use ConfigMap data as a set: the VAP CEL expression checks key presence
+		// (saKey in params.data), not value, so empty string is sufficient.
+		data[ref.String()] = ""
 	}
 	setCreatorKeys(data, operatorNS)
 

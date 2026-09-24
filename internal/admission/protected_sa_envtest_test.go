@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/runtime/clusterlogforwarder"
 	"github.com/openshift/cluster-logging-operator/test"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -72,7 +73,7 @@ var _ = Describe("Protected SA VAP enforcement (envtest)", Ordered, func() {
 
 		cm := internalruntime.NewConfigMap(operatorNS, ProtectedSAConfigMapName, nil)
 		setCreatorKeys(cm.Data, operatorNS)
-		cm.Data[protectedSAKeyPrefix+podNS+"_"+collectorSA] = ""
+		cm.Data[clusterlogforwarder.ServiceAccountRef{Namespace: podNS, Name: collectorSA}.String()] = ""
 		Expect(adminClient.Create(ctx, cm)).To(Succeed())
 
 		installPolicyAndBinding(ctx, adminClient, protectedSAPodsPolicy, protectedSAPodsBinding, operatorNS)

@@ -15,7 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// ValidatingAdmissionPolicy creates or updates a ValidatingAdmissionPolicy.
+// ValidatingAdmissionPolicy creates or updates a ValidatingAdmissionPolicy,
+// applying the labels and spec from the desired object.
 func ValidatingAdmissionPolicy(ctx context.Context, k8sClient client.Client, desired *admissionregistrationv1.ValidatingAdmissionPolicy) error {
 	current := &admissionregistrationv1.ValidatingAdmissionPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -36,7 +37,8 @@ func ValidatingAdmissionPolicy(ctx context.Context, k8sClient client.Client, des
 	return nil
 }
 
-// ValidatingAdmissionPolicyBinding creates or updates a ValidatingAdmissionPolicyBinding.
+// ValidatingAdmissionPolicyBinding creates or updates a ValidatingAdmissionPolicyBinding,
+// applying the labels and spec from the desired object.
 func ValidatingAdmissionPolicyBinding(ctx context.Context, k8sClient client.Client, desired *admissionregistrationv1.ValidatingAdmissionPolicyBinding) error {
 	current := &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
 		ObjectMeta: metav1.ObjectMeta{

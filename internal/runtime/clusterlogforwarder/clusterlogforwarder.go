@@ -15,6 +15,14 @@ type ServiceAccountRef struct {
 	Name      string
 }
 
+// String returns the ConfigMap data key for this ServiceAccount reference.
+// The format "sa_<namespace>_<name>" is collision-free because namespaces
+// (DNS-1123 label) and ServiceAccount names (DNS-1123 subdomain) forbid '_',
+// and ConfigMap keys may not contain '/'.
+func (r ServiceAccountRef) String() string {
+	return fmt.Sprintf("sa_%s_%s", r.Namespace, r.Name)
+}
+
 // ListServiceAccounts lists all ClusterLogForwarders and returns the
 // unique set of ServiceAccount references they declare.
 func ListServiceAccounts(ctx context.Context, k8sClient client.Reader) ([]ServiceAccountRef, error) {

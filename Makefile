@@ -41,7 +41,7 @@ export CLF_TEST_INCLUDES?=
 .PHONY: force
 
 .PHONY: tools
-tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS)
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(GOVULNCHECK)
 
 .PHONY: pre-commit
 # Should pass when run before commit.
@@ -179,9 +179,27 @@ image: .target/image
 # - override the .cache dir for CI, where $HOME/.cache may not be writable.
 # - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
 export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
-lint:  $(GOLANGCI_LINT) lint-repo
+lint:  $(GOLANGCI_LINT) lint-repo lint-vuln
 	$(GOLANGCI_LINT) run --color=never  --timeout=3m $(if $(CI),,--fix)
 .PHONY: lint
+
+.PHONY: lint-vuln
+lint-vuln: $(GOVULNCHECK)
+	@echo "Checking for vulnerabilities..."
+	@vuln_output=$$($(GOVULNCHECK) ./... 2>&1); \
+	vuln_status=$$?; \
+	if [ $$vuln_status -ne 0 ]; then \
+		total_vulns=$$(echo "$$vuln_output" | grep "Your code is affected by" | sed -E 's/.*affected by ([0-9]+).*/\1/' || echo "0"); \
+		fixable_vulns=$$(echo "$$vuln_output" | grep "Fixed in:" | wc -l | tr -d ' ' || echo "0"); \
+		if [ -n "$$total_vulns" ] && [ "$$total_vulns" != "0" ]; then \
+			printf "\033[1;33mwarning: %s vulnerabilities found, %s can be fixed\033[0m\n" "$$total_vulns" "$$fixable_vulns"; \
+			printf "\033[0;33m         Run 'govulncheck -show color,verbose ./...' for details\033[0m\n"; \
+		else \
+			echo "No vulnerabilities found"; \
+		fi; \
+	else \
+		echo "No vulnerabilities found"; \
+	fi
 
 .PHONY: lint-repo
 lint-repo:

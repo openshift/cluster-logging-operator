@@ -12,6 +12,7 @@ type KubernetesLogs struct {
 	GlobMinimumCooldownMillis uint                       `json:"glob_minimum_cooldown_ms,omitempty" yaml:"glob_minimum_cooldown_ms,omitempty" toml:"glob_minimum_cooldown_ms,omitempty"`
 	AutoPartialMerge          bool                       `json:"auto_partial_merge,omitempty" yaml:"auto_partial_merge,omitempty" toml:"auto_partial_merge,omitempty"`
 	MaxMergedLineBytes        uint64                     `json:"max_merged_line_bytes,omitempty" yaml:"max_merged_line_bytes,omitempty" toml:"max_merged_line_bytes,omitempty"`
+	MaxMergedLineAction       *string                    `json:"max_merged_line_action,omitempty" yaml:"max_merged_line_action,omitempty" toml:"max_merged_line_action,omitempty"`
 	IncludePathsGlobPatterns  []string                   `json:"include_paths_glob_patterns,omitempty" yaml:"include_paths_glob_patterns,omitempty" toml:"include_paths_glob_patterns,omitempty"`
 	ExcludePathsGlobPatterns  []string                   `json:"exclude_paths_glob_patterns,omitempty" yaml:"exclude_paths_glob_patterns,omitempty" toml:"exclude_paths_glob_patterns,omitempty"`
 	ExtraLabelSelector        string                     `json:"extra_label_selector,omitempty" yaml:"extra_label_selector,omitempty" toml:"extra_label_selector,omitempty"`

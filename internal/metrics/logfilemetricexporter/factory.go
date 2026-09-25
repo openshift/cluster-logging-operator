@@ -12,7 +12,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	loggingv1a1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	coreFactory "github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -28,6 +28,17 @@ const (
 	logPods                         = "varlogpods"
 	logPodsValue                    = "/var/log/pods"
 	metricsVolumePath               = "/etc/logfilemetricexporter/metrics"
+
+	// lfmeRunAsUser is the fixed non-root UID the exporter runs as. The exporter reads the
+	// hostPath log directories via group 0 (the default GID granted by OpenShift), which
+	// satisfies the 0750 root:root permissions on /var/log/pods without joining extra groups.
+	lfmeRunAsUser int64 = 1000
+	// selinuxTypeLogWriter (container_logwriter_t) is an MCS-constrained container domain that
+	// grants read plus the inotify "watch"/"watch_reads" permissions on container_log_t, which
+	// the exporter requires to watch /var/log/pods. It is far more restrictive than the
+	// super-privileged spc_t; the otherwise-preferable container_logreader_t domain is not
+	// usable because it denies the inotify "watch" permission.
+	selinuxTypeLogWriter = "container_logwriter_t"
 )
 
 var (
@@ -112,11 +123,18 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 			Protocol:      v1.ProtocolTCP,
 		},
 	}
-	exporterContainer.Command = []string{"/bin/bash"}
-	exporterContainer.Args = []string{"-c",
-		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/logfilemetricexporter/metrics/tls.key -crtFile=/etc/logfilemetricexporter/metrics/tls.crt -secureMetrics -tlsMinVersion=" +
-			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",") +
-			" -groups=" + strings.Join(tls.TLSGroups(tlsProfileSpec), ",")}
+	exporterContainer.Command = []string{"/usr/local/bin/log-file-metric-exporter"}
+	exporterContainer.Args = []string{
+		"-verbosity=2",
+		"-dir=/var/log/pods",
+		"-http=:2112",
+		"-keyFile=/etc/logfilemetricexporter/metrics/tls.key",
+		"-crtFile=/etc/logfilemetricexporter/metrics/tls.crt",
+		"-secureMetrics",
+		"-tlsMinVersion=" + tls.MinTLSVersion(tlsProfileSpec),
+		"-cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ","),
+		"-groups=" + strings.Join(tls.TLSGroups(tlsProfileSpec), ","),
+	}
 
 	exporterContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
@@ -124,6 +142,29 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 		{Name: exporterMetricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
 	}
 
-	collector.AddSecurityContextTo(exporterContainer)
+	exporterContainer.SecurityContext = securityContext()
 	return exporterContainer
+}
+
+// securityContext returns the minimal security context required by the log-file-metric-exporter.
+// The exporter runs as a fixed non-root UID with all capabilities dropped, a read-only root
+// filesystem, no privilege escalation and the default seccomp profile. It runs under the
+// MCS-constrained container_logwriter_t SELinux domain, which grants read plus the inotify
+// watch the exporter needs on the host log tree while remaining far more restrictive than spc_t.
+func securityContext() *v1.SecurityContext {
+	return &v1.SecurityContext{
+		Capabilities: &v1.Capabilities{
+			Drop: auth.RequiredDropCapabilities,
+		},
+		SELinuxOptions: &v1.SELinuxOptions{
+			Type: selinuxTypeLogWriter,
+		},
+		RunAsUser:                utils.GetPtr(lfmeRunAsUser),
+		RunAsNonRoot:             utils.GetPtr(true),
+		ReadOnlyRootFilesystem:   utils.GetPtr(true),
+		AllowPrivilegeEscalation: utils.GetPtr(false),
+		SeccompProfile: &v1.SeccompProfile{
+			Type: v1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
 }

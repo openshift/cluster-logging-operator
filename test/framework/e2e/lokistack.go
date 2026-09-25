@@ -55,7 +55,7 @@ const (
 
 	minioName = "minio"
 
-	minioImage = "quay.io/minio/minio:latest"
+	minioImage = "quay.io/openshift-logging/minio-mirror:RELEASE.2025-09-07T16-13-09Z"
 )
 
 var lokiOperatorChannel = "stable-6.4"

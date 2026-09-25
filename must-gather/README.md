@@ -47,8 +47,7 @@ Example must-gather for cluster-logging output (use `tree` for up-to-date struct
 ```
 ├── cluster-logging
 │  ├── clo
-│  │  ├── cluster-logging-operator-xxxxxxxxxx-xxxxx
-│  │  └── version
+│  │  └── cluster-logging-operator-xxxxxxxxxx-xxxxx
 │  └── namespaces
 │  │  └── [nampespace_name]               ## including openshift-logging
 │  │     ├── collector-xxxxx.describe
@@ -171,4 +170,5 @@ Example must-gather for cluster-logging output (use `tree` for up-to-date struct
 │     ├── [...]
 │  └── openshift-operators-redhat
 │     ├── [...]
-└── timestamp
+├── timestamp
+└── version

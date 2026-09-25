@@ -75,7 +75,24 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
 		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
 
-		sc := dsInstance.Spec.Template.Spec.Containers[0].SecurityContext
+		container := dsInstance.Spec.Template.Spec.Containers[0]
+
+		// The exporter binary is invoked directly (not via a shell) with each flag as a separate arg.
+		Expect(container.Command).To(Equal([]string{"/usr/local/bin/log-file-metric-exporter"}))
+		Expect(container.Args).To(HaveLen(9))
+		Expect(container.Args).To(ContainElements(
+			"-verbosity=2",
+			"-dir=/var/log/pods",
+			"-http=:2112",
+			"-keyFile=/etc/logfilemetricexporter/metrics/tls.key",
+			"-crtFile=/etc/logfilemetricexporter/metrics/tls.crt",
+			"-secureMetrics",
+		))
+		Expect(container.Args).To(ContainElement(HavePrefix("-tlsMinVersion=")))
+		Expect(container.Args).To(ContainElement(HavePrefix("-cipherSuites=")))
+		Expect(container.Args).To(ContainElement(HavePrefix("-groups=")))
+
+		sc := container.SecurityContext
 		Expect(sc).ToNot(BeNil())
 		Expect(sc.SELinuxOptions).ToNot(BeNil())
 		Expect(sc.SELinuxOptions.Type).To(Equal("container_logwriter_t"))

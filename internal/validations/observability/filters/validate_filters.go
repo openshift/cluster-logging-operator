@@ -7,6 +7,7 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
 )
@@ -25,6 +26,8 @@ func ValidateFilter(spec obs.FilterSpec) (condition metav1.Condition) {
 		results = append(results, validateDropFilter(spec)...)
 	case obs.FilterTypePrune:
 		results = append(results, validatePruneFilter(spec)...)
+	case obs.FilterTypeKubeAPIAudit:
+		results = append(results, validateKubeAPIAuditFilter(spec)...)
 	}
 	condition = internalobs.NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("filter %q is valid", spec.Name))
 	if len(results) > 0 {
@@ -121,8 +124,45 @@ func validateFieldPath(fieldPath obs.FieldPath) string {
 		// Validate field path
 	} else if !pathExpRegex.MatchString(path) {
 		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
+	} else if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("field path %q", path), path); msg != "" {
+		return msg
 	}
 	return ""
+}
+
+// validateKubeAPIAuditFilter rejects rule values that would allow TOML literal multiline
+// injection. Every string in a kubeAPIAudit rule is rendered into the filter's VRL script,
+// which is serialized as a single literal multiline TOML string, so any of them can carry the
+// terminator sequence.
+func validateKubeAPIAuditFilter(filterSpec obs.FilterSpec) (results []string) {
+	if filterSpec.KubeAPIAudit == nil {
+		return results
+	}
+	check := func(kind string, values []string) {
+		for _, v := range values {
+			if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit %s %q", kind, v), v); msg != "" {
+				results = append(results, msg)
+			}
+		}
+	}
+	for _, rule := range filterSpec.KubeAPIAudit.Rules {
+		check("user", rule.Users)
+		check("userGroup", rule.UserGroups)
+		check("verb", rule.Verbs)
+		check("namespace", rule.Namespaces)
+		check("nonResourceURL", rule.NonResourceURLs)
+		for _, gr := range rule.Resources {
+			if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit resource group %q", gr.Group), gr.Group); msg != "" {
+				results = append(results, msg)
+			}
+			check("resource", gr.Resources)
+			check("resourceName", gr.ResourceNames)
+		}
+	}
+	if len(results) > 0 {
+		results = []string{fmt.Sprintf("%s: %v", filterSpec.Name, results)}
+	}
+	return results
 }
 
 func validateRequiredFields(fieldList []obs.FieldPath, pruneType string) string {

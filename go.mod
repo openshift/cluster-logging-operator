@@ -11,8 +11,8 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.7.0
 	github.com/klauspost/compress v1.18.7
-	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/gomega v1.40.0
 	github.com/openshift/api v0.0.0-20260601143908-70f01b82bb53
 	github.com/openshift/cluster-logging-operator/api/observability v0.0.0-00010101000000-000000000000
 	github.com/openshift/hypershift/api v0.0.0-20250331115040-26fc3ceb1929
@@ -77,7 +77,7 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.30.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
+	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect

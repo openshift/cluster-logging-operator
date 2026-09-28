@@ -21,6 +21,7 @@ func Validate(context internalcontext.ForwarderContext) {
 		}
 		messages = append(messages, common.ValidateValueReference(configs, context.Secrets, context.ConfigMaps)...)
 		messages = append(messages, validateOutputIsReferencedByPipelines(out, pipelines)...)
+		messages = append(messages, validateOutputTemplates(out)...)
 		// Validate by output type
 		switch out.Type {
 		case obs.OutputTypeCloudwatch, obs.OutputTypeS3:
@@ -46,6 +47,38 @@ func Validate(context internalcontext.ForwarderContext) {
 				internalobs.NewConditionFromPrefix(obs.ConditionTypeValidOutputPrefix, out.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("output %q is valid", out.Name)))
 		}
 	}
+}
+
+// validateOutputTemplates rejects user-supplied template fields that would allow TOML literal
+// multiline injection. These fields are rendered into a VRL remap whose source is serialized as
+// a single literal multiline TOML string, so an embedded terminator would break out and inject
+// arbitrary TOML into the collector configuration. This is the admission-time counterpart to the
+// structural guard in internal/utils/toml. See LOG-9752.
+func validateOutputTemplates(output obs.OutputSpec) (results []string) {
+	add := func(fieldName, value string) {
+		if msg := common.ValidateTOMLLiteralSafe(fieldName, value); msg != "" {
+			results = append(results, msg)
+		}
+	}
+	if output.Cloudwatch != nil {
+		add("cloudwatch.groupName", output.Cloudwatch.GroupName)
+	}
+	if output.Elasticsearch != nil {
+		add("elasticsearch.index", output.Elasticsearch.Index)
+	}
+	if output.GoogleCloudLogging != nil {
+		add("googleCloudLogging.logId", output.GoogleCloudLogging.LogId)
+	}
+	if output.Kafka != nil {
+		add("kafka.topic", output.Kafka.Topic)
+	}
+	if output.Loki != nil {
+		add("loki.tenantKey", output.Loki.TenantKey)
+	}
+	if output.Splunk != nil {
+		add("splunk.index", output.Splunk.Index)
+	}
+	return results
 }
 
 func validateOutputIsReferencedByPipelines(output obs.OutputSpec, pipelines internalobs.Pipelines) (results []string) {

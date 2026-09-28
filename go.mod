@@ -40,7 +40,7 @@ require (
 
 require (
 	cel.dev/expr v0.25.2 // indirect
-	codeberg.org/go-fonts/liberation v0.5.0 // indirect
+	codeberg.org/go-fonts/liberation v0.6.0 // indirect
 	codeberg.org/go-latex/latex v0.1.0 // indirect
 	codeberg.org/go-pdf/fpdf v0.10.0 // indirect
 	git.sr.ht/~sbinet/gg v0.6.0 // indirect

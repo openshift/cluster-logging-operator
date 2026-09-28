@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime/clusterlogforwarder"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 )
 
@@ -111,7 +112,7 @@ func checkVAPInstalled() {
 }
 
 func waitForSAProtected(namespace, sa string) {
-	key := fmt.Sprintf("sa_%s_%s", namespace, sa)
+	key := clusterlogforwarder.ServiceAccountRef{Namespace: namespace, Name: sa}.String()
 	Eventually(func(g Gomega) {
 		out, err := exec.Command("oc", "get", "configmap", internaladmission.ProtectedSAConfigMapName,
 			"-n", constants.OpenshiftNS, "-o", "json").CombinedOutput()

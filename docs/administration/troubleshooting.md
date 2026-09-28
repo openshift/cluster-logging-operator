@@ -48,10 +48,10 @@ Does it have a newline character at the end? If not, the application writing the
 ### 3. A Pod or workload is denied: `uses protected ServiceAccount ... which is only allowed for use by authorized ClusterLogForwarders`
 
 The cluster logging operator installs ValidatingAdmissionPolicies that refuse
-a Pod or workload when it references a collector ServiceAccount (one referenced by
-a `ClusterLogForwarder`) and the creator is not the operator or its built-in
-controllers. This stops a user who can create Pods from inheriting the
-collector SA's privileges (e.g. `logging-scc` host mounts).
+a Pod or workload that references a collector ServiceAccount (one referenced by
+a `ClusterLogForwarder`) unless the creator is the operator or a built-in
+kube-system controller. This prevents users who can create Pods from inheriting
+the collector SA's privileges (e.g. `logging-scc` host mounts).
 
 **Common causes**
 

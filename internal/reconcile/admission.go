@@ -16,7 +16,9 @@ import (
 )
 
 // ValidatingAdmissionPolicy creates or updates a ValidatingAdmissionPolicy,
-// applying the labels and spec from the desired object.
+// applying the labels and spec from the desired object. Labels should be set
+// on the desired object by the caller (e.g., via internalruntime.SetCommonLabels,
+// similar to how NewConfigMap or NewDaemonSet initialization works).
 func ValidatingAdmissionPolicy(ctx context.Context, k8sClient client.Client, desired *admissionregistrationv1.ValidatingAdmissionPolicy) error {
 	current := &admissionregistrationv1.ValidatingAdmissionPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -38,7 +40,9 @@ func ValidatingAdmissionPolicy(ctx context.Context, k8sClient client.Client, des
 }
 
 // ValidatingAdmissionPolicyBinding creates or updates a ValidatingAdmissionPolicyBinding,
-// applying the labels and spec from the desired object.
+// applying the labels and spec from the desired object. Labels should be set
+// on the desired object by the caller (e.g., via internalruntime.SetCommonLabels,
+// similar to how NewConfigMap or NewDaemonSet initialization works).
 func ValidatingAdmissionPolicyBinding(ctx context.Context, k8sClient client.Client, desired *admissionregistrationv1.ValidatingAdmissionPolicyBinding) error {
 	current := &admissionregistrationv1.ValidatingAdmissionPolicyBinding{
 		ObjectMeta: metav1.ObjectMeta{

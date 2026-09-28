@@ -12,6 +12,7 @@ import (
 	internalreconcile "github.com/openshift/cluster-logging-operator/internal/reconcile"
 	internalruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/runtime/clusterlogforwarder"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -101,7 +102,7 @@ func OperatorNamespace() string {
 }
 
 func operatorServiceAccountUser(operatorNS string) string {
-	return fmt.Sprintf("system:serviceaccount:%s:%s", operatorNS, constants.ClusterLoggingOperator)
+	return utils.ServiceAccountUsername(operatorNS, constants.ClusterLoggingOperator)
 }
 
 // ReconcileProtectedSAPolicies ensures the two ValidatingAdmissionPolicies and

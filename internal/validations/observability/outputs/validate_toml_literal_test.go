@@ -76,6 +76,16 @@ var _ = Describe("#validateOutputTemplates (LOG-9752)", func() {
 		Expect(msgs[0]).To(ContainSubstring("splunk.payloadKey"))
 	})
 
+	It("should reject a splunk indexedFields entry containing the terminator", func() {
+		out := obs.OutputSpec{
+			Type:   obs.OutputTypeSplunk,
+			Splunk: &obs.Splunk{IndexedFields: []obs.FieldPath{`.good`, `.foo."x'''y"`}},
+		}
+		msgs := validateOutputTemplates(out)
+		Expect(msgs).ToNot(BeEmpty())
+		Expect(msgs[0]).To(ContainSubstring("splunk.indexedFields[1]"))
+	})
+
 	It("should reject an s3 keyPrefix containing the terminator", func() {
 		out := obs.OutputSpec{
 			Type: obs.OutputTypeS3,

@@ -30,6 +30,7 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true

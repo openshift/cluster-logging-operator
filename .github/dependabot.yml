@@ -13,58 +13,26 @@ updates:
       timezone: "America/New_York"
     # Group updates to reduce PR noise
     groups:
-      # Group AWS SDK updates together
-      aws-sdk:
-        patterns:
-          - "github.com/aws/aws-sdk-go-v2*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Group Kubernetes/OpenShift updates together
+      # Kubernetes/OpenShift updates - minor versions only (more conservative)
       k8s-ecosystem:
         patterns:
           - "k8s.io/*"
           - "sigs.k8s.io/*"
           - "github.com/openshift/*"
         update-types:
-          - "minor"
           - "patch"
-      # Group testing dependencies
-      testing:
-        patterns:
-          - "github.com/onsi/ginkgo*"
-          - "github.com/onsi/gomega*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Group OpenTelemetry dependencies
-      opentelemetry:
-        patterns:
-          - "go.opentelemetry.io/otel*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Group Go extended libraries
-      golang-x:
-        patterns:
-          - "golang.org/x/*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Group OpenAPI libraries
-      go-openapi:
-        patterns:
-          - "github.com/go-openapi/*"
-        update-types:
-          - "minor"
-          - "patch"
-      # Group all remaining patch updates together (must be last - catches everything else)
-      patch-updates:
+      # All other dependencies - minor and patch updates
+      all-dependencies:
         patterns:
           - "*"
+        exclude-patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+          - "github.com/openshift/*"
         update-types:
+          - "minor"
           - "patch"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     reviewers:
       - "jcantrill"
       - "vparfonov"
@@ -72,12 +40,9 @@ updates:
     assignees:
       - "jcantrill"
     labels:
-      - "dependencies"
-      - "go"
-      - "automated"
+      - "kind/dependency-change"
     commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+      prefix: "chore"
     # Rebase strategy: auto-rebase PRs when base branch is updated
     rebase-strategy: "auto"
     # Allow both direct and indirect dependency updates

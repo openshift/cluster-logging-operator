@@ -2756,7 +2756,10 @@ spec:
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
-                resources: {}
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 128Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:

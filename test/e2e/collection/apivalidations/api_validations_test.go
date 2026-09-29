@@ -40,7 +40,8 @@ var _ = Describe("", func() {
 			Fail(err.Error())
 		}
 
-		execCMD := exec.Command("sh", "-c", fmt.Sprintf("echo '%s' | oc -n %s create -f -", crYaml, deployNS))
+		execCMD := exec.Command("oc", "-n", deployNS, "create", "-f", "-")
+		execCMD.Stdin = bytes.NewReader(crYaml)
 		reader, err := cmd.NewReader(execCMD)
 		Expect(err).ToNot(HaveOccurred())
 		defer func() {

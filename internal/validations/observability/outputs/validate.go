@@ -75,8 +75,22 @@ func validateOutputTemplates(output obs.OutputSpec) (results []string) {
 	if output.Loki != nil {
 		add("loki.tenantKey", output.Loki.TenantKey)
 	}
+	if output.S3 != nil {
+		add("s3.keyPrefix", output.S3.KeyPrefix)
+	}
 	if output.Splunk != nil {
 		add("splunk.index", output.Splunk.Index)
+		add("splunk.source", output.Splunk.Source)
+		add("splunk.sourceType", output.Splunk.SourceType)
+		add("splunk.payloadKey", string(output.Splunk.PayloadKey))
+	}
+	if output.Syslog != nil {
+		add("syslog.facility", output.Syslog.Facility)
+		add("syslog.severity", output.Syslog.Severity)
+		add("syslog.appName", output.Syslog.AppName)
+		add("syslog.procId", output.Syslog.ProcId)
+		add("syslog.msgId", output.Syslog.MsgId)
+		add("syslog.payloadKey", output.Syslog.PayloadKey)
 	}
 	return results
 }

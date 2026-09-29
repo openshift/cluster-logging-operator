@@ -46,13 +46,22 @@ To reduce PR noise and keep the review queue manageable, updates are grouped int
 
 | Group | Pattern | Update Types | Description |
 |-------|---------|--------------|-------------|
-| `k8s-ecosystem` | `k8s.io/*`, `sigs.k8s.io/*`, `github.com/openshift/*` | **patch only** | Kubernetes/OpenShift deps (conservative: patches only due to API sensitivity) |
+| `k8s-ecosystem` | `k8s.io/*`, `sigs.k8s.io/*`, `github.com/openshift/*`, `prometheus-operator` | **patch only** | Kubernetes/OpenShift/Prometheus Operator deps (conservative: patches only due to API sensitivity) |
 | `all-dependencies` | `*` (excluding k8s-ecosystem) | minor, patch | All other Go dependencies grouped together |
 
 **Why this strategy?**
-- **Kubernetes dependencies** are treated conservatively (patch-only) because K8s API changes can be breaking even in minor versions
+- **Kubernetes & Prometheus Operator dependencies** are treated conservatively (patch-only) because their APIs change with breaking changes even in minor versions
+  - Minor and major updates are explicitly **ignored** via the `ignore` directive  
+  - Only patch updates will be included in the k8s-ecosystem group
+  - Example: prometheus-operator v0.55.1 → v0.94.1 changes field types (Scheme/ServerName become pointers)
+- **Pseudo-versioned dependencies** (format `v0.0.0-timestamp-hash`) have routine updates **blocked** but security updates **allowed**
+  - These track unreleased commits and don't follow semver
+  - Routine updates are unpredictable and may contain breaking changes
+  - **Security updates** will still create PRs automatically (Dependabot treats these separately)
+  - Routine updates require manual review and testing before upgrading
+  - Examples: `golang.org/x/exp`, `github.com/google/pprof`, `github.com/openshift/api`
 - **All other dependencies** are grouped together to create one weekly PR instead of many small ones
-- **Major version updates** are always created as individual PRs for careful review
+- **Major version updates** (non-k8s) are always created as individual PRs for careful review
 - **Security updates** are included in the grouped PRs when applicable
 
 ### 3. Pull Request Metadata

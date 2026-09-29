@@ -83,6 +83,9 @@ func validateOutputTemplates(output obs.OutputSpec) (results []string) {
 		add("splunk.source", output.Splunk.Source)
 		add("splunk.sourceType", output.Splunk.SourceType)
 		add("splunk.payloadKey", string(output.Splunk.PayloadKey))
+		for i, f := range output.Splunk.IndexedFields {
+			add(fmt.Sprintf("splunk.indexedFields[%d]", i), string(f))
+		}
 	}
 	if output.Syslog != nil {
 		add("syslog.facility", output.Syslog.Facility)

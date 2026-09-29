@@ -42,32 +42,35 @@ Every Monday morning, Dependabot:
 
 ### 2. Grouping Strategy
 
-To reduce PR noise, updates are grouped:
+To reduce PR noise and keep the review queue manageable, updates are grouped into two categories:
 
 | Group | Pattern | Update Types | Description |
 |-------|---------|--------------|-------------|
-| `aws-sdk` | `github.com/aws/aws-sdk-go-v2*` | minor, patch | AWS SDK updates together |
-| `k8s-ecosystem` | `k8s.io/*`, `sigs.k8s.io/*`, `github.com/openshift/*` | minor, patch | Kubernetes/OpenShift deps together |
-| `testing` | `github.com/onsi/ginkgo*`, `github.com/onsi/gomega*` | minor, patch | Test framework updates together |
-| `opentelemetry` | `go.opentelemetry.io/otel*` | minor, patch | OpenTelemetry deps together |
-| `golang-x` | `golang.org/x/*` | minor, patch | Go extended libraries together |
-| `go-openapi` | `github.com/go-openapi/*` | minor, patch | OpenAPI libraries together |
-| `patch-updates` | `*` | patch | All remaining patch updates (evaluated last) |
+| `k8s-ecosystem` | `k8s.io/*`, `sigs.k8s.io/*`, `github.com/openshift/*` | **patch only** | Kubernetes/OpenShift deps (conservative: patches only due to API sensitivity) |
+| `all-dependencies` | `*` (excluding k8s-ecosystem) | minor, patch | All other Go dependencies grouped together |
 
-**Major version updates** are always created as individual PRs for careful review.
+**Why this strategy?**
+- **Kubernetes dependencies** are treated conservatively (patch-only) because K8s API changes can be breaking even in minor versions
+- **All other dependencies** are grouped together to create one weekly PR instead of many small ones
+- **Major version updates** are always created as individual PRs for careful review
+- **Security updates** are included in the grouped PRs when applicable
 
 ### 3. Pull Request Metadata
 
 Each Dependabot PR includes:
-- **Labels**: `dependencies`, `go`, `automated`
+- **Labels**: `kind/dependency-change` (standard repo label for dependency updates)
 - **Reviewers**: Team members from OWNERS file (jcantrill, vparfonov, Clee2691)
 - **Assignees**: jcantrill (for tracking)
-- **Commit message**: Prefixed with `chore(deps):` for consistency
+- **Commit message**: Prefixed with `chore(deps):` (Dependabot automatically adds `(deps)` to the `chore` prefix)
 - **Auto-rebase**: Enabled (see conflict resolution below)
 
 ### 4. PR Limits
 
-Maximum of **10 open PRs** at any time to prevent overwhelming the review queue.
+Maximum of **2 open PRs** at any time:
+- 1 PR for k8s-ecosystem patch updates
+- 1 PR for all other dependencies (grouped)
+
+This limit keeps the review queue manageable while ensuring timely security updates.
 
 ## Conflict Resolution
 
@@ -186,12 +189,15 @@ make test-unit
 
 ### Too Many PRs
 
-**Cause**: Multiple dependencies have updates
+This should not happen with the current configuration (limited to 2 PRs maximum).
+
+If you see more than 2 PRs:
+- **Major version updates** create separate PRs (as intended)
+- **Security updates** may create additional PRs if critical
 
 **Solutions**:
-1. Merge compatible PRs in batches
-2. Reduce `open-pull-requests-limit` in config
-3. Adjust grouping strategy to be more aggressive
+1. Review and merge existing PRs to make room for new ones
+2. Use `@dependabot ignore this major version` for major updates you're not ready to adopt
 
 ### CI Fails on Dependabot PR
 

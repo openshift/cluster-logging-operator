@@ -43,5 +43,53 @@ var _ = Describe("TOML literal injection guards (LOG-9752)", func() {
 			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
 		})
+		It("should reject a rule level containing the terminator", func() {
+			spec := newSpec(auditv1.PolicyRule{Level: "x'''y"})
+			cond := ValidateFilter(spec)
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		})
+		It("should reject a rule omitStage containing the terminator", func() {
+			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", OmitStages: []auditv1.Stage{"x'''y"}})
+			cond := ValidateFilter(spec)
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		})
+		It("should reject a filter-level omitStage containing the terminator", func() {
+			spec := obs.FilterSpec{
+				Name:         "my-audit",
+				Type:         obs.FilterTypeKubeAPIAudit,
+				KubeAPIAudit: &obs.KubeAPIAudit{OmitStages: []auditv1.Stage{"x'''y"}},
+			}
+			cond := ValidateFilter(spec)
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		})
+	})
+
+	Context("#validateOpenshiftLabelsFilter", func() {
+		newSpec := func(labels map[string]string) obs.FilterSpec {
+			return obs.FilterSpec{
+				Name:            "my-labels",
+				Type:            obs.FilterTypeOpenshiftLabels,
+				OpenshiftLabels: labels,
+			}
+		}
+		It("should accept benign labels", func() {
+			spec := newSpec(map[string]string{"environment": "production"})
+			Expect(ValidateFilter(spec).Status).To(Equal(metav1.ConditionTrue))
+		})
+		It("should reject a label value containing the terminator", func() {
+			spec := newSpec(map[string]string{"environment": "x'''y"})
+			cond := ValidateFilter(spec)
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		})
+		It("should reject a label key containing the terminator", func() {
+			spec := newSpec(map[string]string{"x'''y": "value"})
+			cond := ValidateFilter(spec)
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		})
 	})
 })

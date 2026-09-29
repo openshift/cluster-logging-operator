@@ -2752,6 +2752,7 @@ spec:
                   runAsNonRoot: true
                   seccompProfile:
                     type: RuntimeDefault
+                terminationMessagePolicy: FallbackToLogsOnError
                 volumeMounts:
                 - mountPath: /var/run/secrets/metrics-certs
                   name: metrics-certs

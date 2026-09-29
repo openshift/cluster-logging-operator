@@ -27,11 +27,12 @@ resources:
 # [METRICS] Expose the controller manager metrics service.
 #- metrics_service.yaml
 
-# [NETWORK POLICY] Protect the /metrics endpoint and Webhook Server with NetworkPolicy.
-# Only Pod(s) running a namespace labeled with 'metrics: enabled' will be able to gather the metrics.
-# Only CR(s) which requires webhooks and are applied on namespaces labeled with 'webhooks: enabled' will
-# be able to communicate with the Webhook Server.
-#- ../network-policy
+# [NETWORK POLICY] Deploy the permissive NetworkPolicy for the operator manager pod so it
+# keeps functioning (metrics, DNS, API server) under a restrictive AdminNetworkPolicy, but
+# only for traffic that a matching AdminNetworkPolicy rule allows or delegates with a Pass
+# action; an AdminNetworkPolicy Deny cannot be overridden here.
+# See config/network-policy and docs/features/network_policy.adoc.
+- ../network-policy
 
 patches:
 # [METRICS] The following patch will enable the metrics endpoint using HTTPS and the port :8443.

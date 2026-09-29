@@ -11,24 +11,62 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "America/New_York"
+    # Ignore k8s ecosystem and prometheus-operator minor/major updates (only allow patches)
+    # These dependencies have breaking API changes even in minor versions
+    ignore:
+      - dependency-name: "k8s.io/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "sigs.k8s.io/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "github.com/openshift/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Ignore pseudo-versioned dependencies (v0.0.0-timestamp-hash format) for routine updates
+      # These don't follow semver and track unreleased commits - updates are unpredictable
+      # Security updates are still allowed and will create separate PRs
+      # Routine updates require manual review and testing before upgrading
+      - dependency-name: "github.com/golang-collections/collections"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/openshift/api"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/openshift/hypershift/api"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/vspaz/wls-go"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "golang.org/x/exp"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/ajstarks/svgo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/golang/freetype"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/google/pprof"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/modern-go/concurrent"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/munnerz/goautoneg"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github.com/mxk/go-flowrate"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "google.golang.org/genproto/googleapis/api"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "google.golang.org/genproto/googleapis/rpc"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
     # Group updates to reduce PR noise
     groups:
-      # Kubernetes/OpenShift updates - minor versions only (more conservative)
+      # Kubernetes/OpenShift/Prometheus Operator updates - patches only (more conservative)
       k8s-ecosystem:
         patterns:
           - "k8s.io/*"
           - "sigs.k8s.io/*"
           - "github.com/openshift/*"
+          - "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
         update-types:
           - "patch"
       # All other dependencies - minor and patch updates
       all-dependencies:
         patterns:
           - "*"
-        exclude-patterns:
-          - "k8s.io/*"
-          - "sigs.k8s.io/*"
-          - "github.com/openshift/*"
         update-types:
           - "minor"
           - "patch"

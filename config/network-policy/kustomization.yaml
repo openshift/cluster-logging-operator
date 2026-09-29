@@ -1,4 +1,7 @@
-# resources:
-# - allow-metrics-traffic.yaml
-# - allow-webhook-traffic.yaml
-# - clo-permissive-network-policy.yaml
+resources:
+# The permissive NetworkPolicy for the operator manager pod. It is deployed by OLM
+# so the operator keeps functioning (metrics, DNS, API server) when a restrictive
+# AdminNetworkPolicy is applied to the cluster. See docs/features/network_policy.adoc.
+- clo-permissive-network-policy.yaml
+# allow-metrics-traffic.yaml and allow-webhook-traffic.yaml are operator-sdk
+# scaffolding and are intentionally not included.

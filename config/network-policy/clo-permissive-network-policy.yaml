@@ -16,15 +16,17 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow metrics (Port 8443)
+    # Allow metrics scraping (metrics-bind-address :8443)
     - ports:
-      - port: https-metrics
+      - port: 8443
         protocol: TCP
   egress:
     # Allow DNS resolution
     - ports:
-      - port: dns
+      - port: 53
         protocol: UDP
+      - port: 53
+        protocol: TCP
     # Allow communication with Kubernetes API server
     - ports:
       - port: 6443

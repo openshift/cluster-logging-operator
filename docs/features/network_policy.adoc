@@ -2,7 +2,7 @@
 
 The Cluster Logging Operator automatically creates and manages `NetworkPolicy` resources for its logging components to ensure they function in restrictive network environments, even if a cluster-wide `AdminNetworkPolicy` would otherwise block their traffic.
 
-In addition, you can use the `NetworkPolicy` defined in `config/network-policy/clo-permissive-network-policy.yaml` to configure the Cluster Logging Operator's network policy for restricted networks.
+The operator's own manager pod is also protected by a permissive `NetworkPolicy` (`clo-permissive-network-policy`) that is deployed automatically by OLM as part of the operator bundle. This policy allows the operator to continue to serve metrics and to reach the cluster DNS and Kubernetes API server when a restrictive `AdminNetworkPolicy` is applied to the cluster. See <<Cluster Logging Operator NetworkPolicy>> for details.
 
 == Overview
 
@@ -13,6 +13,50 @@ When logging components are deployed, the operator can optionally create permiss
 * Namespace-level network restrictions are applied
 
 The `NetworkPolicy` resources are automatically created, updated, and removed along with the component deployment lifecycle.
+
+== Cluster Logging Operator NetworkPolicy
+
+The operator manager pod is protected by the `clo-permissive-network-policy` `NetworkPolicy`. This policy is included in the operator bundle and is created, updated, and removed by OLM together with the operator; no manual step is required. It is applied in the namespace where the operator is installed (for example, `openshift-logging`).
+
+The policy is intentionally permissive so the operator keeps working when a restrictive `AdminNetworkPolicy` is applied to the cluster:
+
+* **Ingress** is allowed on the metrics port so the operator can continue to be scraped for metrics.
+* **Egress** is allowed to the cluster DNS (for name resolution) and to the Kubernetes API server (so the operator can reconcile resources and remain discoverable by OLM).
+
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: cluster-logging-operator
+  name: clo-permissive-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      name: cluster-logging-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow metrics scraping (metrics-bind-address :8443)
+    - ports:
+      - port: 8443
+        protocol: TCP
+  egress:
+    # Allow DNS resolution
+    - ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+    # Allow communication with the Kubernetes API server
+    - ports:
+      - port: 6443
+        protocol: TCP
+----
+
+NOTE: When a cluster-wide proxy is enabled, the operator's egress traffic is directed to the proxy, which may listen on a port other than the ones allowed above. In that case, edit the `clo-permissive-network-policy` (or add a delegating `AdminNetworkPolicy`, see <<AdminNetworkPolicy Delegation>>) to permit egress to the proxy endpoint.
 
 == Collector NetworkPolicy
 

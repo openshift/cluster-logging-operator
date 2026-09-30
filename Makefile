@@ -242,13 +242,21 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	IMAGE_TLS_SCANNER=$(IMAGE_TLS_SCANNER) \
 
 .PHONY: test-functional
+# Run the functional suites with the ginkgo CLI so specs execute in parallel
+# WITHIN each suite (ginkgo v2 only parallelizes when driven by its own CLI; go
+# test cannot). This removes the previous wall-time floor of the longest serial
+# suite. The tests are already parallel-safe: every test runs in a unique
+# crypto/rand namespace and all cluster-scoped RBAC is namespace-suffixed.
+# --procs is tunable; functional specs are latency-bound (mostly waiting on the
+# cluster) so oversubscribing the runner's cores is effective.
 test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -race \
-		./test/functional/... \
-		-ginkgo.no-color -timeout=40m -ginkgo.poll-progress-after='45s'
+	GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
+		-race -p --procs=8 \
+		--no-color --poll-progress-after=45s --timeout=40m \
+		./test/functional/...
 
 .PHONY: test-helpers
 test-helpers:

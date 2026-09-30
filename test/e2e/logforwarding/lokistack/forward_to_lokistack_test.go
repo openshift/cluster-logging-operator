@@ -15,13 +15,17 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-// suiteFramework owns the loki operator, which is a cluster singleton shared by
-// every spec. It is deployed once before any spec runs and torn down once after
-// all specs complete, rather than being redeployed in each spec's BeforeEach.
+// suiteFramework owns the cluster singletons shared by every spec: the minio
+// object store and the loki operator. They are deployed once before any spec
+// runs and torn down once after all specs complete, rather than being
+// redeployed in each spec's BeforeEach.
 var suiteFramework *framework.E2ETestFramework
 
 var _ = BeforeSuite(func() {
 	suiteFramework = framework.NewE2ETestFramework()
+	if err := suiteFramework.DeployMinio(); err != nil {
+		Fail(err.Error())
+	}
 	if err := suiteFramework.DeployLokiOperator(); err != nil {
 		Fail(err.Error())
 	}
@@ -33,7 +37,11 @@ var _ = AfterSuite(func() {
 	}
 })
 
-var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
+// Specs run serially: each deploys its own LokiStack and the claimed CI
+// cluster cannot sustain more than one stack at a time. Shared cluster
+// singletons (minio, loki operator, reader ClusterRole lifecycle) also assume
+// no concurrent spec teardown.
+var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", Serial, func() {
 	const (
 		forwarderName = "my-forwarder"
 		logGenName    = "log-generator"
@@ -54,10 +62,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	BeforeEach(func() {
 		deployNS = e2e.CreateTestNamespace()
 
-		if err = e2e.DeployMinio(); err != nil {
-			Fail(err.Error())
-		}
-		// The loki operator is deployed once for the suite (see BeforeSuite).
+		// Minio and the loki operator are deployed once for the suite (see
+		// BeforeSuite); each spec stands up only its own LokiStack.
 		if lokistackReceiver, err = e2e.DeployLokistackInNamespace(deployNS); err != nil {
 			Fail(err.Error())
 		}

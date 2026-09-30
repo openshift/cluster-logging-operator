@@ -54,11 +54,14 @@ func validateDropFilter(filterSpec obs.FilterSpec) (results []string) {
 			if testCondition.Matches != "" && testCondition.NotMatches != "" {
 				testErrors = append(testErrors, "only one of matches or notMatches can be defined at once")
 			}
+			if strings.ContainsAny(testCondition.Matches, "'\n\r") || strings.ContainsAny(testCondition.NotMatches, "'\n\r") {
+				testErrors = append(testErrors, "matches/notMatches must not contain single quotes, newlines, or carriage returns")
+			}
 			// Validate provided regex
 			if testCondition.Matches != "" {
 				_, err = regexp.Compile(testCondition.Matches)
 			} else if testCondition.NotMatches != "" {
-				_, err = regexp.Compile(testCondition.Matches)
+				_, err = regexp.Compile(testCondition.NotMatches)
 			}
 			if err != nil {
 				testErrors = append(testErrors, "matches/notMatches must be a valid regular expression.")

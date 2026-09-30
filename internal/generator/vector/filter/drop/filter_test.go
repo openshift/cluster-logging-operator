@@ -10,6 +10,38 @@ import (
 var _ = Describe("drop filter", func() {
 
 	Context("#VRL", func() {
+		It("should reject matches containing single quotes", func() {
+			spec := []obs.DropTest{
+				{
+					DropConditions: []obs.DropCondition{
+						{
+							Field:   ".kubernetes.namespace_name",
+							Matches: "foo'bar",
+						},
+					},
+				},
+			}
+			_, err := NewFilter(spec).VRL()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("single quotes"))
+		})
+
+		It("should reject notMatches containing single quotes", func() {
+			spec := []obs.DropTest{
+				{
+					DropConditions: []obs.DropCondition{
+						{
+							Field:      ".kubernetes.namespace_name",
+							NotMatches: "x'''[sources.evil]",
+						},
+					},
+				},
+			}
+			_, err := NewFilter(spec).VRL()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("single quotes"))
+		})
+
 		It("should generate valid VRL for dropping", func() {
 			spec := []obs.DropTest{
 				{

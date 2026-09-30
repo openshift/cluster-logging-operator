@@ -6,11 +6,14 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	filtervalidation "github.com/openshift/cluster-logging-operator/internal/validations/observability/filters"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -43,6 +46,19 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	//}
 	forwarder = initialize.ClusterLogForwarder(forwarder, utils.NoOptions)
 	log.V(3).Info("Initialized ClusterLogForwarder", "cr", forwarder)
+
+	filterMap := internalobs.FilterMap(forwarder.Spec)
+	var filterErrors []error
+	for _, filter := range filterMap {
+		cond := filtervalidation.ValidateFilter(*filter)
+		if cond.Status == metav1.ConditionFalse {
+			filterErrors = append(filterErrors, errors.New(cond.Message))
+		}
+	}
+	if len(filterErrors) > 0 {
+		return "", fmt.Errorf("invalid filter spec: %w", errors.Join(filterErrors...))
+	}
+
 	// TODO: enable secrets
 	//secrets := internalobs.FetchSecrets(forwarder.Spec.Outputs, client)
 	secrets := map[string]*corev1.Secret{}

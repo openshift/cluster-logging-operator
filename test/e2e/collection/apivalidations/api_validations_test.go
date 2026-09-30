@@ -40,7 +40,8 @@ var _ = Describe("", func() {
 			Fail(err.Error())
 		}
 
-		execCMD := exec.Command("sh", "-c", fmt.Sprintf("echo '%s' | oc -n %s create -f -", crYaml, deployNS))
+		execCMD := exec.Command("oc", "-n", deployNS, "create", "-f", "-")
+		execCMD.Stdin = bytes.NewReader(crYaml)
 		reader, err := cmd.NewReader(execCMD)
 		Expect(err).ToNot(HaveOccurred())
 		defer func() {
@@ -125,6 +126,17 @@ var _ = Describe("", func() {
 		Entry("should fail for AzureMonitor if no LogType", "azure-monitor-no-logtype.yaml", func(out string, err error) {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(MatchRegexp("azureMonitor.logType: Required value"))
+		}),
+		Entry("should pass for drop filter with valid matches", "drop-filter-valid.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for drop filter with single quote in matches", "drop-filter-single-quote-matches.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
+		}),
+		Entry("should fail for drop filter with single quote in notMatches", "drop-filter-single-quote-notmatches.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
 		}),
 	)
 })

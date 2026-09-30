@@ -468,6 +468,7 @@ if !exists(._internal.level) {
 [sources.input_infrastructure_journal]
 type = "journald"
 journal_directory = "/var/log/journal"
+journalctl_path = "/usr/bin/journalctl"
 
 [transforms.input_infrastructure_journal_meta]
 type = "remap"

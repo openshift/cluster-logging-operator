@@ -8,6 +8,7 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
 )
@@ -29,6 +30,10 @@ func ValidateFilter(spec obs.FilterSpec) (condition metav1.Condition) {
 		results = append(results, validateDropFilter(spec)...)
 	case obs.FilterTypePrune:
 		results = append(results, validatePruneFilter(spec)...)
+	case obs.FilterTypeKubeAPIAudit:
+		results = append(results, validateKubeAPIAuditFilter(spec)...)
+	case obs.FilterTypeOpenshiftLabels:
+		results = append(results, validateOpenshiftLabelsFilter(spec)...)
 	}
 	condition = internalobs.NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("filter %q is valid", spec.Name))
 	if len(results) > 0 {
@@ -156,8 +161,74 @@ func validateFieldPath(fieldPath obs.FieldPath) string {
 		// Validate field path
 	} else if !pathExpRegex.MatchString(path) {
 		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
+	} else if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("field path %q", path), path); msg != "" {
+		return msg
 	}
 	return ""
+}
+
+// validateKubeAPIAuditFilter rejects rule values that would allow TOML literal multiline
+// injection. Every string in a kubeAPIAudit rule is rendered into the filter's VRL script,
+// which is serialized as a single literal multiline TOML string, so any of them can carry the
+// terminator sequence.
+func validateKubeAPIAuditFilter(filterSpec obs.FilterSpec) (results []string) {
+	if filterSpec.KubeAPIAudit == nil {
+		return results
+	}
+	checkOne := func(kind, v string) {
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit %s %q", kind, v), v); msg != "" {
+			results = append(results, msg)
+		}
+	}
+	check := func(kind string, values []string) {
+		for _, v := range values {
+			checkOne(kind, v)
+		}
+	}
+	for _, s := range filterSpec.KubeAPIAudit.OmitStages {
+		checkOne("omitStage", string(s))
+	}
+	for _, rule := range filterSpec.KubeAPIAudit.Rules {
+		checkOne("level", string(rule.Level))
+		for _, s := range rule.OmitStages {
+			checkOne("rule omitStage", string(s))
+		}
+		check("user", rule.Users)
+		check("userGroup", rule.UserGroups)
+		check("verb", rule.Verbs)
+		check("namespace", rule.Namespaces)
+		check("nonResourceURL", rule.NonResourceURLs)
+		for _, gr := range rule.Resources {
+			if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit resource group %q", gr.Group), gr.Group); msg != "" {
+				results = append(results, msg)
+			}
+			check("resource", gr.Resources)
+			check("resourceName", gr.ResourceNames)
+		}
+	}
+	if len(results) > 0 {
+		results = []string{fmt.Sprintf("%s: %v", filterSpec.Name, results)}
+	}
+	return results
+}
+
+// validateOpenshiftLabelsFilter rejects label keys or values that would allow TOML literal
+// multiline injection. The labels map is JSON-encoded into a VRL remap whose source is
+// serialized as a single literal multiline TOML string; JSON encoding does not escape the
+// terminator sequence, so a crafted key or value would break out into the collector config.
+func validateOpenshiftLabelsFilter(filterSpec obs.FilterSpec) (results []string) {
+	for k, v := range filterSpec.OpenshiftLabels {
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("openshiftLabels key %q", k), k); msg != "" {
+			results = append(results, msg)
+		}
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("openshiftLabels value %q", v), v); msg != "" {
+			results = append(results, msg)
+		}
+	}
+	if len(results) > 0 {
+		results = []string{fmt.Sprintf("%s: %v", filterSpec.Name, results)}
+	}
+	return results
 }
 
 func validateRequiredFields(fieldList []obs.FieldPath, pruneType string) string {

@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("[ClusterLogForwarder] Forwards logs with TLS curves", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs with TLS curves", Serial, func() {
 	const (
 		forwarderName = "my-forwarder"
 		logGenName    = "log-generator"

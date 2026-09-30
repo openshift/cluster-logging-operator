@@ -24,7 +24,7 @@ const (
 	nonAllowlistedMetric = `vector_uptime_seconds`
 )
 
-var _ = Describe("[e2e][collection][metrics] Metrics Collection Profiles", Ordered, func() {
+var _ = Describe("[e2e][collection][metrics] Metrics Collection Profiles", Ordered, Serial, func() {
 	var (
 		e2e           *framework.E2ETestFramework
 		clf           *obs.ClusterLogForwarder

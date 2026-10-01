@@ -1,0 +1,31 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: clo-protected-sa-pods
+spec:
+  # Fail closed: if the policy cannot be evaluated the request is denied.
+  # The paramRef in the binding uses parameterNotFoundAction: Allow so a
+  # missing param ConfigMap does not lock the operator out (see binding).
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: v1
+    kind: ConfigMap
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  variables:
+    - name: sa
+      expression: "has(object.spec.serviceAccountName) ? object.spec.serviceAccountName : 'default'"
+    - name: saKey
+      expression: "'sa_' + request.namespace + '_' + variables.sa"
+    - name: isProtected
+      expression: "has(params.data) && (variables.saKey in params.data)"
+    - name: allowedCreators
+      expression: "(has(params.data) && ('podCreators' in params.data)) ? params.data['podCreators'].split(',') : []"
+  validations:
+    - expression: "!variables.isProtected || (request.userInfo.username in variables.allowedCreators)"
+      messageExpression: "'Pod uses protected ServiceAccount \"' + request.namespace + '/' + variables.sa + '\" which is only allowed for use by authorized ClusterLogForwarders'"
+      reason: Forbidden

@@ -52,6 +52,6 @@ spec:
           - name: KUBE_FEATURE_WatchListClient
             value: "false"
           - name: RELATED_IMAGE_VECTOR
-            value: quay.io/openshift-logging/vector:v0.54.0
+            value: quay.io/vparfono/vector:v0.57.0
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
             value: quay.io/openshift-logging/log-file-metric-exporter:latest

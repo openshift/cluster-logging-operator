@@ -155,6 +155,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		s.Buffer = common.NewApiBuffer(o)
 		s.Request = common.NewApiRequest(o)
 		s.TLS = tls.NewTls(o, secrets, op)
+		s.DangerouslyAllowUnconfinedTemplateResolution = true
 	}, inputID)
 	return id, sink, tfs
 }

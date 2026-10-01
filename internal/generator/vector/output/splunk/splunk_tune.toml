@@ -38,6 +38,8 @@ sourcetype = "{{ ._internal.splunk.sourcetype }}"
 host_key = "._internal.hostname"
 compression = "gzip"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["_internal"]

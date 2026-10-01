@@ -9,6 +9,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	utilsjson "github.com/openshift/cluster-logging-operator/internal/utils/json"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -81,7 +82,7 @@ func validateServiceAccountPermissions(k8sClient client.Client, inputs sets.Stri
 		return err
 	}
 	var err error
-	var username = fmt.Sprintf("system:serviceaccount:%s:%s", serviceAccount.Namespace, serviceAccount.Name)
+	username := utils.ServiceAccountUsername(serviceAccount.Namespace, serviceAccount.Name)
 
 	// Perform subject access reviews for each spec'd input
 	var failedInputs []string

@@ -10,8 +10,11 @@ import (
 	"strings"
 	"time"
 
+	internaladmission "github.com/openshift/cluster-logging-operator/internal/admission"
 	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
+	internalcontroller "github.com/openshift/cluster-logging-operator/internal/controller"
+	internalreconcile "github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -160,6 +163,8 @@ func main() {
 		}
 	}()
 
+	k8sClient := mgr.GetClient()
+
 	clusterVersion, clusterID, err := version.ClusterVersion(mgr.GetAPIReader())
 	if err != nil {
 		log.Error(err, "unable to retrieve the cluster version")
@@ -210,6 +215,24 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", "observability.ClusterLogForwarder")
 		os.Exit(1)
+	}
+
+	operatorNS := internaladmission.OperatorNamespace()
+	if internalreconcile.IsAdmissionPolicyAPIAvailable(k8sClient) {
+		if err = (&internalcontroller.ProtectedSAReconciler{
+			Client:     mgr.GetClient(),
+			OperatorNS: operatorNS,
+		}).SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create controller", "controller", "ProtectedServiceAccounts")
+			os.Exit(1)
+		}
+
+		if err := mgr.Add(internalcontroller.NewProtectedSAAdmissionRunnable(k8sClient, operatorNS)); err != nil {
+			log.Error(err, "unable to register protected SA admission runnable")
+			os.Exit(1)
+		}
+	} else {
+		log.Info("ValidatingAdmissionPolicy API is unavailable; protected-SA controller disabled")
 	}
 
 	//+kubebuilder:scaffold:builder

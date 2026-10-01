@@ -3,7 +3,8 @@ package controller
 // This file collects all the "kubebuilder rbac annotations" that the controllers contained
 // in this operator need to function.
 
-// +kubebuilder:rbac:groups=apps,resources=deployments;daemonsets,verbs=*
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingadmissionpolicies;validatingadmissionpolicybindings,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments;daemonsets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 // +kubebuilder:rbac:groups=config.openshift.io,resources=proxies;infrastructures,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=pods;services;events;configmaps;secrets;serviceaccounts;serviceaccounts/finalizers;services/finalizers;namespaces,verbs=*

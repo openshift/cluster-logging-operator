@@ -13,7 +13,6 @@ sed -i 's/.*scorecard.*//g' ./bundle/metadata/annotations.yaml
 cat >> bundle.Dockerfile <<EOF
 
 LABEL com.redhat.delivery.operator.bundle=true
-LABEL com.redhat.openshift.versions="${OPENSHIFT_VERSIONS}"
 
 LABEL \\
     com.redhat.component="cluster-logging-operator" \\

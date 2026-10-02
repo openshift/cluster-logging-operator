@@ -25,3 +25,61 @@ spec:
 ----
 
 NOTE: The operator will only reconcile an object named 'instance' in the 'openshift-logging' namespace
+
+== TLS Security
+
+The Log File Metrics Exporter enforces strict TLS security (CWE-327 hardening) to protect metrics endpoints from weak cryptography vulnerabilities.
+
+=== Supported TLS Versions
+
+Only TLS 1.2 and TLS 1.3 are supported. TLS 1.0 and 1.1 are explicitly rejected:
+
+* **Intermediate** and **Modern** profiles: No restrictions; both profiles use TLS 1.2+ by default
+* **Old** profile: TLS 1.0 is automatically upgraded to TLS 1.2. Clients must support TLS 1.2+
+* **Custom** profiles: The minimum TLS version is validated; deprecated versions are rejected
+
+=== Supported Cipher Suites
+
+Only AEAD ciphers (Authenticated Encryption with Associated Data) with ECDHE key exchange are accepted:
+
+* **Supported**: `ECDHE-ECDSA-AES128-GCM-SHA256`, `ECDHE-RSA-AES128-GCM-SHA256`, `ECDHE-ECDSA-AES256-GCM-SHA384`, `ECDHE-RSA-AES256-GCM-SHA384`, `ECDHE-ECDSA-CHACHA20-POLY1305`, `ECDHE-RSA-CHACHA20-POLY1305`
+* **Rejected**: CBC mode ciphers, 3DES, ciphers with SHA-1 MACs, non-ECDHE RSA ciphers, and any unknown ciphers
+
+=== Impact by TLS Profile
+
+[cols="1,2,2"]
+|===
+| Profile | Behavior | Monitoring Client Requirements
+
+| Intermediate (default)
+| All 9 ciphers accepted (6 AEAD + 3 TLS 1.3). TLS 1.2 minimum.
+| Standard TLS 1.2+ with AEAD support (default since ~2015)
+
+| Modern
+| Only 3 TLS 1.3 ciphers. TLS 1.3 minimum.
+| TLS 1.3 support
+
+| Old
+| Insecure ciphers filtered; TLS 1.0/1.1 upgraded to TLS 1.2. Only 9 secure ciphers kept.
+| Must support TLS 1.2+ with AEAD ciphers. Legacy clients (TLS 1.0/1.1) will fail.
+
+| Custom
+| Only secure AEAD ciphers accepted; insecure ciphers silently dropped. Deprecated TLS versions rejected.
+| Depends on custom profile configuration; validate against exporter cipher mapping
+|===
+
+=== Troubleshooting Connection Failures
+
+If Prometheus scrapers or other monitoring clients fail to connect after upgrade with errors like:
+
+* "protocol version not supported"
+* "no shared cipher suites"
+* "TLS handshake failure"
+
+**Resolution**: Upgrade monitoring clients to support TLS 1.2+ with AEAD ciphers (standard since ~2015). Examples:
+
+* **Prometheus**: Update to version 2.10+ (released May 2019)
+* **Grafana**: Update to version 6.0+ (released May 2019)
+* **Custom scrapers**: Ensure they use modern Go (1.12+), Python (3.7+), or Java (8+) libraries with TLS 1.2+ support
+
+For details on the CWE-327 security hardening, see link:../../README.adoc[README] and the operator's TLS package documentation.

@@ -14,8 +14,42 @@ var _ = Describe("#TLSCiphers", func() {
 	It("should return the default ciphers when none are defined", func() {
 		Expect(TLSCiphers(configv1.TLSProfileSpec{})).To(BeEquivalentTo(DefaultTLSCiphers))
 	})
-	It("should return the profile ciphers when they are defined", func() {
-		Expect(TLSCiphers(configv1.TLSProfileSpec{Ciphers: []string{"a", "b"}})).To(Equal([]string{"a", "b"}))
+	It("should filter out insecure ciphers (CWE-327)", func() {
+		insecureCiphers := []string{
+			"TLS_AES_128_GCM_SHA256", // Secure - should be kept
+			"DES-CBC3-SHA",           // Insecure - should be filtered
+			"AES128-SHA",             // Insecure - should be filtered
+			"ECDHE-RSA-AES128-GCM-SHA256", // Secure - should be kept
+		}
+		result := TLSCiphers(configv1.TLSProfileSpec{Ciphers: insecureCiphers})
+		Expect(result).To(ContainElement("TLS_AES_128_GCM_SHA256"))
+		Expect(result).To(ContainElement("ECDHE-RSA-AES128-GCM-SHA256"))
+		Expect(result).ToNot(ContainElement("DES-CBC3-SHA"))
+		Expect(result).ToNot(ContainElement("AES128-SHA"))
+	})
+	It("should return defaults when all ciphers are insecure", func() {
+		insecureCiphers := []string{"DES-CBC3-SHA", "AES128-SHA", "AES256-SHA"}
+		result := TLSCiphers(configv1.TLSProfileSpec{Ciphers: insecureCiphers})
+		Expect(result).To(Equal(DefaultTLSCiphers))
+	})
+	It("should accept all ciphers from the Intermediate profile", func() {
+		intermediateProfile := *configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+		result := TLSCiphers(intermediateProfile)
+		Expect(len(result)).To(Equal(len(intermediateProfile.Ciphers)))
+		for _, cipher := range intermediateProfile.Ciphers {
+			Expect(result).To(ContainElement(cipher))
+		}
+	})
+	It("should filter insecure ciphers from the Old profile", func() {
+		oldProfile := *configv1.TLSProfiles[configv1.TLSProfileOldType]
+		result := TLSCiphers(oldProfile)
+		// Should have fewer ciphers than the Old profile (insecure ones filtered)
+		Expect(len(result)).To(BeNumerically("<", len(oldProfile.Ciphers)))
+		// Should not contain 3DES
+		Expect(result).ToNot(ContainElement("DES-CBC3-SHA"))
+		// Should not contain AES-SHA (weak MAC)
+		Expect(result).ToNot(ContainElement("AES128-SHA"))
+		Expect(result).ToNot(ContainElement("AES256-SHA"))
 	})
 })
 
@@ -25,6 +59,18 @@ var _ = Describe("#MinTLSVersion", func() {
 	})
 	It("should return the profile min TLS version when defined", func() {
 		Expect(string(configv1.VersionTLS13)).To(Equal(MinTLSVersion(configv1.TLSProfileSpec{MinTLSVersion: configv1.VersionTLS13})))
+	})
+	It("should reject TLS 1.0 and return TLS 1.2 (CWE-327)", func() {
+		Expect(MinTLSVersion(configv1.TLSProfileSpec{MinTLSVersion: configv1.VersionTLS10})).
+			To(Equal(string(configv1.VersionTLS12)))
+	})
+	It("should reject TLS 1.1 and return TLS 1.2 (CWE-327)", func() {
+		Expect(MinTLSVersion(configv1.TLSProfileSpec{MinTLSVersion: configv1.VersionTLS11})).
+			To(Equal(string(configv1.VersionTLS12)))
+	})
+	It("should accept TLS 1.2", func() {
+		Expect(MinTLSVersion(configv1.TLSProfileSpec{MinTLSVersion: configv1.VersionTLS12})).
+			To(Equal(string(configv1.VersionTLS12)))
 	})
 })
 
@@ -191,5 +237,62 @@ var _ = Describe("isClusterAPIServer predicate", func() {
 			},
 		}
 		Expect(IsClusterAPIServer(apiServer)).To(BeFalse())
+	})
+})
+
+var _ = Describe("#CipherSuiteStringToID security tests (CWE-327)", func() {
+	It("should reject insecure cipher suites", func() {
+		insecureSuites := tls.InsecureCipherSuites()
+		for _, suite := range insecureSuites {
+			_, err := CipherSuiteStringToID(suite.Name)
+			Expect(err).To(HaveOccurred(),
+				"insecure cipher suite %s (0x%04x) must not be supported (CWE-327)", suite.Name, suite.ID)
+		}
+	})
+
+	It("should accept only secure cipher suites", func() {
+		// Verify that all entries in supportedCipherSuites come from tls.CipherSuites()
+		secureSuites := tls.CipherSuites()
+		for _, secure := range secureSuites {
+			id, err := CipherSuiteStringToID(secure.Name)
+			Expect(err).ToNot(HaveOccurred(),
+				"secure cipher suite %s must be supported", secure.Name)
+			Expect(id).To(Equal(secure.ID))
+		}
+	})
+})
+
+var _ = Describe("#TLSVersionToConstant security tests (CWE-327)", func() {
+	It("should reject deprecated TLS versions", func() {
+		deprecatedVersions := []configv1.TLSProtocolVersion{
+			configv1.VersionTLS10,
+			configv1.VersionTLS11,
+		}
+
+		for _, version := range deprecatedVersions {
+			// These should default to TLS 1.2, not actually support the deprecated version
+			result, err := TLSVersionToConstant(version)
+			Expect(err).ToNot(HaveOccurred())
+			// Deprecated versions should not be returned; defaults to TLS 1.2
+			Expect(result).To(Equal(uint16(tls.VersionTLS12)),
+				"deprecated TLS version %s must not be supported; should default to TLS 1.2 (CWE-327)", version)
+		}
+	})
+
+	It("should support only secure TLS versions", func() {
+		secureVersions := []struct {
+			version  configv1.TLSProtocolVersion
+			expected uint16
+		}{
+			{configv1.VersionTLS12, uint16(tls.VersionTLS12)},
+			{configv1.VersionTLS13, uint16(tls.VersionTLS13)},
+		}
+
+		for _, tc := range secureVersions {
+			result, err := TLSVersionToConstant(tc.version)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result).To(Equal(tc.expected),
+				"secure TLS version %s must map to %v", tc.version, tc.expected)
+		}
 	})
 })

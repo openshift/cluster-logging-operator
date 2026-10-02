@@ -12,8 +12,16 @@ oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/e
 oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/audit=privileged --overwrite
 oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/warn=privileged --overwrite
 
-GOFLAGS=-mod=mod go test -p 1 -v -timeout=90m ./test/e2e/... \
-   -ginkgo.v -ginkgo.trace -ginkgo.no-color \
-   -ginkgo.skip="FlowControl" \
-   -ginkgo.poll-progress-after=300s \
-   -ginkgo.poll-progress-interval=30s
+# Run with the ginkgo CLI so specs can execute in parallel. Ginkgo v2 only
+# parallelizes when driven by its own CLI (go test cannot). Suites marked
+# `Serial` (all e2e suites except input_selection) still run serially on a
+# single process; only parallel-safe suites spread across the worker processes.
+# --procs is capped to keep the shared, claimed cluster from being overwhelmed.
+GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
+   -p --procs=4 \
+   -v --trace --no-color \
+   --skip="FlowControl" \
+   --poll-progress-after=300s \
+   --poll-progress-interval=30s \
+   --timeout=90m \
+   ./test/e2e/...

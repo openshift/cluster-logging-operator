@@ -22,7 +22,6 @@ export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(or $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null),no-branch)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
-OPENSHIFT_VERSIONS?="v4.21-v5.0"
 export LOGGING_VERSION?=6.7
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
@@ -338,7 +337,7 @@ bundle: $(GEN_TIMESTAMP) $(KUSTOMIZE) $(find config -name *.yaml) ## Generate op
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	hack/revert-bundle.sh
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
+	MANIFEST_VERSION=${LOGGING_VERSION} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 	$(OPERATOR_SDK) bundle validate ./bundle
 	@touch $@
 

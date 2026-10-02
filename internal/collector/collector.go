@@ -51,6 +51,11 @@ const (
 	sourceKubeAPIServerPath                    = "/var/log/kube-apiserver"
 	tmpVolumeName                              = "tmp"
 	tmpPath                                    = "/tmp"
+
+	// collectorRunAsUser is the fixed non-root UID the collector runs as. The collector reads
+	// hostPath log directories via group 0 (the default GID granted by OpenShift), which
+	// satisfies the 0750 root:root permissions on /var/log/pods and other log directories.
+	collectorRunAsUser int64 = 1000
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -159,6 +164,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 		TerminationGracePeriodSeconds: gracePeriod,
 		Tolerations:                   append(constants.DefaultTolerations(), f.Tolerations()...),
 		Affinity:                      f.Affinity(),
+		SecurityContext: &v1.PodSecurityContext{
+			FSGroup: utils.GetPtr[int64](0),
+		},
 
 		Volumes: []v1.Volume{
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: f.ResourceNames.SecretMetrics}}},
@@ -245,8 +253,10 @@ func (f *Factory) NewCollectorContainer(inputs internalobs.Inputs, outputs inter
 		if inputs.HasAuditSource(obs.AuditSourceOVN) {
 			collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: sourceAuditOVNName, ReadOnly: true, MountPath: sourceOVNPath})
 		}
-		AddSecurityContextTo(collector)
 	}
+
+	// Set security context for both DaemonSet and Deployment modes
+	AddSecurityContextTo(collector)
 
 	AddVolumeMounts(collector, secretVolumes, common.SecretBasePath)
 	AddVolumeMounts(collector, configmapVolumes, func(name string) string {
@@ -351,6 +361,8 @@ func AddSecurityContextTo(container *v1.Container) *v1.Container {
 		SELinuxOptions: &v1.SELinuxOptions{
 			Type: "spc_t",
 		},
+		RunAsUser:                utils.GetPtr(collectorRunAsUser),
+		RunAsNonRoot:             utils.GetPtr(true),
 		ReadOnlyRootFilesystem:   utils.GetPtr(true),
 		AllowPrivilegeEscalation: utils.GetPtr(false),
 		SeccompProfile: &v1.SeccompProfile{

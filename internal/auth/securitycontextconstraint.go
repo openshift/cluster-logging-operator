@@ -40,7 +40,7 @@ func NewSCC() *security.SecurityContextConstraints {
 	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
 	scc.AllowPrivilegeEscalation = utils.GetPtr(false)
 	scc.RunAsUser = security.RunAsUserStrategyOptions{
-		Type: security.RunAsUserStrategyRunAsAny,
+		Type: security.RunAsUserStrategyMustRunAsNonRoot,
 	}
 	scc.SELinuxContext = security.SELinuxContextStrategyOptions{
 		Type: security.SELinuxStrategyRunAsAny,

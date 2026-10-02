@@ -124,6 +124,8 @@ var _ = Describe("Factory#Daemonset", func() {
 					SELinuxOptions: &v1.SELinuxOptions{
 						Type: "spc_t",
 					},
+					RunAsUser:                utils.GetPtr[int64](1000),
+					RunAsNonRoot:             utils.GetPtr(true),
 					ReadOnlyRootFilesystem:   utils.GetPtr(true),
 					AllowPrivilegeEscalation: utils.GetPtr(false),
 					SeccompProfile: &v1.SeccompProfile{
@@ -533,14 +535,16 @@ var _ = Describe("Factory#Deployment", func() {
 						FieldRef: &v1.ObjectFieldSelector{
 							APIVersion: "v1", FieldPath: "status.podIP"}}}))
 			})
-			It("should not set security context", func() {
-				Expect(collector.SecurityContext).ToNot(Equal(&v1.SecurityContext{
+			It("should set security context", func() {
+				Expect(collector.SecurityContext).To(Equal(&v1.SecurityContext{
 					Capabilities: &v1.Capabilities{
 						Drop: auth.RequiredDropCapabilities,
 					},
 					SELinuxOptions: &v1.SELinuxOptions{
 						Type: "spc_t",
 					},
+					RunAsUser:                utils.GetPtr[int64](1000),
+					RunAsNonRoot:             utils.GetPtr(true),
 					ReadOnlyRootFilesystem:   utils.GetPtr(true),
 					AllowPrivilegeEscalation: utils.GetPtr(false),
 					SeccompProfile: &v1.SeccompProfile{

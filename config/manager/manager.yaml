@@ -26,6 +26,7 @@ spec:
       - name: cluster-logging-operator
         image: controller:latest
         imagePullPolicy: IfNotPresent
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true

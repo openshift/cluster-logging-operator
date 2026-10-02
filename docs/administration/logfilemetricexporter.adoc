@@ -32,11 +32,11 @@ The Log File Metrics Exporter enforces strict TLS security (CWE-327 hardening) t
 
 === Supported TLS Versions
 
-Only TLS 1.2 and TLS 1.3 are supported. TLS 1.0 and 1.1 are explicitly rejected:
+Only TLS 1.2 and TLS 1.3 are supported. Deprecated TLS 1.0 and 1.1 versions are automatically upgraded to TLS 1.2:
 
 * **Intermediate** and **Modern** profiles: No restrictions; both profiles use TLS 1.2+ by default
 * **Old** profile: TLS 1.0 is automatically upgraded to TLS 1.2. Clients must support TLS 1.2+
-* **Custom** profiles: The minimum TLS version is validated; deprecated versions are rejected
+* **Custom** profiles: The minimum TLS version is validated; deprecated versions are upgraded to TLS 1.2
 
 === Supported Cipher Suites
 

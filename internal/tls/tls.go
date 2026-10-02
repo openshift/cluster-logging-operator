@@ -108,6 +108,14 @@ func TLSCiphers(profile configv1.TLSProfileSpec) []string {
 		}
 	}
 
+	// TLS 1.3 cipher suites (not in tls.CipherSuites() but still secure)
+	// Explicit allowlist to reject CCM variants
+	tls13Ciphers := map[string]bool{
+		"TLS_AES_128_GCM_SHA256":       true,
+		"TLS_AES_256_GCM_SHA384":       true,
+		"TLS_CHACHA20_POLY1305_SHA256": true,
+	}
+
 	validCiphers := make([]string, 0, len(profile.Ciphers))
 	for _, cipherName := range profile.Ciphers {
 		// Accept if it's in the secure IANA cipher list
@@ -116,8 +124,8 @@ func TLSCiphers(profile configv1.TLSProfileSpec) []string {
 			continue
 		}
 
-		// Check if this is a TLS 1.3 cipher (not in CipherSuites() but still secure)
-		if strings.HasPrefix(cipherName, "TLS_AES_") || strings.HasPrefix(cipherName, "TLS_CHACHA20_") {
+		// Check if this is a secure TLS 1.3 cipher
+		if tls13Ciphers[cipherName] {
 			validCiphers = append(validCiphers, cipherName)
 			continue
 		}

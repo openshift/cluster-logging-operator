@@ -131,7 +131,7 @@ func (tc *E2ETestFramework) DeployHttpReceiver(ns string) (deployment *VectorHtt
 	opts := metav1.CreateOptions{}
 	config := runtime.NewConfigMap(ns, container.Name, map[string]string{
 		vector.ConfigFile:    vectorHttpConf,
-		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
+		vector.RunVectorFile: vector.RunVectorScript,
 	})
 	config, err = tc.KubeClient.CoreV1().ConfigMaps(ns).Create(context.TODO(), config, opts)
 	if err != nil {
@@ -502,7 +502,7 @@ func (tc *E2ETestFramework) DeployHttpReceiverWithTLS(ns string, profileSpec con
 	vectorConf := vectorHttpConfWithTLSProfile(profileSpec)
 	config := runtime.NewConfigMap(ns, container.Name, map[string]string{
 		vector.ConfigFile:    vectorConf,
-		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
+		vector.RunVectorFile: vector.RunVectorScript,
 	})
 
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.toml", vectorConf)

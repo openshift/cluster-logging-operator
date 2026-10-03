@@ -27,23 +27,23 @@ var (
 		"KILL",
 	}
 
-	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
+	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected", "hostPath"}
 )
 
 func NewSCC() *security.SecurityContextConstraints {
 
 	scc := runtime.NewSCC(sccName)
-	scc.AllowPrivilegedContainer = false
+	scc.AllowPrivilegedContainer = true // Allow init container to run privileged for data directory setup
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true
 	scc.Volumes = DesiredSCCVolumes
-	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
-	scc.AllowPrivilegeEscalation = utils.GetPtr(false)
+	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(true)  // Allow privilege escalation for init container
+	scc.AllowPrivilegeEscalation = utils.GetPtr(true)
 	scc.RunAsUser = security.RunAsUserStrategyOptions{
-		Type: security.RunAsUserStrategyRunAsAny,
+		Type: security.RunAsUserStrategyRunAsAny, // Allow any UID (0 for init, 1000 for collector)
 	}
 	scc.SELinuxContext = security.SELinuxContextStrategyOptions{
-		Type: security.SELinuxStrategyRunAsAny,
+		Type: security.SELinuxStrategyRunAsAny, // Allow any SELinux type (spc_t for init, container_logwriter_t for collector)
 	}
 	scc.ReadOnlyRootFilesystem = true
 	scc.ForbiddenSysctls = []string{"*"}

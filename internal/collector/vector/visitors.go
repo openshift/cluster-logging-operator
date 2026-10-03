@@ -32,9 +32,10 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 	collectorContainer.Command = []string{"sh"}
 	collectorContainer.Args = []string{entrypointValue}
 
+	hostPathDirOrCreate := corev1.HostPathDirectoryOrCreate
 	podSpec.Volumes = append(podSpec.Volumes,
 		corev1.Volume{Name: common.ConfigVolumeName, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: resNames.ConfigMap}}}},
-		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: dataPath}}},
+		corev1.Volume{Name: common.DataDir, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: dataPath, Type: &hostPathDirOrCreate}}},
 		corev1.Volume{Name: common.EntrypointVolumeName, VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: resNames.ConfigMap}}}},
 	)
 }

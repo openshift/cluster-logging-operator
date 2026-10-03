@@ -51,6 +51,21 @@ const (
 	sourceKubeAPIServerPath                    = "/var/log/kube-apiserver"
 	tmpVolumeName                              = "tmp"
 	tmpPath                                    = "/tmp"
+
+	// collectorRunAsUser must be 0 (root) because container log files on the host are 0600 root:root.
+	// DAC_READ_SEARCH cannot be used as a non-root workaround because Linux only grants effective
+	// capabilities to non-root processes when the binary has file capabilities (setcap), and the
+	// Vector binary does not. The security improvement comes from replacing spc_t with the
+	// MCS-constrained container_logwriter_t SELinux domain and dropping all dangerous capabilities.
+	collectorRunAsUser int64 = 0
+	// collectorRunAsGroup is the primary GID.
+	collectorRunAsGroup int64 = 0
+	// selinuxTypeLogWriter (container_logwriter_t) is an MCS-constrained container domain that
+	// grants read on /var/log/** plus inotify watch permissions on container_log_t, and write
+	// on /var/lib/vector/**. Far more restrictive than spc_t (super-privileged container).
+	selinuxTypeLogWriter = "container_logwriter_t"
+	// initContainerName is the name of the init container that prepares the data directory.
+	initContainerName = "data-dir-init"
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -214,6 +229,14 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 
 	f.Visit(collector, podSpec, f.ResourceNames, namespace, LogLevel(f.annotations))
 
+	// Add init container for daemonsets to prepare the data directory with proper SELinux labeling
+	if f.isDaemonset {
+		dataPath := vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)
+		podSpec.InitContainers = []v1.Container{
+			newDataDirInitContainer(dataPath),
+		}
+	}
+
 	podSpec.Containers = []v1.Container{
 		*collector,
 	}
@@ -373,8 +396,11 @@ func AddSecurityContextTo(container *v1.Container) *v1.Container {
 			Drop: auth.RequiredDropCapabilities,
 		},
 		SELinuxOptions: &v1.SELinuxOptions{
-			Type: "spc_t",
+			Type: selinuxTypeLogWriter,
 		},
+		RunAsUser:                utils.GetPtr(collectorRunAsUser),
+		RunAsGroup:               utils.GetPtr(collectorRunAsGroup),
+		RunAsNonRoot:             utils.GetPtr(false),
 		ReadOnlyRootFilesystem:   utils.GetPtr(true),
 		AllowPrivilegeEscalation: utils.GetPtr(false),
 		SeccompProfile: &v1.SeccompProfile{
@@ -382,6 +408,38 @@ func AddSecurityContextTo(container *v1.Container) *v1.Container {
 		},
 	}
 	return container
+}
+
+// newDataDirInitContainer creates an init container that prepares the collector's data directory.
+// The init container runs as root with spc_t to create the directory and relabel it to
+// container_file_t (which container_logwriter_t can write to). Ownership is set to 1000:0
+// to prepare for a future non-root collector migration.
+func newDataDirInitContainer(dataPath string) v1.Container {
+	return v1.Container{
+		Name:    initContainerName,
+		Image:   utils.GetComponentImage(constants.VectorName),
+		Command: []string{"/bin/sh", "-c"},
+		Args: []string{
+			"set -e; " +
+				"mkdir -p \"$1\" && " +
+				"chown -R 1000:0 \"$1\" && " +
+				"chmod -R 2770 \"$1\" && " +
+				"chcon -R -t container_file_t \"$1\"",
+			"--",
+			dataPath,
+		},
+		VolumeMounts: []v1.VolumeMount{
+			{Name: common.DataDir, MountPath: dataPath},
+		},
+		SecurityContext: &v1.SecurityContext{
+			Privileged:               utils.GetPtr(true), // Init container needs privilege for chown and chcon
+			AllowPrivilegeEscalation: utils.GetPtr(true),
+			SELinuxOptions: &v1.SELinuxOptions{
+				Type: "spc_t", // Init container needs spc_t for chcon
+			},
+			RunAsUser: utils.GetPtr[int64](0), // Must run as root for chcon and chown
+		},
+	}
 }
 
 func addTrustedCABundle(collector *v1.Container, podSpec *v1.PodSpec, trustedCABundleCM *v1.ConfigMap) {

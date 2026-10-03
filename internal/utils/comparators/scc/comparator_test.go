@@ -34,16 +34,16 @@ var _ = Describe("scc#AreSame", func() {
 	},
 		Entry("Priority nil", func(right *security.SecurityContextConstraints) { right.Priority = nil }, func(left *security.SecurityContextConstraints) { left.Priority = utils.GetPtr[int32](12) }),
 		Entry("Priority different value", func(right *security.SecurityContextConstraints) { right.Priority = utils.GetPtr[int32](12) }),
-		Entry("AllowPrivilegedContainer", func(right *security.SecurityContextConstraints) { right.AllowPrivilegedContainer = true }),
+		Entry("AllowPrivilegedContainer", func(right *security.SecurityContextConstraints) { right.AllowPrivilegedContainer = false }),
 		Entry("RequiredDropCapabilities", func(right *security.SecurityContextConstraints) {
 			right.RequiredDropCapabilities = append(right.RequiredDropCapabilities, "foo")
 		}),
 		Entry("AllowHostDirVolumePlugin", func(right *security.SecurityContextConstraints) { right.AllowHostDirVolumePlugin = false }),
 		Entry("Volumes", func(none *security.SecurityContextConstraints) {}, func(left *security.SecurityContextConstraints) { left.Volumes = left.Volumes[1:] }),
 		Entry("DefaultAllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) {
-			right.DefaultAllowPrivilegeEscalation = utils.GetPtr(true)
+			right.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
 		}),
-		Entry("AllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) { right.AllowPrivilegeEscalation = utils.GetPtr(true) }),
+		Entry("AllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) { right.AllowPrivilegeEscalation = utils.GetPtr(false) }),
 		Entry("RunAsUser", func(right *security.SecurityContextConstraints) {
 			right.RunAsUser = security.RunAsUserStrategyOptions{}
 		}),

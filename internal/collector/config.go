@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -20,7 +19,7 @@ func (f *Factory) ReconcileCollectorConfig(k8sClient client.Client, reader clien
 		f.ResourceNames.ConfigMap,
 		map[string]string{
 			vector.ConfigFile:    collectorConfig,
-			vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)),
+			vector.RunVectorFile: vector.RunVectorScript,
 		},
 		f.CommonLabelInitializer)
 

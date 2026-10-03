@@ -6,7 +6,6 @@ import (
 
 	security "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,27 +26,33 @@ var (
 		"KILL",
 	}
 
-	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
+	AllowedCapabilities = []corev1.Capability{
+		"DAC_READ_SEARCH",
+	}
+
+	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected", "hostPath"}
 )
 
 func NewSCC() *security.SecurityContextConstraints {
-
 	scc := runtime.NewSCC(sccName)
-	scc.AllowPrivilegedContainer = false
+	scc.AllowPrivilegedContainer = false // Forbids privileged containers
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
+	scc.AllowedCapabilities = AllowedCapabilities
 	scc.AllowHostDirVolumePlugin = true
 	scc.Volumes = DesiredSCCVolumes
-	scc.DefaultAllowPrivilegeEscalation = utils.GetPtr(false)
-	scc.AllowPrivilegeEscalation = utils.GetPtr(false)
+	scc.DefaultAllowPrivilegeEscalation = new(false)
+	scc.AllowPrivilegeEscalation = new(false)
 	scc.RunAsUser = security.RunAsUserStrategyOptions{
 		Type: security.RunAsUserStrategyRunAsAny,
 	}
 	scc.SELinuxContext = security.SELinuxContextStrategyOptions{
-		Type: security.SELinuxStrategyRunAsAny,
+		Type: security.SELinuxStrategyRunAsAny, // Permits spc_t on init container
 	}
 	scc.ReadOnlyRootFilesystem = true
 	scc.ForbiddenSysctls = []string{"*"}
-	scc.SeccompProfiles = []string{"runtime/default"}
+	scc.SeccompProfiles = []string{
+		"runtime/default",
+	}
 	return scc
 }
 

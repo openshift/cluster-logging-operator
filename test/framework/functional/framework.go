@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
@@ -329,6 +330,25 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		WithCmd([]string{"/bin/sh", "-c", "sleep infinity"}).
 		WithImagePullPolicy(corev1.PullIfNotPresent).
 		End()
+
+	dataPath := vector.GetDataPath(f.Namespace, f.Forwarder.Name)
+
+	f.Pod.Spec.Volumes = append(f.Pod.Spec.Volumes, corev1.Volume{
+		Name: common.DataDir,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+
+	for i, c := range f.Pod.Spec.Containers {
+		if c.Name == constants.CollectorName {
+			f.Pod.Spec.Containers[i].VolumeMounts = append(f.Pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      common.DataDir,
+				MountPath: dataPath,
+				ReadOnly:  false,
+			})
+		}
+	}
 
 	for _, visit := range visitors {
 		if visit != nil {

@@ -46,8 +46,12 @@ var _ = Describe("[Functional][Metrics]Function testing of collector metrics", f
 			FromInput(obs.InputTypeApplication).
 			ToHttpOutput()
 
-		// Create ClusterRole to allow GET on /metrics
-		roleName := fmt.Sprintf("%s-metrics-reader", framework.Name)
+		// Create ClusterRole to allow GET on /metrics. The name is suffixed with
+		// the per-spec namespace so concurrent specs (ginkgo -p) do not collide on
+		// these cluster-scoped objects. /metrics is a non-resource URL and
+		// TokenReviews are cluster-scoped, so these must remain ClusterRole/
+		// ClusterRoleBinding; a namespaced RoleBinding cannot grant them.
+		roleName := fmt.Sprintf("%s-metrics-reader", framework.Namespace)
 		metricsReaderRole = runtime.NewClusterRole(
 			roleName,
 			runtime.NewNonResourceURLPolicyRule([]string{"/metrics"}, []string{"get"}),
@@ -64,7 +68,7 @@ var _ = Describe("[Functional][Metrics]Function testing of collector metrics", f
 
 		// Create ClusterRoleBinding to allow collector to do TokenReviews
 		tokenReviewBinding = runtime.NewClusterRoleBinding(
-			fmt.Sprintf("%s-token-reviewer", framework.Name),
+			fmt.Sprintf("%s-token-reviewer", framework.Namespace),
 			runtime.NewClusterRoleRef("system:auth-delegator"),
 			runtime.NewServiceAccountSubject("default", framework.Namespace),
 		)

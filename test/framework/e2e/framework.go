@@ -237,7 +237,7 @@ func (tc *E2ETestFramework) Create(obj crclient.Object) error {
 	tc.AddCleanup(func() error {
 		return tc.Test.Delete(obj)
 	})
-	clolog.Info("Creating object", "obj", string(body))
+	clolog.V(2).Info("Creating object", "obj", string(body))
 	return tc.Test.Recreate(obj)
 }
 
@@ -247,7 +247,7 @@ func (tc *E2ETestFramework) CreateObservabilityClusterLogForwarder(forwarder *ob
 
 func DoCleanup() bool {
 	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-	clolog.Info("Running Cleanup script ....", "DO_CLEANUP", doCleanup)
+	clolog.V(1).Info("Running Cleanup script ....", "DO_CLEANUP", doCleanup)
 	return doCleanup == "" || strings.ToLower(doCleanup) == "true"
 }
 
@@ -264,7 +264,7 @@ func (tc *E2ETestFramework) Cleanup() {
 	} else {
 		clolog.V(1).Info("Test passed. Skipping artifacts gathering")
 	}
-	clolog.Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
+	clolog.V(1).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
 		clolog.V(5).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
@@ -282,14 +282,14 @@ func RunCleanupScript() {
 			clolog.Info("No cleanup script provided")
 			return
 		}
-		clolog.Info("Script", "CLEANUP_CMD", value)
+		clolog.V(1).Info("Script", "CLEANUP_CMD", value)
 		args := strings.Split(value, " ")
 		// #nosec G204
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
 		result, err := cmd.CombinedOutput()
-		clolog.Info("RunCleanupScript output: ", "output", string(result))
-		clolog.Info("RunCleanupScript err: ", "error", err)
+		clolog.V(2).Info("RunCleanupScript output: ", "output", string(result))
+		clolog.V(2).Info("RunCleanupScript err: ", "error", err)
 	}
 }
 

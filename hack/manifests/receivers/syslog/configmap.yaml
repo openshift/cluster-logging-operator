@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: rsyslog-server
+  name: rsyslog-conf
+data:
+  rsyslog.conf: |
+    #$ModLoad imuxsock
+    #$SystemLogSocketName /var/lib/rsyslog/rsyslog.sock
+    $ModLoad imudp
+    $UDPServerRun 55514
+    $ModLoad imtcp
+    $InputTCPServerRun 55514
+    template(name="DebugJsonFormat" type="list") {
+      constant(value="{")
+      property(name="timegenerated" format="jsonf")
+      constant(value=",")
+      property(name="timereported" format="jsonf")
+      constant(value=",")
+      property(name="hostname" format="jsonf")
+      constant(value=",")
+      property(name="syslogfacility-text" format="jsonf")
+      constant(value=",")
+      property(name="syslogpriority-text" format="jsonf")
+      constant(value=",")
+      property(name="syslogtag" format="jsonf")
+      constant(value=",")
+      property(name="programname" format="jsonf")
+      constant(value=",")
+      property(name="app-name" format="jsonf")
+      constant(value=",")
+      property(name="procid" format="jsonf")
+      constant(value=",")
+      property(name="msgid" format="jsonf")
+      constant(value=",")
+      property(name="msg" format="jsonf")
+      constant(value="}\n")
+    }
+
+    # For vector
+    :app-name, isequal, "audit" action(type="omfile" File="/log/openshift-audit.log")
+    &stop
+    :app-name, isequal, "application" action(type="omfile" File="/log/openshift-app-container.log")
+    &stop
+    :app-name, isequal, "infrastructure" action(type="omfile" File="/log/openshift-infra-container.log")
+    &stop
+    :app-name, isequal, "eventrouter" action(type="omfile" File="/log/openshift-eventrouter.log")
+    &stop
+
+    # Journal log
+    action(type="omfile" File="/log/openshift-journal.log")
+    &stop

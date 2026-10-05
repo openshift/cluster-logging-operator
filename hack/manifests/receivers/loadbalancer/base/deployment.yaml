@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadbalancer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadbalancer
+  template:
+    metadata:
+      labels:
+        app: loadbalancer
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            # Extract DNS resolver from /etc/resolv.conf and export it
+            # Then start nginx normally via the entrypoint
+            - |
+              export DNS_RESOLVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
+              exec /docker-entrypoint.sh nginx -g 'daemon off;'
+          env:
+            # 2. Define your custom injection variables here
+            - name: TARGET_SERVICE
+              value: "http-receiver.openshift-logging.svc.cluster.local"
+            - name: TARGET_PORT
+              value: "8080"
+            # 1. CRITICAL: Tell Nginx to output the finished template directly to the main config path
+            - name: NGINX_ENVSUBST_OUTPUT_DIR
+              value: "/etc/nginx"
+            - name: PROXY_TIMEOUT
+              value: "60s"
+            - name: WORKER_CONNECTIONS
+              value: "24"
+
+          volumeMounts:
+            # Mount the template into Nginx's designated template scanning folder
+            - name: template-volume
+              mountPath: /etc/nginx/templates/nginx.conf.template
+              subPath: nginx.conf.template
+          ports:
+            - containerPort: 8888
+      volumes:
+        - name: template-volume
+          configMap:
+            name: nginx-template-config

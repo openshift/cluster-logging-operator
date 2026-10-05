@@ -3,6 +3,7 @@ package drop
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
@@ -41,18 +42,41 @@ func buildMatchCondition(field, pattern string, negate bool) (string, error) {
 	return fmt.Sprintf(`%smatch(to_string(%s) ?? "", r'%s')`, prefix, field, pattern), nil
 }
 
+func normalizeOlderThan(value string) (string, error) {
+	if date, err := time.Parse(time.DateOnly, value); err == nil {
+		return date.UTC().Format(time.RFC3339Nano), nil
+	}
+	timestamp, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return "", fmt.Errorf("invalid olderThan %q: %w", value, err)
+	}
+	return timestamp.UTC().Format(time.RFC3339Nano), nil
+}
+
+func buildOlderThanCondition(olderThan string) (string, error) {
+	cutoff, err := normalizeOlderThan(olderThan)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`((parse_timestamp(to_string(.timestamp) ?? "", "%%+") < t'%s') ?? false)`, cutoff), nil
+}
+
 func (f *Filter) VRL() (string, error) {
 	vrlTests := []string{}
 	for _, test := range f.tests {
 		condList := []string{}
 		for _, cond := range test.DropConditions {
-			field := fmt.Sprintf("._internal%s", cond.Field)
 			var matchExpr string
 			var err error
-			if cond.Matches != "" {
-				matchExpr, err = buildMatchCondition(field, cond.Matches, false)
+			if cond.OlderThan != "" {
+				matchExpr, err = buildOlderThanCondition(cond.OlderThan)
 			} else {
-				matchExpr, err = buildMatchCondition(field, cond.NotMatches, true)
+				field := fmt.Sprintf("._internal%s", cond.Field)
+				if cond.Matches != "" {
+					matchExpr, err = buildMatchCondition(field, cond.Matches, false)
+				} else {
+					matchExpr, err = buildMatchCondition(field, cond.NotMatches, true)
+				}
 			}
 			if err != nil {
 				return "", err

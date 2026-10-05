@@ -2,7 +2,7 @@ package http
 
 import (
 	"encoding/json"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,6 +14,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
@@ -207,6 +209,59 @@ var _ = Describe("[Functional][Inputs][Http] Functional tests", func() {
 			err = types.ParseLogsFrom(utils.ToJsonLogs(lines), &logs, false)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			Expect(logs[0]).To(FitLogFormatTemplate(events.Items[1]))
+		})
+	})
+
+	Context("When applying an olderThan drop filter to HTTP audit records", func() {
+		It("should drop records with a stage timestamp before the cutoff", func() {
+			cutoff := time.Date(2026, time.September, 16, 0, 0, 0, 0, time.UTC)
+			framework.Forwarder.Spec.Filters = []obs.FilterSpec{
+				{
+					Name: "drop-historical-audit",
+					Type: obs.FilterTypeDrop,
+					DropTestsSpec: []obs.DropTest{{
+						DropConditions: []obs.DropCondition{{OlderThan: cutoff.Format(time.RFC3339)}},
+					}},
+				},
+			}
+			framework.Forwarder.Spec.Pipelines[0].FilterRefs = []string{"drop-historical-audit"}
+
+			Expect(framework.DeployWithVisitor(
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				}),
+			).To(Succeed())
+
+			olderEvent := events.Items[0]
+			olderEvent.RequestReceivedTimestamp = metav1.NewMicroTime(cutoff.Add(-time.Second))
+			olderEvent.StageTimestamp = metav1.NewMicroTime(cutoff.Add(-time.Second))
+			newerEvent := events.Items[1]
+			newerEvent.RequestReceivedTimestamp = metav1.NewMicroTime(cutoff.Add(time.Second))
+			newerEvent.StageTimestamp = metav1.NewMicroTime(cutoff.Add(time.Second))
+
+			Expect(framework.WriteAsJsonToHttpInput(httpInputName, olderEvent)).To(Succeed())
+			Expect(framework.WriteAsJsonToHttpInput(httpInputName, newerEvent)).To(Succeed())
+
+			verifyOnlyNewerEvent := func() error {
+				raw, err := framework.ReadFileFromWithRetryInterval(string(obs.OutputTypeHTTP), functional.ApplicationLogFile, time.Second)
+				if err != nil {
+					return err
+				}
+				lines := strings.Split(strings.TrimSpace(raw), "\n")
+				if len(lines) != 1 {
+					return fmt.Errorf("expected only one forwarded audit event, got %d: %s", len(lines), raw)
+				}
+				var logs []auditv1.Event
+				if err := types.ParseLogsFrom(utils.ToJsonLogs(lines), &logs, false); err != nil {
+					return err
+				}
+				if len(logs) != 1 || logs[0].AuditID != newerEvent.AuditID {
+					return fmt.Errorf("expected only the event after the cutoff, got %#v", logs)
+				}
+				return nil
+			}
+			Eventually(verifyOnlyNewerEvent, 2*time.Minute, time.Second).Should(Succeed())
+			Consistently(verifyOnlyNewerEvent, 30*time.Second, time.Second).Should(Succeed(), "the historical event must remain dropped")
 		})
 	})
 })

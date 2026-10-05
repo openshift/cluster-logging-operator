@@ -4,12 +4,41 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	corev1 "k8s.io/api/core/v1"
 )
+
+// NewLogGeneratorDeployment creates a single container log generator deployment
+func NewLogGeneratorDeployment(namespace, name string, replicas int32, delay time.Duration, message string) *appsv1.Deployment {
+	pod := NewMultiContainerLogGenerator(namespace, name, 0, delay, message, 1, map[string]string{})
+	deployment := runtime.NewDeployment(namespace, name)
+	labels := map[string]string{
+		constants.LabelK8sComponent: "log-generator",
+	}
+	deployment.Spec = appsv1.DeploymentSpec{
+		Replicas: utils.GetPtr(replicas),
+		Strategy: appsv1.DeploymentStrategy{
+			Type: appsv1.RecreateDeploymentStrategyType,
+		},
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
+		Template: corev1.PodTemplateSpec{
+			Spec: pod.Spec,
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: labels,
+			},
+		},
+	}
+	deployment.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways
+	return deployment
+}
 
 // NewLogGenerator creates a pod that will print `count` lines to stdout, waiting for
 // `delay` between each line.  Lines are of the form "<timestamp> [n] `message`"

@@ -1,8 +1,10 @@
 package collector
 
 import (
+	"context"
 	"os"
 	"path"
+	"sync/atomic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,12 +19,50 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+func newClientWithDeleteCounter(objs ...client.Object) (client.Client, *atomic.Int32) {
+	var deleteCount atomic.Int32
+	builder := fake.NewClientBuilder().
+		WithInterceptorFuncs(interceptor.Funcs{
+			Delete: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+				deleteCount.Add(1)
+				return c.Delete(ctx, obj, opts...)
+			},
+		})
+	for _, obj := range objs {
+		builder = builder.WithObjects(obj)
+	}
+	return builder.Build(), &deleteCount
+}
+
+// newClientWithDeleteReturningNotFound simulates a race where the resource
+// is deleted between Get and Delete by returning NotFound from Delete.
+func newClientWithDeleteReturningNotFound(objs ...client.Object) client.Client {
+	builder := fake.NewClientBuilder().
+		WithInterceptorFuncs(interceptor.Funcs{
+			Delete: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.DeleteOption) error {
+				return apierrors.NewNotFound(
+					schema.GroupResource{Group: "", Resource: obj.GetObjectKind().GroupVersionKind().Kind},
+					obj.GetName(),
+				)
+			},
+		})
+	for _, obj := range objs {
+		builder = builder.WithObjects(obj)
+	}
+	return builder.Build()
+}
 
 var _ = Describe("Factory#MaxUnavailable", func() {
 	var (
@@ -492,6 +532,30 @@ var _ = Describe("Factory#Daemonset", func() {
 		})
 	})
 
+	Context("RemoveDaemonSet", func() {
+		It("should not issue a DELETE API call when no daemonset exists", func() {
+			fakeClient, deleteCount := newClientWithDeleteCounter()
+			err := RemoveDaemonset(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deleteCount.Load()).To(Equal(int32(0)), "expected no DELETE calls when daemonset does not exist")
+		})
+
+		It("should issue a DELETE API call when a daemonset exists", func() {
+			existing := runtime.NewDaemonSet("openshift-logging", "collector")
+			fakeClient, deleteCount := newClientWithDeleteCounter(existing)
+			err := RemoveDaemonset(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deleteCount.Load()).To(Equal(int32(1)), "expected exactly one DELETE call when daemonset exists")
+		})
+
+		It("should succeed when the daemonset is deleted between Get and Delete", func() {
+			existing := runtime.NewDaemonSet("openshift-logging", "collector")
+			fakeClient := newClientWithDeleteReturningNotFound(existing)
+			err := RemoveDaemonset(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 })
 
 var _ = Describe("Factory#Deployment", func() {
@@ -759,6 +823,30 @@ var _ = Describe("Factory#Deployment", func() {
 			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(constants.AnnotationSecretHash))
 			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(constants.AnnotationConfigMapHash))
 			Expect(actDpl.Spec.Template.Annotations).To(HaveKey(targetAnnotation))
+		})
+	})
+
+	Context("RemoveDeployment", func() {
+		It("should not issue a DELETE API call when no deployment exists", func() {
+			fakeClient, deleteCount := newClientWithDeleteCounter()
+			err := RemoveDeployment(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deleteCount.Load()).To(Equal(int32(0)), "expected no DELETE calls when deployment does not exist")
+		})
+
+		It("should issue a DELETE API call when a deployment exists", func() {
+			existing := runtime.NewDeployment("openshift-logging", "collector")
+			fakeClient, deleteCount := newClientWithDeleteCounter(existing)
+			err := RemoveDeployment(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deleteCount.Load()).To(Equal(int32(1)), "expected exactly one DELETE call when deployment exists")
+		})
+
+		It("should succeed when the deployment is deleted between Get and Delete", func() {
+			existing := runtime.NewDeployment("openshift-logging", "collector")
+			fakeClient := newClientWithDeleteReturningNotFound(existing)
+			err := RemoveDeployment(fakeClient, "openshift-logging", "collector")
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 

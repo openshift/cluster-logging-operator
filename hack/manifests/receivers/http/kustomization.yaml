@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/name: http
+      app.kubernetes.io/component: receiver
+      app.kubernetes.io/part-of: cluster-logging
+    includeSelectors: true
+    includeTemplates: true
+resources:
+- http_receiver_deployment.yaml
+- http_receiver_configmap.yaml
+- http_receiver_service.yaml

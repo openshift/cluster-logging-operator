@@ -41,7 +41,7 @@ export CLF_TEST_INCLUDES?=
 .PHONY: force
 
 .PHONY: tools
-tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS)
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(GOVULNCHECK)
 
 .PHONY: pre-commit
 # Should pass when run before commit.
@@ -183,6 +183,27 @@ lint:  $(GOLANGCI_LINT) lint-repo
 	$(GOLANGCI_LINT) run --color=never  --timeout=3m $(if $(CI),,--fix)
 .PHONY: lint
 
+.PHONY: vulncheck
+vulncheck: $(GOVULNCHECK)
+	@echo "Checking for vulnerabilities..."
+	@vuln_output=$$($(GOVULNCHECK) ./... 2>&1); \
+	vuln_status=$$?; \
+	if [ $$vuln_status -ne 0 ]; then \
+		total_vulns=$$(echo "$$vuln_output" | grep "Your code is affected by" | sed -E 's/.*affected by ([0-9]+).*/\1/' || echo "0"); \
+		fixable_vulns=$$(echo "$$vuln_output" | grep "Fixed in:" | grep -v "N/A" | wc -l | tr -d ' ' || echo "0"); \
+		if [ -n "$$total_vulns" ] && [ "$$total_vulns" != "0" ]; then \
+			printf "\033[1;33mwarning: %s vulnerabilities found, %s can be fixed\033[0m\n" "$$total_vulns" "$$fixable_vulns"; \
+			printf "\033[0;33m         Run 'govulncheck -show color,verbose ./...' for details\033[0m\n"; \
+			if [ "$$fixable_vulns" != "0" ]; then \
+				exit 1; \
+			fi; \
+		else \
+			echo "No vulnerabilities found"; \
+		fi; \
+	else \
+		echo "No vulnerabilities found"; \
+	fi
+
 .PHONY: lint-repo
 lint-repo:
 	@hack/run-linter
@@ -274,6 +295,17 @@ test-unit: test-forwarder-generator test-unit-api
 .PHONY: test-unit-api
 test-unit-api:
 	@cd ./api/observability && go test -coverprofile=test.cov ./...
+
+# Validates the protected-SA ValidatingAdmissionPolicies' CEL against a real
+# kube-apiserver via envtest (no cluster needed). setup-envtest downloads the
+# apiserver/etcd binaries; its version tracks controller-runtime (release-0.23).
+# The admission suite skips these specs when KUBEBUILDER_ASSETS is unset, so
+# test-unit is unaffected.
+ENVTEST_K8S_VERSION ?= 1.31.0
+.PHONY: test-admission-envtest
+test-admission-envtest:
+	KUBEBUILDER_ASSETS="$$(go run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.23 use $(ENVTEST_K8S_VERSION) -p path)" \
+	go test -count=1 -run TestAdmission ./internal/admission/...
 
 .PHONY: coverage
 coverage: test-unit

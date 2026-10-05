@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/validations/observability/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/set"
 )
@@ -15,6 +17,9 @@ var (
 	// Matches dot delimited paths with alphanumeric & `_`. Any other characters added in a segment will require quotes.
 	// Matches `.kubernetes.namespace_name` & `kubernetes."test-label/with slashes"` & `."@timestamp"`
 	pathExpRegex = regexp.MustCompile(`^(\.[a-zA-Z0-9_]+|\."[^"]+")(\.[a-zA-Z0-9_]+|\."[^"]+")*$`)
+
+	// Matches RFC3339 timestamps with optional fractional seconds and timezone offset.
+	rfc3339Timestamp = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$`)
 )
 
 func ValidateFilter(spec obs.FilterSpec) (condition metav1.Condition) {
@@ -25,6 +30,10 @@ func ValidateFilter(spec obs.FilterSpec) (condition metav1.Condition) {
 		results = append(results, validateDropFilter(spec)...)
 	case obs.FilterTypePrune:
 		results = append(results, validatePruneFilter(spec)...)
+	case obs.FilterTypeKubeAPIAudit:
+		results = append(results, validateKubeAPIAuditFilter(spec)...)
+	case obs.FilterTypeOpenshiftLabels:
+		results = append(results, validateOpenshiftLabelsFilter(spec)...)
 	}
 	condition = internalobs.NewConditionFromPrefix(obs.ConditionTypeValidFilterPrefix, spec.Name, true, obs.ReasonValidationSuccess, fmt.Sprintf("filter %q is valid", spec.Name))
 	if len(results) > 0 {
@@ -42,37 +51,68 @@ func validateDropFilter(filterSpec obs.FilterSpec) (results []string) {
 		results = append(results, fmt.Sprintf("%q drop filter must have at least one test spec'd", filterSpec.Name))
 	}
 
-	var err error
 	// Validate each test
 	for i, dropTest := range filterSpec.DropTestsSpec {
 		testErrors := []string{}
+		if len(dropTest.DropConditions) == 0 {
+			testErrors = append(testErrors, "a drop test must have at least one condition")
+		}
 		// For each test, validate conditions
 		for _, testCondition := range dropTest.DropConditions {
-			if err := validateFieldPath(testCondition.Field); err != "" {
-				testErrors = append(testErrors, err)
-			}
-			// Validate only one of matches/notMatches is defined
-			if testCondition.Matches != "" && testCondition.NotMatches != "" {
-				testErrors = append(testErrors, "only one of matches or notMatches can be defined at once")
-			}
-			if strings.ContainsAny(testCondition.Matches, "'\n\r") || strings.ContainsAny(testCondition.NotMatches, "'\n\r") {
-				testErrors = append(testErrors, "matches/notMatches must not contain single quotes, newlines, or carriage returns")
-			}
-			// Validate provided regex
-			if testCondition.Matches != "" {
-				_, err = regexp.Compile(testCondition.Matches)
-			} else if testCondition.NotMatches != "" {
-				_, err = regexp.Compile(testCondition.NotMatches)
-			}
-			if err != nil {
-				testErrors = append(testErrors, "matches/notMatches must be a valid regular expression.")
-			}
+			testErrors = append(testErrors, validateDropCondition(testCondition)...)
 		}
 		if len(testErrors) != 0 {
 			results = append(results, fmt.Sprintf("%s: test[%d] %v", filterSpec.Name, i, testErrors))
 		}
 	}
 	return results
+}
+
+func validateDropCondition(condition obs.DropCondition) (results []string) {
+	// If OlderThan is used, only validate it
+	if condition.OlderThan != "" {
+		if err := validateOlderThan(condition.OlderThan); err != "" {
+			return append(results, err)
+		}
+		return results
+	}
+
+	// No OlderThan, validate Field and regex
+	if err := validateFieldPath(condition.Field); err != "" {
+		results = append(results, err)
+	}
+
+	// This should already be validated by the schema, but keeping here for backwards compatibility
+	if condition.Matches != "" && condition.NotMatches != "" {
+		results = append(results, "only one of matches or notMatches can be defined at once")
+	}
+
+	if strings.ContainsAny(condition.Matches, "'\n\r") || strings.ContainsAny(condition.NotMatches, "'\n\r") {
+		results = append(results, "matches/notMatches must not contain single quotes, newlines, or carriage returns")
+	}
+
+	regexToCompile := condition.Matches
+	if condition.NotMatches != "" {
+		regexToCompile = condition.NotMatches
+	}
+
+	if _, err := regexp.Compile(regexToCompile); err != nil {
+		results = append(results, "matches/notMatches must be a valid regular expression")
+	}
+
+	return results
+}
+
+func validateOlderThan(value string) string {
+	if _, err := time.Parse(time.DateOnly, value); err == nil {
+		return ""
+	}
+	if rfc3339Timestamp.MatchString(value) {
+		if _, err := time.Parse(time.RFC3339, value); err == nil {
+			return ""
+		}
+	}
+	return fmt.Sprintf("invalid olderThan %q: must be a valid YYYY-MM-DD or RFC3339 timestamp with an explicit offset", value)
 }
 
 func validatePruneFilter(filterSpec obs.FilterSpec) (results []string) {
@@ -121,8 +161,74 @@ func validateFieldPath(fieldPath obs.FieldPath) string {
 		// Validate field path
 	} else if !pathExpRegex.MatchString(path) {
 		return fmt.Sprintf("%q must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test-foo\")", fieldPath)
+	} else if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("field path %q", path), path); msg != "" {
+		return msg
 	}
 	return ""
+}
+
+// validateKubeAPIAuditFilter rejects rule values that would allow TOML literal multiline
+// injection. Every string in a kubeAPIAudit rule is rendered into the filter's VRL script,
+// which is serialized as a single literal multiline TOML string, so any of them can carry the
+// terminator sequence.
+func validateKubeAPIAuditFilter(filterSpec obs.FilterSpec) (results []string) {
+	if filterSpec.KubeAPIAudit == nil {
+		return results
+	}
+	checkOne := func(kind, v string) {
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit %s %q", kind, v), v); msg != "" {
+			results = append(results, msg)
+		}
+	}
+	check := func(kind string, values []string) {
+		for _, v := range values {
+			checkOne(kind, v)
+		}
+	}
+	for _, s := range filterSpec.KubeAPIAudit.OmitStages {
+		checkOne("omitStage", string(s))
+	}
+	for _, rule := range filterSpec.KubeAPIAudit.Rules {
+		checkOne("level", string(rule.Level))
+		for _, s := range rule.OmitStages {
+			checkOne("rule omitStage", string(s))
+		}
+		check("user", rule.Users)
+		check("userGroup", rule.UserGroups)
+		check("verb", rule.Verbs)
+		check("namespace", rule.Namespaces)
+		check("nonResourceURL", rule.NonResourceURLs)
+		for _, gr := range rule.Resources {
+			if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("kubeAPIAudit resource group %q", gr.Group), gr.Group); msg != "" {
+				results = append(results, msg)
+			}
+			check("resource", gr.Resources)
+			check("resourceName", gr.ResourceNames)
+		}
+	}
+	if len(results) > 0 {
+		results = []string{fmt.Sprintf("%s: %v", filterSpec.Name, results)}
+	}
+	return results
+}
+
+// validateOpenshiftLabelsFilter rejects label keys or values that would allow TOML literal
+// multiline injection. The labels map is JSON-encoded into a VRL remap whose source is
+// serialized as a single literal multiline TOML string; JSON encoding does not escape the
+// terminator sequence, so a crafted key or value would break out into the collector config.
+func validateOpenshiftLabelsFilter(filterSpec obs.FilterSpec) (results []string) {
+	for k, v := range filterSpec.OpenshiftLabels {
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("openshiftLabels key %q", k), k); msg != "" {
+			results = append(results, msg)
+		}
+		if msg := common.ValidateTOMLLiteralSafe(fmt.Sprintf("openshiftLabels value %q", v), v); msg != "" {
+			results = append(results, msg)
+		}
+	}
+	if len(results) > 0 {
+		results = []string{fmt.Sprintf("%s: %v", filterSpec.Name, results)}
+	}
+	return results
 }
 
 func validateRequiredFields(fieldList []obs.FieldPath, pruneType string) string {

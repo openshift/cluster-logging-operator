@@ -167,5 +167,36 @@ var _ = Describe("", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Invalid value"))
 		}),
+		Entry("should pass for drop filter with valid olderThan", "drop-filter-olderthan.yaml", func(out string, err error) {
+			Expect(err).ToNot(HaveOccurred())
+		}),
+		Entry("should fail for drop filter with invalid olderThan", "drop-filter-invalid-olderthan.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Invalid value"))
+		}),
+		Entry("should fail for drop filter with olderThan and field in the same condition", "drop-filter-invalid-olderthan-field.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("must define exactly one of olderThan or field"))
+		}),
+		Entry("should fail for drop filter with matches and notMatches", "drop-filter-invalid-matches-notmatches.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("a field requires exactly one match expression"))
+		}),
+		Entry("should fail for drop filter with field but no match expression", "drop-filter-invalid-field-without-match.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("a field requires exactly one match expression"))
+		}),
+		Entry("should fail for drop filter with match expression but no field", "drop-filter-invalid-match-without-field.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("match expressions cannot be used without a field"))
+		}),
+		Entry("should fail for drop filter with an empty condition", "drop-filter-invalid-empty-condition.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("must define exactly one of olderThan or field"))
+		}),
+		Entry("should fail for drop filter with olderThan and a match expression", "drop-filter-invalid-olderthan-match.yaml", func(out string, err error) {
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("match expressions cannot be used without a field"))
+		}),
 	)
 })

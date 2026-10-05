@@ -82,9 +82,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 				ToOutputWithVisitor(func(output *obs.OutputSpec) {
 					output.Type = obs.OutputTypeElasticsearch
 					output.Elasticsearch = &obs.Elasticsearch{
-						URLSpec: obs.URLSpec{
-							URL: "http://0.0.0.0:9800",
-						},
+						URL:     "http://0.0.0.0:9800",
 						Index:   "foo",
 						Version: 8,
 					}

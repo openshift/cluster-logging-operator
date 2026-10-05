@@ -1,0 +1,7 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cluster-logging-operator
+  namespace: openshift-logging
+spec:
+  targetNamespaces: []

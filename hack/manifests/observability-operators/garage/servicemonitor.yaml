@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: garage
+spec:
+  endpoints:
+  - path: /metrics
+    port: admin
+    scheme: http
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  serviceDiscoveryRole: EndpointSlice

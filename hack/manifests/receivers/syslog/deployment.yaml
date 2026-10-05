@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rsyslog-server
+  labels:
+    app: rsyslog-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rsyslog-server
+  template:
+    metadata:
+      labels:
+        app: rsyslog-server
+    spec:
+      containers:
+        - name: rsyslog-server
+          image: registry.redhat.io/rhel9/rsyslog:9.8-1780596788
+          ports:
+            - containerPort: 55514
+              name: tcp
+              protocol: TCP
+            - containerPort: 55514
+              name: udp
+              protocol: UDP
+          volumeMounts:
+            - mountPath: /etc/rsyslog
+              name: rsyslog-conf
+            - mountPath: /log
+              name: log
+          command: ["/usr/sbin/rsyslogd", "-i", "/tmp/rsyslog.pid", "-n", '-f', '/etc/rsyslog/rsyslog.conf']
+      volumes:
+        - name: rsyslog-conf
+          configMap:
+            name: rsyslog-conf
+        - emptyDir:
+            sizeLimit: 1Gi
+          name: log

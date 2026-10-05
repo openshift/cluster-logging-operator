@@ -17,7 +17,7 @@ func NewDeployment(namespace, deploymentName, component, impl string, replicas i
 
 	dpl := runtime.NewDeployment(namespace, deploymentName, visitors...)
 	runtime.NewDeploymentBuilder(dpl).WithTemplateAnnotations(annotations).
-		WithTemplateLabels(dpl.Labels).
+		WithTemplateLabels(selectors).
 		WithSelector(selectors).
 		WithPodSpec(podSpec).
 		WithReplicas(utils.GetPtr(replicas))

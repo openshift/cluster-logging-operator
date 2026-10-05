@@ -28,7 +28,7 @@ patches:
             token:
               from: serviceAccount
           target:
-            namespace: openshift-logging-storage
+            namespace: openshift-logging
             name: lokistack-dev
         tls:
           ca:

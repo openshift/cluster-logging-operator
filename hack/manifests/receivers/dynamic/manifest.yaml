@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamic-config
+data:
+  config.json: |
+    {
+      "listen": true
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dynamic-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dynamic-receiver
+  template:
+    metadata:
+      labels:
+        app: dynamic-receiver
+    spec:
+      containers:
+      - name: go-app
+        image: quay.io/jcantril/vector:dynamic
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+      volumes:
+      - name: config-volume
+        configMap:
+          name: dynamic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dynamic-receiver
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: dynamic-receiver

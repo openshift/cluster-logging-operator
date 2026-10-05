@@ -24,9 +24,15 @@ func (f *Factory) ReconcileDaemonset(k8sClient client.Client, namespace string, 
 	return reconcile.DaemonSet(k8sClient, desired)
 }
 
-func Remove(k8sClient client.Client, namespace, name string) (err error) {
+func RemoveDaemonset(k8sClient client.Client, namespace, name string) (err error) {
 	log.V(3).Info("Removing collector", "namespace", namespace, "name", name)
 	ds := runtime.NewDaemonSet(namespace, name)
+	if err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(ds), ds); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failure checking daemonset %s/%s: %v", namespace, name, err)
+	}
 	if err = k8sClient.Delete(context.TODO(), ds); err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failure deleting daemonset %s/%s: %v", namespace, name, err)
 	}

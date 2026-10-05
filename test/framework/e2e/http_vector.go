@@ -476,7 +476,7 @@ func (tc *E2ETestFramework) DeployHttpReceiverWithTLS(ns string, profileSpec con
 
 	container := corev1.Container{
 		Name:  HttpReceiver,
-		Image: utils.GetComponentImage(constants.VectorName),
+		Image: utils.GetComponentImage(constants.VectorReceiverName),
 		Ports: []corev1.ContainerPort{
 			{Name: "https", ContainerPort: 8090},
 		},

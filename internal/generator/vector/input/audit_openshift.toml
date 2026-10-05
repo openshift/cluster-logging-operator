@@ -17,6 +17,12 @@ source = '''
   ._internal.structured = parse_json!(string!(._internal.message))
   ._internal = merge!(._internal,._internal.structured)
 
+  audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
+  if audit_err != null {
+    audit_time, audit_err = parse_timestamp(to_string(._internal.requestReceivedTimestamp) ?? "", "%+")
+  }
+  if audit_err == null { ._internal.timestamp = audit_time }
+
   ._internal.log_source = "openshiftAPI"
   ._internal.log_type = "audit"
   ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""

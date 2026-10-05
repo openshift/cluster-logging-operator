@@ -38,7 +38,7 @@ func NewViaqReceiverSource(spec *adapters.Input, resNames factory.ForwarderResou
 		server.Decoding = &sources.Decoding{
 			Codec: codec.CodecTypeJSON,
 		}
-		tfs[metaID] = NewAuditInternalNormalization(obs.AuditSourceKube, itemsID, false)
+		tfs[metaID] = NewAuditInternalNormalization(obs.AuditSourceKube, itemsID, false, parseReceiverStructuredAuditTimestamp)
 		spec.Ids = append(spec.Ids, metaID)
 		return base, server, tfs
 	default:

@@ -11,9 +11,8 @@ spec:
   serviceAccount:
     name: logcollector
   pipelines:
-  - name: infra
+  - name: app
     inputRefs:
     - application
-    - infrastructure
     outputRefs:
       - replaceme

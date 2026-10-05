@@ -85,7 +85,7 @@ func NewOVNAuditSource(input *adapters.Input) (id string, _ types.Source, tfs ap
 	f.MaxLineBytes = MaxLineBytes
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
-	tfs.Add(metaID, NewInternalNormalization(obs.AuditSourceOVN, obs.InputTypeAudit, id))
+	tfs.Add(metaID, NewInternalNormalization(obs.AuditSourceOVN, obs.InputTypeAudit, id, v1.ParseOVNAuditLogTimestamp))
 	input.Ids = append(input.Ids, metaID)
 	return id, f, tfs
 }

@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: log-generator
+spec:
+  selector:
+    app.kubernetes.io/name: log-generator
+    app.kubernetes.io/component: log-generator
+    app.kubernetes.io/part-of: cluster-logging
+  endpoints:
+  - port: metrics
+  jobLabel: monitor-log-generator
+  podTargetLabels:
+  - app.kubernetes.io/name
+  - app.kubernetes.io/component

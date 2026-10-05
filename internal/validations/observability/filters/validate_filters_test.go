@@ -14,6 +14,37 @@ var _ = Describe("[internal][validations][observability][filters]", func() {
 		expConditionTypeRE = obs.ConditionTypeValidFilterPrefix + "-.*"
 	)
 
+	Context("#validateOlderThan", func() {
+		DescribeTable("accepts dates and RFC3339 timestamps with an explicit offset", func(value string) {
+			Expect(validateOlderThan(value)).To(BeEmpty())
+		},
+			Entry("date", "2026-09-16"),
+			Entry("leap day", "2024-02-29"),
+			Entry("UTC timestamp", "2026-09-16T00:15:30Z"),
+			Entry("negative offset", "2026-09-16T00:15:30-04:00"),
+			Entry("positive offset", "2026-09-16T12:15:30+05:30"),
+			Entry("maximum offset components", "2026-09-16T23:59:00+23:59"),
+			Entry("fractional seconds", "2026-09-16T00:15:30.123456789Z"),
+		)
+
+		DescribeTable("rejects invalid dates and timestamp formats", func(value string) {
+			Expect(validateOlderThan(value)).To(ContainSubstring("invalid olderThan"))
+		},
+			Entry("missing offset", "2026-09-16T00:15:30"),
+			Entry("comma fractional separator", "2026-09-16T00:15:30,1Z"),
+			Entry("offset hour 24", "2026-09-16T00:15:30+24:00"),
+			Entry("negative offset hour 24", "2026-09-16T00:15:30-24:00"),
+			Entry("offset minute 60", "2026-09-16T00:15:30+00:60"),
+			Entry("negative offset minute 60", "2026-09-16T00:15:30-00:60"),
+			Entry("wrong date separator", "2026/09/16"),
+			Entry("impossible date", "2026-02-30"),
+			Entry("impossible timestamp date", "2026-02-30T00:15:30Z"),
+			Entry("single-digit month", "2026-9-16"),
+			Entry("single-digit day", "2026-09-6"),
+			Entry("single-digit hour", "2026-09-16T0:15:30Z"),
+		)
+	})
+
 	Context("#validateDropFilters", func() {
 		DescribeTable("invalid fields and matches/notMatches", func(dropTests []obs.DropTest, errMsg string) {
 			spec := obs.FilterSpec{
@@ -63,20 +94,6 @@ var _ = Describe("[internal][validations][observability][filters]", func() {
 					},
 				},
 				`[field must be a valid dot delimited path expression (.kubernetes.container_name or .kubernetes.\"test\-foo\")]`,
-			),
-			Entry("should fail validation if both matches and notMatches are spec'd for one condition",
-				[]obs.DropTest{
-					{
-						DropConditions: []obs.DropCondition{
-							{
-								Field:      ".kubernetes.test",
-								Matches:    "foobar",
-								NotMatches: "baz",
-							},
-						},
-					},
-				},
-				"[only one of matches or notMatches can be defined at once]",
 			),
 			Entry("should fail validation if any matches or notMatches contain invalid regular expressions",
 				[]obs.DropTest{
@@ -202,13 +219,52 @@ var _ = Describe("[internal][validations][observability][filters]", func() {
 			),
 		)
 
-		It("should fail if no drop conditions spec'd", func() {
+		DescribeTable("valid olderThan drop condition", func(olderThan string) {
 			spec := obs.FilterSpec{
 				Name: myDrop,
 				Type: obs.FilterTypeDrop,
+				DropTestsSpec: []obs.DropTest{{
+					DropConditions: []obs.DropCondition{{OlderThan: olderThan}},
+				}},
 			}
-			Expect(ValidateFilter(spec)).To(MatchCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, "at least one"))
-		})
+			Expect(ValidateFilter(spec)).To(MatchCondition(expConditionTypeRE, true, obs.ReasonValidationSuccess, `filter.*is valid`))
+		},
+			Entry("accepts a date-only value", "2026-09-16"),
+			Entry("accepts an RFC3339 timestamp with an offset", "2026-09-16T00:15:30-04:00"),
+		)
+
+		DescribeTable("invalid drop condition structure", func(dropTests []obs.DropTest, errMsg string) {
+			spec := obs.FilterSpec{
+				Name:          myDrop,
+				Type:          obs.FilterTypeDrop,
+				DropTestsSpec: dropTests,
+			}
+			Expect(ValidateFilter(spec)).To(MatchCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, errMsg))
+		},
+			Entry("rejects an empty test list", []obs.DropTest{}, "at least one"),
+			Entry("rejects a test with no conditions", []obs.DropTest{{}}, "at least one condition"),
+			Entry("rejects an empty condition for its invalid field path", []obs.DropTest{{DropConditions: []obs.DropCondition{{}}}}, "must start with a '.'"),
+			Entry("rejects a matcher without a field", []obs.DropTest{{DropConditions: []obs.DropCondition{{Matches: "message"}}}}, "must start with a '.'"),
+		)
+
+		DescribeTable("invalid olderThan drop condition", func(olderThan, errMsg string) {
+			spec := obs.FilterSpec{
+				Name: myDrop,
+				Type: obs.FilterTypeDrop,
+				DropTestsSpec: []obs.DropTest{{
+					DropConditions: []obs.DropCondition{{OlderThan: olderThan}},
+				}},
+			}
+			Expect(ValidateFilter(spec)).To(MatchCondition(expConditionTypeRE, false, obs.ReasonValidationFailure, errMsg))
+		},
+			Entry("rejects a timestamp without an offset", "2026-09-16T00:15:30", "invalid olderThan"),
+			Entry("rejects a comma fractional separator", "2026-09-16T00:15:30,1Z", "invalid olderThan"),
+			Entry("rejects offset hour 24", "2026-09-16T00:15:30+24:00", "invalid olderThan"),
+			Entry("rejects offset minute 60", "2026-09-16T00:15:30+00:60", "invalid olderThan"),
+			Entry("rejects a date with the wrong separator", "2026/09/16", "invalid olderThan"),
+			Entry("rejects an impossible date", "2026-02-30", "invalid olderThan"),
+		)
+
 	})
 
 	Context("#validatePruneFilter", func() {

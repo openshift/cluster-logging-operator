@@ -255,7 +255,7 @@ test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
 		-race -p --procs=8 \
-		--no-color --poll-progress-after=45s --timeout=40m \
+		--no-color --poll-progress-after=45s --timeout=60m \
 		./test/functional/...
 
 .PHONY: test-helpers

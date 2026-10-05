@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // EnsureCanUpdateOwnedResource returns nil when the object has not been persisted yet
@@ -13,29 +12,15 @@ import (
 // unowned), it returns an error and callers must not mutate the object.
 //
 // CLO-managed resources have a single controller ownerReference (the CLF), or no
-// owner at all (e.g. dashboard ConfigMaps). Ownership is matched by UID.
+// owner at all (e.g. dashboard ConfigMaps). Ownership is compared with HasSameOwner.
 func EnsureCanUpdateOwnedResource(obj metav1.Object, desiredOwners ...metav1.OwnerReference) error {
 	if obj.GetResourceVersion() == "" {
 		return nil
 	}
-	if hasSameOwnerUIDs(obj.GetOwnerReferences(), desiredOwners) {
+	if HasSameOwner(obj.GetOwnerReferences(), desiredOwners) {
 		return nil
 	}
 	return ResourceOwnershipConflictError(obj)
-}
-
-// hasSameOwnerUIDs reports whether current and desired have the same owner UIDs.
-// An empty desired owner list only matches when current owners are also empty.
-func hasSameOwnerUIDs(current, desired []metav1.OwnerReference) bool {
-	return ownerUIDSet(current).Equal(ownerUIDSet(desired))
-}
-
-func ownerUIDSet(refs []metav1.OwnerReference) sets.Set[string] {
-	uids := sets.New[string]()
-	for _, ref := range refs {
-		uids.Insert(string(ref.UID))
-	}
-	return uids
 }
 
 // ResourceOwnershipConflictError builds a stable error for ownership conflicts.

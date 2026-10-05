@@ -72,10 +72,9 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 		return err
 	}
 
-	if err := utils.EnsureCanUpdateOwnedResource(existing, desired.OwnerReferences...); err != nil {
-		return err
-	}
-
+	// ClusterRoleBindings are cluster-scoped. Do not set ownerReferences from a
+	// namespaced owner (e.g. ClusterLogForwarder); Kubernetes GC cannot resolve
+	// that relationship. Cleanup is done explicitly via DeleteClusterRoleBinding.
 	if existing.RoleRef != desired.RoleRef {
 		log.V(3).Info("Deleting clusterRoleBinding due to roleRef change", "name", name)
 		if err := k8sClient.Delete(context.TODO(), existing); err != nil {
@@ -86,7 +85,6 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 	}
 
 	existing.Subjects = desired.Subjects
-	existing.OwnerReferences = desired.OwnerReferences
 	log.V(3).Info("Updating clusterRoleBinding", "name", name)
 	return k8sClient.Update(context.TODO(), existing)
 }

@@ -254,7 +254,7 @@ test-functional: test-functional-benchmarker-vector
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
-		-race -p --procs=8 \
+		-race -p --procs=8 --keep-going \
 		--no-color --poll-progress-after=45s --timeout=60m \
 		./test/functional/...
 

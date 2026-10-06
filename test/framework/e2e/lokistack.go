@@ -58,7 +58,7 @@ const (
 	minioImage = "quay.io/openshift-logging/minio-mirror:RELEASE.2025-09-07T16-13-09Z"
 )
 
-var lokiOperatorChannel = "stable-6.4"
+var lokiOperatorChannel = "stable-6.6"
 
 func init() {
 	if value := os.Getenv("LOKI_OPERATOR_CHANNEL"); value != "" {

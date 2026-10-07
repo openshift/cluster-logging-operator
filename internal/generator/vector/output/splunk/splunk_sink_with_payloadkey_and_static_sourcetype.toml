@@ -49,6 +49,8 @@ timestamp_key = "._internal.timestamp"
 source = "{{ ._internal.splunk.source }}"
 sourcetype = "{{ ._internal.splunk.sourcetype }}"
 host_key = "._internal.hostname"
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.splunk_hec.encoding]
 codec = "json"
 except_fields = ["_internal"]

@@ -47,6 +47,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		}
 		sasl(s, o.Kafka.Authentication)
 		librdKafkaOptions(s, o)
+		s.DangerouslyAllowUnconfinedTemplateResolution = true
 	}, componentID)
 	return id, sink, tfs
 }

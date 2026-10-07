@@ -64,6 +64,7 @@ if exists(.kubernetes.event.metadata.uid) {
 			s.IdKey = "_id"
 		}
 		s.TLS = tls.NewTls(o, secrets, op)
+		s.DangerouslyAllowUnconfinedTemplateResolution = true
 	}, componentID)
 	return id, sink, tfs
 }

@@ -468,5 +468,32 @@ var _ = Describe("inputs", func() {
 		},
 			"infrastructure_container_with_throttle.toml",
 		),
+		Entry("application input with MaxMessageSize and truncate behavior", obs.InputSpec{
+			Name: "my_app",
+			Type: obs.InputTypeApplication,
+			Application: &obs.Application{
+				Tuning: &obs.ContainerInputTuningSpec{
+					MaxMessageSize:           utils.GetPtr(resource.MustParse("1Mi")),
+					OversizedMessageBehavior: utils.GetPtr(obs.OversizedMessageBehaviorTruncate),
+				},
+			},
+		},
+			"application_with_max_merge_line_size_truncate.toml",
+		),
+		Entry("infrastructure input with containers source, MaxMessageSize and truncate behavior", obs.InputSpec{
+			Name: "myinfra",
+			Type: obs.InputTypeInfrastructure,
+			Infrastructure: &obs.Infrastructure{
+				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
+				Tuning: &obs.InfrastructureInputTuningSpec{
+					Container: &obs.ContainerInputTuningSpec{
+						MaxMessageSize:           utils.GetPtr(resource.MustParse("1M")),
+						OversizedMessageBehavior: utils.GetPtr(obs.OversizedMessageBehaviorTruncate),
+					},
+				},
+			},
+		},
+			"infrastructure_container_with_max_merge_line_size_truncate.toml",
+		),
 	)
 })

@@ -55,6 +55,7 @@ var _ = Describe("reconciling RoleBinding", func() {
 	It("should update Subjects and OwnerReferences when roleRef is unchanged", func() {
 		existing := runtime.NewRoleBinding(namespace, name, newRef,
 			rbacv1.Subject{Kind: "ServiceAccount", Name: "old-sa", Namespace: namespace})
+		existing.OwnerReferences = []metav1.OwnerReference{ownerRef}
 		k8sClient := newClient(existing)
 
 		desired := runtime.NewRoleBinding(namespace, name, newRef, subject)
@@ -71,6 +72,7 @@ var _ = Describe("reconciling RoleBinding", func() {
 	It("should delete and recreate the RoleBinding when roleRef changes", func() {
 		existing := runtime.NewRoleBinding(namespace, name, oldRef,
 			rbacv1.Subject{Kind: "ServiceAccount", Name: "old-sa", Namespace: namespace})
+		existing.OwnerReferences = []metav1.OwnerReference{ownerRef}
 		k8sClient := newClient(existing)
 
 		desired := runtime.NewRoleBinding(namespace, name, newRef, subject)
@@ -82,5 +84,19 @@ var _ = Describe("reconciling RoleBinding", func() {
 		Expect(result.RoleRef).To(Equal(newRef))
 		Expect(result.Subjects).To(Equal([]rbacv1.Subject{subject}))
 		Expect(result.OwnerReferences).To(Equal([]metav1.OwnerReference{ownerRef}))
+	})
+
+	It("should refuse to overwrite a RoleBinding owned by another resource", func() {
+		foreignOwner := metav1.OwnerReference{APIVersion: "v1", Kind: "ConfigMap", Name: "other", UID: "other-uid"}
+		existing := runtime.NewRoleBinding(namespace, name, newRef, subject)
+		existing.OwnerReferences = []metav1.OwnerReference{foreignOwner}
+		k8sClient := newClient(existing)
+
+		desired := runtime.NewRoleBinding(namespace, name, newRef, subject)
+		desired.OwnerReferences = []metav1.OwnerReference{ownerRef}
+
+		err := reconcile.RoleBinding(k8sClient, desired)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("refusing to overwrite"))
 	})
 })

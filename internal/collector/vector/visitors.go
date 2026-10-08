@@ -22,6 +22,14 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 		},
 	)
 
+	// Pin Vector's worker-thread count to the CPU limit so it does not oversubscribe the
+	// container's CFS quota and cause CPU throttling on nodes with many cores.
+	if threads, ok := vectorThreads(collectorContainer.Resources); ok {
+		collectorContainer.Env = append(collectorContainer.Env,
+			corev1.EnvVar{Name: "VECTOR_THREADS", Value: threads},
+		)
+	}
+
 	dataPath := GetDataPath(namespace, resNames.ForwarderName)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		corev1.VolumeMount{Name: common.ConfigVolumeName, ReadOnly: true, MountPath: vectorConfigPath},

@@ -51,6 +51,15 @@ const (
 	sourceKubeAPIServerPath                    = "/var/log/kube-apiserver"
 	tmpVolumeName                              = "tmp"
 	tmpPath                                    = "/tmp"
+
+	// collectorRunAsUser is set to 1000 to enforce RunAsNonRoot.
+	// Read access to host logs (/var/log/pods) is achieved via collectorRunAsGroup (GID 0),
+	// which satisfies the group-read permissions on the host filesystem.
+	// The security improvement comes from replacing spc_t with the MCS-constrained
+	// container_logwriter_t SELinux domain.
+	collectorRunAsUser = common.NonRootUser
+	// collectorRunAsGroup is the primary GID.
+	collectorRunAsGroup int64 = 0
 )
 
 type Visitor func(collector *v1.Container, podSpec *v1.PodSpec, resNames *factory.ForwarderResourceNames, namespace, logLevel string)
@@ -153,6 +162,9 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 	}
 
 	podSpec := &v1.PodSpec{
+		SecurityContext: &v1.PodSecurityContext{
+			FSGroup: utils.GetPtr(int64(0)),
+		},
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
 		PriorityClassName:             clusterLoggingPriorityClassName,
 		ServiceAccountName:            f.ResourceNames.ServiceAccount,
@@ -213,6 +225,14 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, spec obs.ClusterLogF
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
 	f.Visit(collector, podSpec, f.ResourceNames, namespace, LogLevel(f.annotations))
+
+	// Add init container for daemonsets to prepare the data directory with proper SELinux labeling
+	if f.isDaemonset {
+		dataPath := vector.GetDataPath(namespace, f.ResourceNames.ForwarderName)
+		podSpec.InitContainers = []v1.Container{
+			vector.NewDataDirInitContainer(dataPath),
+		}
+	}
 
 	podSpec.Containers = []v1.Container{
 		*collector,
@@ -370,11 +390,15 @@ func AddServiceAccountProjectedVolume(podSpec *v1.PodSpec, audience string) {
 func AddSecurityContextTo(container *v1.Container) *v1.Container {
 	container.SecurityContext = &v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
+			Add:  auth.AllowedCapabilities,
 			Drop: auth.RequiredDropCapabilities,
 		},
 		SELinuxOptions: &v1.SELinuxOptions{
-			Type: "spc_t",
+			Type: common.SelinuxTypeLogWriter, // container_logwriter_t enforces SELinux isolation
 		},
+		RunAsUser:                utils.GetPtr(collectorRunAsUser),  // 1000
+		RunAsGroup:               utils.GetPtr(collectorRunAsGroup), // 0
+		RunAsNonRoot:             utils.GetPtr(true),
 		ReadOnlyRootFilesystem:   utils.GetPtr(true),
 		AllowPrivilegeEscalation: utils.GetPtr(false),
 		SeccompProfile: &v1.SeccompProfile{

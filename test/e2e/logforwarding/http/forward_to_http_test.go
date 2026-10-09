@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", Serial, func() {
 	var (
 		err              error
 		e2e              = framework.NewE2ETestFramework()

@@ -3,6 +3,7 @@ package lokistack
 import (
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +16,39 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// suiteFramework owns the resources shared by every spec (minio, the loki
+// operator and the log-reader cluster role). They are deployed once on parallel
+// process 1 so the specs can run concurrently without redeploying them.
+var suiteFramework *framework.E2ETestFramework
+
+// specCounter, combined with the Ginkgo parallel process number, yields a token
+// that is unique across every spec in every parallel process. It keeps the
+// per-spec namespaces and minio buckets from colliding when the suite runs with
+// `ginkgo -p`.
+var specCounter int64
+
+// uniqueName returns prefix suffixed with a token unique to this spec across all
+// parallel processes. The result is a valid DNS label and S3 bucket name.
+func uniqueName(prefix string) string {
+	return fmt.Sprintf("%s-p%d-%d", prefix, GinkgoParallelProcess(), atomic.AddInt64(&specCounter, 1))
+}
+
+var _ = SynchronizedBeforeSuite(func() []byte {
+	// Runs once, on parallel process 1, before any spec on any process.
+	suiteFramework = framework.NewE2ETestFramework()
+	Expect(suiteFramework.DeployMinio()).To(Succeed(), "exp. minio to deploy")
+	Expect(suiteFramework.DeployLokiOperator()).To(Succeed(), "exp. loki operator to deploy")
+	Expect(suiteFramework.DeployLokiReaderClusterRole()).To(Succeed(), "exp. loki reader cluster role to be created")
+	return nil
+}, func(_ []byte) {})
+
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	// Runs once, on parallel process 1, after all specs on all processes.
+	if suiteFramework != nil {
+		suiteFramework.Cleanup()
+	}
+})
+
 var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	const (
 		forwarderName = "my-forwarder"
@@ -23,7 +57,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	)
 	var (
 		err               error
-		e2e               = framework.NewE2ETestFramework()
+		e2e               *framework.E2ETestFramework
 		forwarder         *obs.ClusterLogForwarder
 		deployNS          string
 		logGenNS          string
@@ -33,15 +67,19 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	)
 
 	BeforeEach(func() {
-		deployNS = e2e.CreateTestNamespace()
+		// A fresh framework per spec so cleanup is scoped to this spec, letting
+		// specs run in parallel. minio, the loki operator and the reader role are
+		// shared and were deployed once in SynchronizedBeforeSuite.
+		e2e = framework.NewE2ETestFramework()
+		deployNS = e2e.CreateNamespace(uniqueName("clo-test"))
 
-		if err = e2e.DeployMinio(); err != nil {
+		// Each parallel LokiStack needs its own object-store bucket; sharing one
+		// across stacks corrupts their index and chunks.
+		bucket := deployNS
+		if err = e2e.CreateMinioBucket(bucket); err != nil {
 			Fail(err.Error())
 		}
-		if err = e2e.DeployLokiOperator(); err != nil {
-			Fail(err.Error())
-		}
-		if lokistackReceiver, err = e2e.DeployLokistackInNamespace(deployNS); err != nil {
+		if lokistackReceiver, err = e2e.DeployLokistackInNamespace(deployNS, bucket); err != nil {
 			Fail(err.Error())
 		}
 
@@ -97,7 +135,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		}
 
 		// Deploy log generator
-		logGenNS = e2e.CreateTestNamespaceWithPrefix("clo-test-loader")
+		logGenNS = e2e.CreateNamespace(uniqueName("clo-test-loader"))
 		generatorOpt := framework.NewDefaultLogGeneratorOptions()
 		generatorOpt.Count = -1
 		if err = e2e.DeployLogGeneratorWithNamespaceName(logGenNS, logGenName, generatorOpt); err != nil {
@@ -384,7 +422,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 					Fail(err.Error())
 				}
 
-				traceLogGenNS := e2e.CreateTestNamespaceWithPrefix("clo-test-trace")
+				traceLogGenNS := e2e.CreateNamespace(uniqueName("clo-test-trace"))
 				traceGenOpt := framework.NewDefaultLogGeneratorOptions()
 				traceGenOpt.Message = fmt.Sprintf(messageFormat, expectedTraceID, expectedSpanID, expectedFlags)
 				if err = e2e.DeployLogGeneratorWithNamespaceName(traceLogGenNS, traceLogGenName, traceGenOpt); err != nil {

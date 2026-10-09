@@ -23,7 +23,7 @@ import (
 const (
 	S3Secret      = "s3-secret"
 	awsRegion     = "us-east-2"
-	minioImage    = "quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z"
+	minioImage    = "quay.io/openshift-logging/minio-mirror:RELEASE.2025-09-07T16-13-09Z"
 	minioPort     = 9000
 	minioCmd      = "server"
 	minioDataPath = "/data"

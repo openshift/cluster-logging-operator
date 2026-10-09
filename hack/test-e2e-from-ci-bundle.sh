@@ -18,7 +18,7 @@ oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/w
 # single process; only parallel-safe suites spread across the worker processes.
 # --procs is capped to keep the shared, claimed cluster from being overwhelmed.
 GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
-   -p --procs=4 \
+   -p --procs=3 \
    -v --trace --no-color \
    --skip="FlowControl" \
    --poll-progress-after=300s \

@@ -1,8 +1,6 @@
 # NetworkPolicy for cluster-logging-operator manager pod
 # This policy defines both ingress and egress rules required for the operator to function
-# in a restrictive network environment. It only takes effect for traffic that a matching
-# AdminNetworkPolicy rule allows or delegates with a Pass action; an AdminNetworkPolicy Deny
-# takes precedence and cannot be overridden by this NetworkPolicy.
+# in a restrictive network environment.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -18,17 +16,15 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow metrics scraping (metrics-bind-address :8443)
+    # Allow metrics (Port 8443)
     - ports:
-      - port: 8443
+      - port: https-metrics
         protocol: TCP
   egress:
     # Allow DNS resolution
     - ports:
-      - port: 53
+      - port: dns
         protocol: UDP
-      - port: 53
-        protocol: TCP
     # Allow communication with Kubernetes API server
     - ports:
       - port: 6443

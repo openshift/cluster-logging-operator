@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 
-set -uo pipefail
+set -u
 
-# The directory used for persisting Vector state, such as on-disk buffers, file checkpoints, and more.
-VECTOR_DATA_DIR=%s
-echo "Creating the directory used for persisting Vector state $VECTOR_DATA_DIR"
-mkdir -p ${VECTOR_DATA_DIR}
+# Ensure data directory exists (init container handles this in production, but needed for tests)
+if [ -n "${VECTOR_DATA_DIR:-}" ]; then
+    # Try to create the directory; ignore errors if filesystem is read-only or inaccessible
+    mkdir -p "$VECTOR_DATA_DIR" 2>/dev/null || true
+fi
 
 echo "Starting Vector process..."
 exec /usr/bin/vector --config-toml /etc/vector/vector.toml

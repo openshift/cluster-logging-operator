@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -95,7 +96,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		sc := container.SecurityContext
 		Expect(sc).ToNot(BeNil())
 		Expect(sc.SELinuxOptions).ToNot(BeNil())
-		Expect(sc.SELinuxOptions.Type).To(Equal("container_logwriter_t"))
+		Expect(sc.SELinuxOptions.Type).To(Equal(common.SelinuxTypeLogWriter))
 		Expect(sc.RunAsUser).ToNot(BeNil())
 		Expect(*sc.RunAsUser).To(Equal(int64(1000)))
 		Expect(sc.RunAsNonRoot).ToNot(BeNil())

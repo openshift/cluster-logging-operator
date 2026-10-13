@@ -1,3 +1,7 @@
+// Package tls provides TLS profile management for cluster logging components.
+// It enforces CWE-327 security hardening: deprecated TLS versions (1.0, 1.1) are rejected,
+// and only secure AEAD ciphers (AES-GCM, ChaCha20-Poly1305) with ECDHE key exchange are accepted.
+// OpenSSL-named ciphers from OpenShift TLS profiles are validated against a secure mapping.
 package tls
 
 import (
@@ -52,6 +56,21 @@ var (
 		configv1.TLSGroupSecP256r1MLKEM768:  "SecP256r1MLKEM768",
 		configv1.TLSGroupSecP384r1MLKEM1024: "SecP384r1MLKEM1024",
 	}
+
+	// openSSLToIANACiphersMap maps OpenSSL cipher suite names (used in OpenShift TLS profiles)
+	// to their IANA equivalents (used by Go's crypto/tls). Only secure AEAD ciphers with
+	// ECDHE key exchange are included (CWE-327 hardening). This enforces the same
+	// restrictions as the log-file-metric-exporter binary, preventing the operator from
+	// passing insecure ciphers (CBC, 3DES, SHA-1 MACs, non-ECDHE) to pod TLS configuration.
+	// See LOG-9764 for the security rationale.
+	openSSLToIANACiphersMap = map[string]string{
+		"ECDHE-ECDSA-AES128-GCM-SHA256":  "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+		"ECDHE-RSA-AES128-GCM-SHA256":    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+		"ECDHE-ECDSA-AES256-GCM-SHA384":  "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+		"ECDHE-RSA-AES256-GCM-SHA384":    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+		"ECDHE-ECDSA-CHACHA20-POLY1305": "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+		"ECDHE-RSA-CHACHA20-POLY1305":   "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+	}
 )
 
 // FetchAPIServerTlsProfile fetches tlsSecurityProfile configured in APIServer
@@ -64,20 +83,87 @@ func FetchAPIServerTlsProfile(k8client client.Client) (*configv1.TLSSecurityProf
 	return apiServer.Spec.TLSSecurityProfile, nil
 }
 
-// TLSCiphers returns the TLS ciphers for the
-// TLS security profile defined in the APIServerConfig.
+// TLSCiphers returns the TLS ciphers for the TLS security profile.
+// Insecure cipher suites are filtered out (CWE-327): only AEAD ciphers (AES-GCM, ChaCha20-Poly1305)
+// with ECDHE key exchange are accepted. OpenSSL-named ciphers from OpenShift profiles are validated
+// against openSSLToIANACiphersMap; ciphers not in the mapping (CBC, 3DES, SHA-1 MACs, non-ECDHE)
+// are silently dropped. If all ciphers are filtered, defaults to the Intermediate profile.
+// The returned cipher list can be passed to the exporter binary via -cipherSuites flag (comma-separated).
 func TLSCiphers(profile configv1.TLSProfileSpec) []string {
 	if len(profile.Ciphers) == 0 {
 		return DefaultTLSCiphers
 	}
-	return profile.Ciphers
+
+	// Build a map of secure IANA cipher names for fast lookup
+	secureCipherNames := make(map[string]bool)
+	for _, suite := range tls.CipherSuites() {
+		secureCipherNames[suite.Name] = true
+	}
+
+	// Build a reverse map of IANA names to OpenSSL names for checking if an OpenSSL cipher is secure
+	secureCiphersByOpenSSL := make(map[string]bool)
+	for openSSLName, ianaName := range openSSLToIANACiphersMap {
+		if secureCipherNames[ianaName] {
+			secureCiphersByOpenSSL[openSSLName] = true
+		}
+	}
+
+	// TLS 1.3 cipher suites (not in tls.CipherSuites() but still secure)
+	// Explicit allowlist to reject CCM variants
+	tls13Ciphers := map[string]bool{
+		"TLS_AES_128_GCM_SHA256":       true,
+		"TLS_AES_256_GCM_SHA384":       true,
+		"TLS_CHACHA20_POLY1305_SHA256": true,
+	}
+
+	validCiphers := make([]string, 0, len(profile.Ciphers))
+	for _, cipherName := range profile.Ciphers {
+		// Accept if it's in the secure IANA cipher list
+		if secureCipherNames[cipherName] {
+			validCiphers = append(validCiphers, cipherName)
+			continue
+		}
+
+		// Check if this is a secure TLS 1.3 cipher
+		if tls13Ciphers[cipherName] {
+			validCiphers = append(validCiphers, cipherName)
+			continue
+		}
+
+		// Check if this is a secure OpenSSL-named cipher
+		if secureCiphersByOpenSSL[cipherName] {
+			validCiphers = append(validCiphers, cipherName)
+			continue
+		}
+
+		log.V(1).Info("Filtering out insecure or unsupported cipher suite", "cipher", cipherName)
+	}
+
+	// If all ciphers were filtered out, fall back to defaults
+	if len(validCiphers) == 0 {
+		log.Info("All ciphers were filtered out as insecure, falling back to defaults",
+			"originalCount", len(profile.Ciphers),
+			"defaultCount", len(DefaultTLSCiphers))
+		return DefaultTLSCiphers
+	}
+
+	return validCiphers
 }
 
-// MinTLSVersion returns the minimum TLS version for the
-// TLS security profile defined in the APIServerConfig.
+// MinTLSVersion returns the minimum TLS version for the TLS security profile.
+// Deprecated TLS versions (1.0, 1.1) are rejected and automatically upgraded to TLS 1.2 (CWE-327).
+// This ensures components deployed with the Old TLS profile receive a secure minimum version.
+// The returned version string can be passed to the exporter binary via -tlsMinVersion flag.
 func MinTLSVersion(profile configv1.TLSProfileSpec) string {
 	if profile.MinTLSVersion == "" {
 		return string(DefaultMinTLSVersion)
+	}
+	// Reject deprecated TLS versions - return TLS 1.2 as safe fallback
+	if profile.MinTLSVersion == configv1.VersionTLS10 || profile.MinTLSVersion == configv1.VersionTLS11 {
+		log.Info("Rejecting deprecated TLS version, using TLS 1.2 instead",
+			"requestedVersion", profile.MinTLSVersion,
+			"fallbackVersion", configv1.VersionTLS12)
+		return string(configv1.VersionTLS12)
 	}
 	return string(profile.MinTLSVersion)
 }
@@ -142,14 +228,10 @@ func GetClusterTLSProfileSpec(apiServerTLSProfile *configv1.TLSSecurityProfile) 
 	return defaultProfile
 }
 
-// CipherSuiteStringToID converts cipher suite name to crypto/tls ID
+// CipherSuiteStringToID converts cipher suite name to crypto/tls ID.
+// Only secure cipher suites are supported; insecure ciphers are rejected (CWE-327).
 func CipherSuiteStringToID(name string) (uint16, error) {
 	for _, suite := range tls.CipherSuites() {
-		if suite.Name == name {
-			return suite.ID, nil
-		}
-	}
-	for _, suite := range tls.InsecureCipherSuites() {
 		if suite.Name == name {
 			return suite.ID, nil
 		}
@@ -157,13 +239,10 @@ func CipherSuiteStringToID(name string) (uint16, error) {
 	return 0, fmt.Errorf("unsupported cipher suite: %s", name)
 }
 
-// TLSVersionToConstant converts TLS version string to crypto/tls constant
+// TLSVersionToConstant converts TLS version string to crypto/tls constant.
+// Only TLS 1.2 and 1.3 are supported; deprecated versions are rejected (CWE-327).
 func TLSVersionToConstant(version configv1.TLSProtocolVersion) (uint16, error) {
 	switch version {
-	case configv1.VersionTLS10:
-		return tls.VersionTLS10, nil
-	case configv1.VersionTLS11:
-		return tls.VersionTLS11, nil
 	case configv1.VersionTLS12:
 		return tls.VersionTLS12, nil
 	case configv1.VersionTLS13:

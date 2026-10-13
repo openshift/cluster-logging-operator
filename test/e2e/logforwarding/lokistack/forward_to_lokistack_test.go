@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
+var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", Serial, func() {
 	const (
 		forwarderName = "my-forwarder"
 		logGenName    = "log-generator"

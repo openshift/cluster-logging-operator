@@ -46,19 +46,30 @@ func NewContainerSource(spec *adapters.Input, includes, excludes []string, logTy
 	base := helpers.MakeInputID(spec.Name, "container")
 	var selector *metav1.LabelSelector
 	maxMsgSize := int64(0)
+	var oversizedAction *string
 	if spec.Application != nil {
 		selector = spec.Application.Selector
-		if spec.Application.Tuning != nil && spec.Application.Tuning.MaxMessageSize != nil {
-			if size, ok := spec.Application.Tuning.MaxMessageSize.AsInt64(); ok {
-				maxMsgSize = size
+		if spec.Application.Tuning != nil {
+			if spec.Application.Tuning.MaxMessageSize != nil {
+				if size, ok := spec.Application.Tuning.MaxMessageSize.AsInt64(); ok {
+					maxMsgSize = size
+				}
+			}
+			if spec.Application.Tuning.OversizedMessageBehavior != nil {
+				oversizedAction = (*string)(spec.Application.Tuning.OversizedMessageBehavior)
 			}
 		}
 	}
 	if spec.Infrastructure != nil {
 		if (len(spec.Infrastructure.Sources) == 0 || set.New(spec.Infrastructure.Sources...).Has(obs.InfrastructureSourceContainer)) &&
-			spec.Infrastructure.Tuning != nil && spec.Infrastructure.Tuning.Container != nil && spec.Infrastructure.Tuning.Container.MaxMessageSize != nil {
-			if size, ok := spec.Infrastructure.Tuning.Container.MaxMessageSize.AsInt64(); ok {
-				maxMsgSize = size
+			spec.Infrastructure.Tuning != nil && spec.Infrastructure.Tuning.Container != nil {
+			if spec.Infrastructure.Tuning.Container.MaxMessageSize != nil {
+				if size, ok := spec.Infrastructure.Tuning.Container.MaxMessageSize.AsInt64(); ok {
+					maxMsgSize = size
+				}
+			}
+			if spec.Infrastructure.Tuning.Container.OversizedMessageBehavior != nil {
+				oversizedAction = (*string)(spec.Infrastructure.Tuning.Container.OversizedMessageBehavior)
 			}
 		}
 	}
@@ -69,6 +80,9 @@ func NewContainerSource(spec *adapters.Input, includes, excludes []string, logTy
 		kl.GlobMinimumCooldownMillis = 15000
 		kl.AutoPartialMerge = true
 		kl.MaxMergedLineBytes = uint64(maxMsgSize)
+		if oversizedAction != nil {
+			kl.MaxMergedLineAction = oversizedAction
+		}
 		kl.IncludePathsGlobPatterns = includes
 		kl.ExcludePathsGlobPatterns = excludes
 		kl.ExtraLabelSelector = helpers2.LabelSelectorFrom(selector)

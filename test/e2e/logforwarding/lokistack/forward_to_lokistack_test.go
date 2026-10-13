@@ -75,6 +75,9 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		// specs run in parallel. minio, the loki operator and the reader role are
 		// shared and were deployed once in SynchronizedBeforeSuite.
 		e2e = framework.NewE2ETestFramework()
+		// Reset per-spec state: ginkgo closure vars persist across specs, and
+		// the log generator is now deployed only by the specs that need it.
+		logGenNS = ""
 		deployNS = e2e.CreateNamespace(uniqueName("clo-test"))
 
 		// Each parallel LokiStack needs its own object-store bucket; sharing one
@@ -100,10 +103,14 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			clf.Spec.ServiceAccount.Name = serviceAccount.Name
 			// Testing removal of otlp annotation validation LOG-8578
 			clf.Annotations = map[string]string{}
+			// Application logs are collected via a per-spec, namespace-scoped
+			// input wired by deployApplicationLogGenerator so parallel specs do
+			// not ingest each other's application pods. Audit and infrastructure
+			// remain cluster-wide.
 			clf.Spec.Pipelines = append(clf.Spec.Pipelines, obs.PipelineSpec{
-				Name:       "all-logs-pipeline",
+				Name:       allLogsPipelineName,
 				OutputRefs: []string{outputName},
-				InputRefs:  []string{string(obs.InputTypeApplication), string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
+				InputRefs:  []string{string(obs.InputTypeAudit), string(obs.InputTypeInfrastructure)},
 			})
 			clf.Spec.Collector = &obs.CollectorSpec{
 				Resources: &corev1.ResourceRequirements{
@@ -137,17 +144,11 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 				},
 			},
 		}
-
-		// Deploy log generator
-		logGenNS = e2e.CreateNamespace(uniqueName("clo-test-loader"))
-		generatorOpt := framework.NewDefaultLogGeneratorOptions()
-		generatorOpt.Count = -1
-		if err = e2e.DeployLogGeneratorWithNamespaceName(logGenNS, logGenName, generatorOpt); err != nil {
-			Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
-		}
 	})
 
 	It("should send logs to lokistack's OTLP endpoint when dataModel == Otel", func() {
+		logGenNS = deployApplicationLogGenerator(e2e, forwarder, logGenName)
+
 		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
@@ -178,6 +179,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	})
 
 	It("should send logs to lokistack when dataModel is not spec'd", func() {
+		logGenNS = deployApplicationLogGenerator(e2e, forwarder, logGenName)
+
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
 		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
@@ -331,6 +334,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	})
 
 	It("should send logs to lokistack with otel equivalent default labels when data model is viaq", func() {
+		logGenNS = deployApplicationLogGenerator(e2e, forwarder, logGenName)
+
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
 		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
@@ -372,6 +377,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	})
 
 	It("should send logs to lokistack when network policy is restricted", func() {
+		logGenNS = deployApplicationLogGenerator(e2e, forwarder, logGenName)
+
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 		forwarder.Spec.Collector.NetworkPolicy = &obs.NetworkPolicy{
 			RuleSet: obs.NetworkPolicyRuleSetTypeRestrictIngressEgress,
@@ -489,10 +496,51 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
+		if logGenNS != "" {
+			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
+		}
 	})
 
 })
+
+const (
+	// allLogsPipelineName is the shared pipeline wired in BeforeEach.
+	allLogsPipelineName = "all-logs-pipeline"
+	// appInputName is the namespace-scoped application input added per spec.
+	appInputName = "application-generated"
+)
+
+// deployApplicationLogGenerator deploys the application log generator in its own
+// namespace and wires a namespace-scoped application input into the forwarder's
+// all-logs pipeline, returning that namespace. It is invoked by each spec that
+// asserts on application logs rather than from BeforeEach, so specs that forward
+// only receiver inputs (http/syslog/trace) don't pay for an unused generator
+// namespace and pod when the suite runs in parallel. Scoping the input to the
+// generator's namespace also keeps parallel specs from ingesting each other's
+// application pods into their LokiStack.
+func deployApplicationLogGenerator(e2e *framework.E2ETestFramework, forwarder *obs.ClusterLogForwarder, name string) string {
+	ns := e2e.CreateNamespace(uniqueName("clo-test-loader"))
+	opt := framework.NewDefaultLogGeneratorOptions()
+	opt.Count = -1
+	if err := e2e.DeployLogGeneratorWithNamespaceName(ns, name, opt); err != nil {
+		Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
+	}
+
+	forwarder.Spec.Inputs = append(forwarder.Spec.Inputs, obs.InputSpec{
+		Name: appInputName,
+		Type: obs.InputTypeApplication,
+		Application: &obs.Application{
+			Includes: []obs.NamespaceContainerSpec{{Namespace: ns}},
+		},
+	})
+	for i := range forwarder.Spec.Pipelines {
+		if forwarder.Spec.Pipelines[i].Name == allLogsPipelineName {
+			forwarder.Spec.Pipelines[i].InputRefs = append(forwarder.Spec.Pipelines[i].InputRefs, appInputName)
+		}
+	}
+
+	return ns
+}
 
 func write2syslog(e2e *framework.E2ETestFramework, fwd *obs.ClusterLogForwarder, logGenPodName string, port int32) []string {
 	const (

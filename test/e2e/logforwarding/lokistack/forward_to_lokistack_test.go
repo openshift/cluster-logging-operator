@@ -67,6 +67,10 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	)
 
 	BeforeEach(func() {
+		// Throttle how many lokistack specs run concurrently without lowering
+		// ginkgo's --procs. The slot is held until this spec finishes teardown.
+		acquireSpecSlot()
+
 		// A fresh framework per spec so cleanup is scoped to this spec, letting
 		// specs run in parallel. minio, the loki operator and the reader role are
 		// shared and were deployed once in SynchronizedBeforeSuite.

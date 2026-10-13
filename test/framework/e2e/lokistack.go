@@ -196,6 +196,18 @@ minio server /data --console-address ":9001"
 }
 
 func (tc *E2ETestFramework) DeployLokiOperator() error {
+	// Skip the install if the operator is already available (e.g. pre-installed
+	// on the cluster or left over from a prior run). Reinstalling would register
+	// cleanups that delete an operator we did not create, so return early without
+	// adding them.
+	if dep, err := tc.KubeClient.AppsV1().Deployments(test.OpenshiftOperatorsRedhatNS).Get(context.TODO(), lokiOperatorDeploymentName, metav1.GetOptions{}); err == nil {
+		if dep.Spec.Replicas != nil && dep.Status.AvailableReplicas == *dep.Spec.Replicas {
+			clolog.V(1).Info("loki operator already available; skipping install",
+				"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
+			return nil
+		}
+	}
+
 	clolog.V(1).Info("deploying loki operator", "namespace", test.OpenshiftOperatorsRedhatNS, "channel", lokiOperatorChannel)
 	operatorGroupYaml := `
 apiVersion: operators.coreos.com/v1

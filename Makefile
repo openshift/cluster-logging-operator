@@ -262,13 +262,23 @@ test-env: ## Echo test environment, useful for running tests outside of the Make
 	IMAGE_TLS_SCANNER=$(IMAGE_TLS_SCANNER) \
 
 .PHONY: test-functional
+# Run the functional suites sharded across concurrent ginkgo invocations so that
+# specs run in parallel WITHIN each suite and the suites themselves run in
+# parallel too. A single `ginkgo -p` run parallelizes specs within a suite but
+# executes suites serially (total = sum of suites); hack/test-functional-sharded.sh
+# fans the suites out into FUNCTIONAL_SHARDS cost-balanced groups and overlaps
+# them. The tests are already parallel-safe: every test runs in a unique
+# crypto/rand namespace and all cluster-scoped RBAC is namespace-suffixed.
+# Tunable (defaults 4 shards * 4 procs = 16 peak, 2x the prior -p --procs=8):
+#   FUNCTIONAL_SHARDS, FUNCTIONAL_PROCS, FUNCTIONAL_TIMEOUT
+# Functional specs are latency-bound (mostly waiting on the cluster), so raise
+# these only as far as the claimed cluster's capacity allows; dial back if it
+# shows contention.
 test-functional: test-functional-benchmarker-vector
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	IMAGE_VECTOR_RECEIVER=$(IMAGE_VECTOR_RECEIVER) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -race \
-		./test/functional/... \
-		-ginkgo.no-color -timeout=40m -ginkgo.poll-progress-after='45s'
+	hack/test-functional-sharded.sh
 
 .PHONY: test-helpers
 test-helpers:

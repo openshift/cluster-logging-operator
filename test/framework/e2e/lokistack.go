@@ -196,6 +196,18 @@ minio server /data --console-address ":9001"
 }
 
 func (tc *E2ETestFramework) DeployLokiOperator() error {
+	// Skip the install if the operator is already available (e.g. pre-installed
+	// on the cluster or left over from a prior run). Reinstalling would register
+	// cleanups that delete an operator we did not create, so return early without
+	// adding them.
+	if dep, err := tc.KubeClient.AppsV1().Deployments(test.OpenshiftOperatorsRedhatNS).Get(context.TODO(), lokiOperatorDeploymentName, metav1.GetOptions{}); err == nil {
+		if dep.Spec.Replicas != nil && dep.Status.AvailableReplicas == *dep.Spec.Replicas {
+			clolog.V(1).Info("loki operator already available; skipping install",
+				"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
+			return nil
+		}
+	}
+
 	clolog.V(1).Info("deploying loki operator", "namespace", test.OpenshiftOperatorsRedhatNS, "channel", lokiOperatorChannel)
 	operatorGroupYaml := `
 apiVersion: operators.coreos.com/v1
@@ -261,22 +273,45 @@ spec:
 	return tc.WaitForDeployment(test.OpenshiftOperatorsRedhatNS, lokiOperatorDeploymentName, defaultRetryInterval, defaultTimeout)
 }
 
-func (tc *E2ETestFramework) DeployLokistackInNamespace(namespace string) (ls *LokistackLogStore, err error) {
-	clolog.V(1).Info("deploying lokistack", "namespace", namespace, "name", LokistackName)
-	logStore := &LokistackLogStore{
-		Name:      LokistackName,
-		Namespace: namespace,
-		tc:        tc,
-	}
-
-	// Create log reader role
+// DeployLokiReaderClusterRole creates the cluster-scoped role that allows
+// reading logs from a LokiStack. It is cluster-scoped and shared by all specs,
+// so it must be created once for the suite (not per-spec) to be safe when specs
+// run in parallel.
+func (tc *E2ETestFramework) DeployLokiReaderClusterRole() error {
 	apiGroups := []string{"loki.grafana.com"}
 	resources := []string{"application", "audit", "infrastructure"}
 	resourceNames := []string{"logs"}
 	verbs := []string{"get"}
+	return tc.createClusterRole(ClusterRoleAllLogsReader, apiGroups, resources, resourceNames, verbs)
+}
 
-	if err := tc.createClusterRole(ClusterRoleAllLogsReader, apiGroups, resources, resourceNames, verbs); err != nil {
-		return nil, err
+// CreateMinioBucket creates a bucket in the shared minio deployment by creating
+// its backing directory. Each parallel LokiStack must use its own bucket:
+// multiple independent Loki clusters sharing a single object-store bucket
+// corrupt each other's index and chunks.
+func (tc *E2ETestFramework) CreateMinioBucket(bucket string) error {
+	pods, err := tc.KubeClient.CoreV1().Pods(minioName).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=" + minioName,
+	})
+	if err != nil {
+		return err
+	}
+	if len(pods.Items) == 0 {
+		return fmt.Errorf("no minio pod found in namespace %q to create bucket %q", minioName, bucket)
+	}
+	_, err = tc.PodExec(minioName, pods.Items[0].Name, minioName, []string{"mkdir", "-p", "/data/" + bucket})
+	return err
+}
+
+// DeployLokistackInNamespace deploys a LokiStack backed by the shared minio
+// using the given bucket. Callers running specs in parallel must pass a bucket
+// unique to the stack (see CreateMinioBucket).
+func (tc *E2ETestFramework) DeployLokistackInNamespace(namespace, bucket string) (ls *LokistackLogStore, err error) {
+	clolog.V(1).Info("deploying lokistack", "namespace", namespace, "name", LokistackName, "bucket", bucket)
+	logStore := &LokistackLogStore{
+		Name:      LokistackName,
+		Namespace: namespace,
+		tc:        tc,
 	}
 
 	yaml := fmt.Sprintf(`
@@ -318,7 +353,7 @@ spec:
 	clolog.V(1).Info("creating minio secret for lokistack", "namespace", namespace)
 	data := map[string][]byte{
 		"endpoint":          []byte(fmt.Sprintf("http://%s.%s.svc:9000", minioName, minioName)),
-		"bucketnames":       []byte("loki"),
+		"bucketnames":       []byte(bucket),
 		"access_key_id":     []byte(minioName),
 		"access_key_secret": []byte(minioName + "123"),
 	}
@@ -423,12 +458,22 @@ func (ls LokistackLogStore) Query(logQL string, orgID, tenant, saName string, li
 }
 
 // QueryUntil repeats the query until at least n lines are received.
+//
+// A query error is treated as transient and retried until timeToWait elapses,
+// not as a fatal condition. Right after a LokiStack becomes ready its gateway
+// (observatorium-api) may report its Deployment as Available while not yet
+// serving authenticated queries, so the first attempts can return 401 or an
+// HTML 5xx page. This is common when several LokiStacks warm up concurrently
+// (ginkgo -p). If the timeout is reached the last query error is returned so
+// the failure stays diagnosable.
 func (ls LokistackLogStore) QueryUntil(logQL string, orgID, tenant, saName string, n int, timeToWait time.Duration) (values []lokitesthelper.StreamValues, err error) {
 	clolog.V(2).Info("Loki QueryUntil", "query", logQL, "n", n)
-	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, timeToWait, true, func(cxt context.Context) (done bool, err error) {
-		values, err = ls.Query(logQL, orgID, tenant, saName, n)
-		if err != nil {
-			return false, err
+	var lastErr error
+	waitErr := wait.PollUntilContextTimeout(context.TODO(), time.Second, timeToWait, true, func(cxt context.Context) (done bool, err error) {
+		values, lastErr = ls.Query(logQL, orgID, tenant, saName, n)
+		if lastErr != nil {
+			clolog.V(3).Info("Loki QueryUntil attempt failed, retrying", "query", logQL, "error", lastErr)
+			return false, nil
 		}
 		got := 0
 		for _, v := range values {
@@ -436,7 +481,11 @@ func (ls LokistackLogStore) QueryUntil(logQL string, orgID, tenant, saName strin
 		}
 		return got >= n, nil
 	})
-	return values, errors.Wrap(err, fmt.Sprintf("waiting for loki query %q, orgID %q", logQL, orgID))
+	if waitErr != nil && lastErr != nil {
+		// Surface the underlying query error rather than the bare context deadline.
+		waitErr = lastErr
+	}
+	return values, errors.Wrap(waitErr, fmt.Sprintf("waiting for loki query %q, orgID %q", logQL, orgID))
 }
 
 func (ls LokistackLogStore) GetApplicationLogs(saName string, timeToWait time.Duration) ([]lokitesthelper.StreamValues, error) {

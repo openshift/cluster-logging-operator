@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/errors"
 )
 
-var _ = Describe("", func() {
+var _ = Describe("", Serial, func() {
 
 	const name = "clf-validation-test"
 	var (

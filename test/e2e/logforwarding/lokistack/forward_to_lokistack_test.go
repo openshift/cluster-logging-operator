@@ -15,6 +15,24 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// suiteFramework owns the loki operator, which is a cluster singleton shared by
+// every spec. It is deployed once before any spec runs and torn down once after
+// all specs complete, rather than being redeployed in each spec's BeforeEach.
+var suiteFramework *framework.E2ETestFramework
+
+var _ = BeforeSuite(func() {
+	suiteFramework = framework.NewE2ETestFramework()
+	if err := suiteFramework.DeployLokiOperator(); err != nil {
+		Fail(err.Error())
+	}
+})
+
+var _ = AfterSuite(func() {
+	if suiteFramework != nil {
+		suiteFramework.Cleanup()
+	}
+})
+
 var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	const (
 		forwarderName = "my-forwarder"
@@ -38,9 +56,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		if err = e2e.DeployMinio(); err != nil {
 			Fail(err.Error())
 		}
-		if err = e2e.DeployLokiOperator(); err != nil {
-			Fail(err.Error())
-		}
+		// The loki operator is deployed once for the suite (see BeforeSuite).
 		if lokistackReceiver, err = e2e.DeployLokistackInNamespace(deployNS); err != nil {
 			Fail(err.Error())
 		}

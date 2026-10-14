@@ -170,7 +170,7 @@ function os::test::junit::generate_report() {
     fi
 }
 
-# os::test::junit::internal::generate_report generats an XML jUnit
+# os::test::junit::internal::generate_report generates an XML jUnit
 # report for either `os::cmd` or `go test`, based on the passed
 # argument.
 #

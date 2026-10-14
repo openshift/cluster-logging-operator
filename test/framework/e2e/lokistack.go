@@ -52,7 +52,7 @@ const (
 	LokistackName       = "lokistack-dev"
 	lokiOperatorChannel = "stable-6.1"
 	minioName           = "minio"
-	minioImage          = "quay.io/minio/minio:latest"
+	minioImage          = "quay.io/openshift-logging/minio-mirror:RELEASE.2025-09-07T16-13-09Z"
 )
 
 type LokistackLogStore struct {

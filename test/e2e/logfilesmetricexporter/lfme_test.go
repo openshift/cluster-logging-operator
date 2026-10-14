@@ -2,8 +2,15 @@ package logfilesmetricexporter
 
 import (
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"fmt"
+	"io"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,10 +19,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"regexp"
-	"strings"
-	"time"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 )
 
 //go:embed valid.yaml
@@ -55,10 +62,65 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
 
-		args := []string{"-k", "-s", fmt.Sprintf("https://%s.%s.svc:2112/metrics", constants.LogfilesmetricexporterName, constants.OpenshiftNS)}
+		pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(pods.Items).ToNot(BeEmpty(), "Expected to find at least one LFME pod")
+
+		podName := pods.Items[0].Name
+
+		transport, upgrader, err := spdy.RoundTripperFor(e2e.RestConfig)
+		Expect(err).ToNot(HaveOccurred())
+
+		pfURL := e2e.KubeClient.CoreV1().RESTClient().Post().
+			Namespace(constants.OpenshiftNS).
+			Resource("pods").
+			Name(podName).
+			SubResource("portforward").
+			URL()
+
+		dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, pfURL)
+
+		stopChan := make(chan struct{}, 1)
+		readyChan := make(chan struct{})
+		defer close(stopChan)
+
+		fw, err := portforward.New(dialer, []string{"0:2112"}, stopChan, readyChan, io.Discard, io.Discard)
+		Expect(err).ToNot(HaveOccurred())
+
+		go func() {
+			defer GinkgoRecover()
+			Expect(fw.ForwardPorts()).To(Succeed())
+		}()
+
+		<-readyChan
+
+		ports, err := fw.GetPorts()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ports).ToNot(BeEmpty())
+		localPort := ports[0].Local
+
+		httpClient := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+
+		metricsURL := fmt.Sprintf("https://localhost:%d/metrics", localPort)
+
 		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(context.Context) (done bool, err error) {
-			out, err := oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(fmt.Sprintf("ds/%s", constants.LogfilesmetricexporterName)).WithCmd("curl", args...).Run()
-			Expect(err).ToNot(HaveOccurred(), out)
+			resp, err := httpClient.Get(metricsURL)
+			if err != nil {
+				return false, nil
+			}
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return false, nil
+			}
+			out := string(body)
 			log.V(5).Info("Polling metrics", "result", out)
 			if !strings.Contains(out, "log_logged_bytes_total") {
 				return false, nil

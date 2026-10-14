@@ -23,6 +23,7 @@ import (
 	lokitesthelper "github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,16 +197,26 @@ minio server /data --console-address ":9001"
 }
 
 func (tc *E2ETestFramework) DeployLokiOperator() error {
-	// Skip the install if the operator is already available (e.g. pre-installed
-	// on the cluster or left over from a prior run). Reinstalling would register
-	// cleanups that delete an operator we did not create, so return early without
-	// adding them.
-	if dep, err := tc.KubeClient.AppsV1().Deployments(test.OpenshiftOperatorsRedhatNS).Get(context.TODO(), lokiOperatorDeploymentName, metav1.GetOptions{}); err == nil {
+	// Only install when the operator deployment is confirmed absent. If it already
+	// exists (e.g. pre-installed on the cluster or left over from a prior run),
+	// reinstalling would register cleanups that delete an operator we did not
+	// create, so handle the existing deployment without entering the install path.
+	dep, err := tc.KubeClient.AppsV1().Deployments(test.OpenshiftOperatorsRedhatNS).Get(context.TODO(), lokiOperatorDeploymentName, metav1.GetOptions{})
+	switch {
+	case err == nil:
 		if dep.Spec.Replicas != nil && dep.Status.AvailableReplicas == *dep.Spec.Replicas {
 			clolog.V(1).Info("loki operator already available; skipping install",
 				"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
 			return nil
 		}
+		// Deployment exists but is not yet fully available; wait for it rather
+		// than attempting a second install.
+		clolog.V(1).Info("loki operator deployment exists but not yet available; waiting",
+			"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
+		return tc.WaitForDeployment(test.OpenshiftOperatorsRedhatNS, lokiOperatorDeploymentName, defaultRetryInterval, defaultTimeout)
+	case !apierrors.IsNotFound(err):
+		// Unexpected error looking up the deployment; do not guess that it is absent.
+		return err
 	}
 
 	clolog.V(1).Info("deploying loki operator", "namespace", test.OpenshiftOperatorsRedhatNS, "channel", lokiOperatorChannel)
@@ -240,7 +251,7 @@ spec:
 
 	// Create operator group
 	ogUri := fmt.Sprintf(operatorGroupURI, test.OpenshiftOperatorsRedhatNS, "loki-operator-group")
-	err := tc.Client().RESTClient().Post().
+	err = tc.Client().RESTClient().Post().
 		RequestURI(ogUri).
 		SetHeader("Content-Type", "application/yaml").
 		Body([]byte(operatorGroupYaml)).

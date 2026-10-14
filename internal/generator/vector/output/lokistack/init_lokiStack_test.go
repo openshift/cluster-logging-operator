@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -69,6 +68,25 @@ var _ = Describe("#GenerateOutput", func() {
 			string(obs.InputTypeApplication),
 			nil,
 		),
+		Entry("with ViaQ audit should include verb in the default label keys",
+			obs.OutputSpec{
+				Name: lokistackOutAudit,
+				Type: obs.OutputTypeLoki,
+				Loki: &obs.Loki{
+					URLSpec: obs.URLSpec{
+						URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit",
+					},
+					Authentication: &obs.HTTPAuthentication{
+						Token: &obs.BearerToken{
+							From: obs.BearerTokenFromServiceAccount,
+						},
+					},
+					LabelKeys: sets.NewString(defaultLabelKeysForTenant(string(obs.InputTypeAudit))...).List(),
+				},
+			},
+			string(obs.InputTypeAudit),
+			nil,
+		),
 		Entry("with ViaQ and customized label keys should generate a loki output spec with desired tenant and label keys",
 			obs.OutputSpec{
 				Name: lokistackOutAudit,
@@ -115,7 +133,7 @@ var _ = Describe("#GenerateOutput", func() {
 							From: obs.BearerTokenFromServiceAccount,
 						},
 					},
-					LabelKeys: sets.NewString(lokioutput.DefaultLabelKeys...).Insert("objectRef.apiGroup").List(),
+					LabelKeys: sets.NewString(defaultLabelKeysForTenant(string(obs.InputTypeAudit))...).Insert("objectRef.apiGroup").List(),
 				},
 			},
 			string(obs.InputTypeAudit),
@@ -176,6 +194,39 @@ var _ = Describe("#GenerateOutput", func() {
 			nil,
 		),
 		Entry(
+			"no config, audit uses default keys",
+			nil,
+			string(obs.InputTypeAudit),
+			[]string{
+				"default_one",
+				"default_two",
+			},
+		),
+		Entry(
+			"empty slices, audit uses default keys",
+			&obs.LokiStackLabelKeys{
+				Global: []string{},
+				Audit: &obs.LokiStackTenantLabelKeys{
+					LabelKeys: []string{},
+				},
+			},
+			string(obs.InputTypeAudit),
+			[]string{
+				"default_one",
+				"default_two",
+			},
+		),
+		Entry(
+			"audit ignore global with empty keys stays empty",
+			&obs.LokiStackLabelKeys{
+				Audit: &obs.LokiStackTenantLabelKeys{
+					IgnoreGlobal: true,
+				},
+			},
+			string(obs.InputTypeAudit),
+			nil,
+		),
+		Entry(
 			"only global",
 			&obs.LokiStackLabelKeys{
 				Global: []string{
@@ -184,6 +235,20 @@ var _ = Describe("#GenerateOutput", func() {
 				},
 			},
 			string(obs.InputTypeApplication),
+			[]string{
+				"global_one",
+				"global_two",
+			},
+		),
+		Entry(
+			"only global, audit does not add extra defaults",
+			&obs.LokiStackLabelKeys{
+				Global: []string{
+					"global_one",
+					"global_two",
+				},
+			},
+			string(obs.InputTypeAudit),
 			[]string{
 				"global_one",
 				"global_two",

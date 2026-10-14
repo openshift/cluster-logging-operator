@@ -45,7 +45,7 @@ func New(o *adapters.Output, inputs []string, secrets map[string]*corev1.Secret,
 	case obs.OutputTypeKafka:
 		sinkId, sink, sinkTransforms = kafka.New(baseID, o, inputs, secrets, op)
 	case obs.OutputTypeLoki:
-		sinkId, sink, sinkTransforms = loki.New(baseID, o, inputs, secrets, op)
+		sinkId, sink, sinkTransforms = loki.New(baseID, o, inputs, secrets, op, "")
 	case obs.OutputTypeLokiStack:
 		outputSinks, outputTransforms := lokistack.New(baseID, o, inputs, secrets, op)
 		sinks.Merge(outputSinks)

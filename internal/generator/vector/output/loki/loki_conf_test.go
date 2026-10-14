@@ -121,7 +121,7 @@ var _ = Describe("Generate vector config", func() {
 			visit(&outputSpec)
 		}
 		adapter = adapters.NewOutput(outputSpec)
-		id, sink, transforms := New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, op)
+		id, sink, transforms := New(helpers.MakeID(outputSpec.Name), adapter, []string{"application"}, secrets, op, "")
 		Expect(exp).To(EqualConfigFrom(api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sink
 			c.AddTransforms(transforms)

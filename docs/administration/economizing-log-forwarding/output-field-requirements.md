@@ -30,6 +30,7 @@ reduce storage cost without affecting queryability by the label dimensions.
 - If `labelKeys` is customized in the LokiStack spec, those custom label fields become required
 - OTel-flavored labels (e.g., `k8s.namespace_name`, `openshift.log_type`) are automatically added when corresponding ViAQ labels are present
 - The `RemapLabels` transform in `loki.go` creates empty string values for missing container labels to prevent stream label gaps
+- `.verb` is a default stream label only for the LokiStack audit tenant with the ViaQ data model. It is not required to distinguish streams. Missing or pruned values on that audit sink are labeled `unknown`. Application and infrastructure tenants, OTel, and generic Loki outputs do not add it by default. When custom global label keys are configured, include `verb` explicitly to retain it for audit logs.
 
 ## Google Cloud Logging
 

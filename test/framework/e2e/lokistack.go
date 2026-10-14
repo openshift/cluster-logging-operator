@@ -331,8 +331,8 @@ spec:
   limits:
     global:
       ingestion:
-        ingestionBurstSize: 10
-        ingestionRate: 10
+        ingestionBurstSize: 50
+        ingestionRate: 50
 `, LokistackName, namespace, minioName+"-secret")
 
 	uri := fmt.Sprintf(lokistackURI, namespace, LokistackName)
@@ -480,8 +480,17 @@ func (ls LokistackLogStore) GetApplicationLogsWithPipeline(saName, expression st
 	return result, errors.Wrap(err, "error getting application logs with log pipeline expression")
 }
 
-func (ls LokistackLogStore) HasApplicationLogs(saName string, timeToWait time.Duration) (bool, error) {
-	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeApplication)
+// HasApplicationLogs reports whether any application logs have been ingested. Optional
+// labelKeyValues (alternating key, value arguments) are appended to the stream selector
+// as additional {key="value"} matchers to narrow the query, e.g. to a specific
+// container so the check is not satisfied by collateral application logs from another
+// workload. An incomplete trailing key without a value is ignored.
+func (ls LokistackLogStore) HasApplicationLogs(saName string, timeToWait time.Duration, labelKeyValues ...string) (bool, error) {
+	selector := fmt.Sprintf("log_type=%q", obs.InputTypeApplication)
+	for i := 0; i+1 < len(labelKeyValues); i += 2 {
+		selector += fmt.Sprintf(", %s=%q", labelKeyValues[i], labelKeyValues[i+1])
+	}
+	query := fmt.Sprintf("{%s}", selector)
 	result, err := ls.QueryUntil(query, "", string(obs.InputTypeApplication), saName, 1, timeToWait)
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has application logs")
 }
@@ -504,8 +513,43 @@ func (ls LokistackLogStore) HasAuditLogs(saName string, timeToWait time.Duration
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has audit logs")
 }
 
+// waitForLokistackReadyCondition waits until the LokiStack custom resource reports its
+// "Ready" condition as true. The loki operator sets this only once all components —
+// including the ingesters — are available and the stack can actually ingest. Gating on
+// the workloads alone can return before the stack is serving, because a Deployment/
+// StatefulSet can report ready replicas a moment before Loki's ring is active.
+func (tc *E2ETestFramework) waitForLokistackReadyCondition(namespace, name string) error {
+	uri := fmt.Sprintf(lokistackURI, namespace, name)
+	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(ctx context.Context) (bool, error) {
+		raw, err := tc.Client().RESTClient().Get().RequestURI(uri).DoRaw(ctx)
+		if err != nil {
+			return false, nil
+		}
+		lokistack := struct {
+			Status struct {
+				Conditions []metav1.Condition `json:"conditions"`
+			} `json:"status"`
+		}{}
+		if err := json.Unmarshal(raw, &lokistack); err != nil {
+			return false, nil
+		}
+		for _, c := range lokistack.Status.Conditions {
+			if c.Type == "Ready" && c.Status == metav1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 func (tc *E2ETestFramework) WaitForLokistackReady(namespace string) error {
 	var err error
+
+	// Gate on the operator's own Ready condition first: it reports ready only when all
+	// components (including the ingesters) are up and the stack can ingest.
+	if err = tc.waitForLokistackReadyCondition(namespace, LokistackName); err != nil {
+		return errors.Wrap(err, "error waiting for lokistack Ready condition")
+	}
 
 	// Wait stateful sets
 	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackCompactor, defaultRetryInterval, defaultTimeout); err != nil {

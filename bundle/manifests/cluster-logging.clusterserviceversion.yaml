@@ -2099,7 +2099,7 @@ spec:
                 - name: RELATED_IMAGE_VECTOR
                   value: quay.io/openshift-logging/vector:v0.47.0
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
-                  value: quay.io/openshift-logging/log-file-metric-exporter:6.1
+                  value: quay.io/openshift-logging/log-file-metric-exporter:latest
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
@@ -2146,6 +2146,6 @@ spec:
   relatedImages:
   - image: quay.io/openshift-logging/vector:v0.47.0
     name: vector
-  - image: quay.io/openshift-logging/log-file-metric-exporter:6.1
+  - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
   version: 6.2.0

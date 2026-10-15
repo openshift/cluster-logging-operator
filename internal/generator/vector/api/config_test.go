@@ -27,7 +27,7 @@ path = "/var/run/ocp-collector/secrets"
 
 [sources.internal_metrics]
 type = "internal_metrics"
-scrape_interval_seconds = 2
+scrape_interval_secs = 2
 
 [transforms.bar]
 inputs = ["internal_metrics"]
@@ -55,7 +55,7 @@ secret:
 sources:
   internal_metrics:
     type: "internal_metrics"
-    scrape_interval_seconds: 2
+    scrape_interval_secs: 2
 transforms:
   bar:
     inputs: ["internal_metrics"]

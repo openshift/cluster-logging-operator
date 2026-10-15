@@ -2,11 +2,8 @@ package logfilesmetricexporter
 
 import (
 	"context"
-	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"io"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -21,8 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 )
 
 //go:embed valid.yaml
@@ -62,64 +57,36 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
 
+		// Give the exporter a moment to start collecting logs
+		time.Sleep(5 * time.Second)
+
+		// Get a pod from the DaemonSet using the standard Kubernetes label
 		pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
 		})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pods.Items).ToNot(BeEmpty(), "Expected to find at least one LFME pod")
-
 		podName := pods.Items[0].Name
 
-		transport, upgrader, err := spdy.RoundTripperFor(e2e.RestConfig)
-		Expect(err).ToNot(HaveOccurred())
-
-		pfURL := e2e.KubeClient.CoreV1().RESTClient().Post().
+		// Use Kubernetes API proxy to access pod's metrics endpoint
+		// The metrics endpoint serves HTTPS, so we need to use https: prefix
+		// Format: pods/https:{podName}:{port}/proxy/{path}
+		req := e2e.KubeClient.CoreV1().RESTClient().Get().
 			Namespace(constants.OpenshiftNS).
 			Resource("pods").
-			Name(podName).
-			SubResource("portforward").
-			URL()
+			SubResource("proxy").
+			Name(fmt.Sprintf("https:%s:2112", podName)).
+			Suffix("metrics")
 
-		dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, pfURL)
-
-		stopChan := make(chan struct{}, 1)
-		readyChan := make(chan struct{})
-		defer close(stopChan)
-
-		fw, err := portforward.New(dialer, []string{"0:2112"}, stopChan, readyChan, io.Discard, io.Discard)
-		Expect(err).ToNot(HaveOccurred())
-
-		go func() {
-			defer GinkgoRecover()
-			Expect(fw.ForwardPorts()).To(Succeed())
-		}()
-
-		<-readyChan
-
-		ports, err := fw.GetPorts()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(ports).ToNot(BeEmpty())
-		localPort := ports[0].Local
-
-		httpClient := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		}
-
-		metricsURL := fmt.Sprintf("https://localhost:%d/metrics", localPort)
-
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(context.Context) (done bool, err error) {
-			resp, err := httpClient.Get(metricsURL)
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(ctx context.Context) (done bool, err error) {
+			// Execute the request through the Kubernetes proxy
+			result := req.Do(ctx)
+			body, err := result.Raw()
 			if err != nil {
+				log.V(5).Info("Failed to fetch metrics", "error", err)
 				return false, nil
 			}
-			defer resp.Body.Close()
 
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return false, nil
-			}
 			out := string(body)
 			log.V(5).Info("Polling metrics", "result", out)
 			if !strings.Contains(out, "log_logged_bytes_total") {

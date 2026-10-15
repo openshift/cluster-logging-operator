@@ -60,13 +60,17 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		e2e.AddCleanup(func() error {
 			return oc.Literal().From("oc -n openshift-logging delete --ignore-not-found logfilemetricexporter instance").Output()
 		})
+		log.Info("Waiting for LFME pod to be ready 1")
 		err = createLFME(validCR)
+		log.Info("Waiting for LFME pod to be ready 2")
 		Expect(err).ToNot(HaveOccurred())
+		log.Info("Waiting for LFME pod to be ready 3")
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
+		log.Info("Waiting for LFME pod to be ready 4")
 
 		// Wait for at least one pod to be running and ready
 		var podName string
-		log.V(3).Info("Waiting for LFME pod to be ready")
+		log.V(3).Info("Waiting for LFME pod to be ready 5")
 		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*60, true, func(ctx context.Context) (bool, error) {
 			pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(ctx, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
@@ -108,7 +112,8 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		log.V(3).Info("Starting metrics polling", "podName", podName)
 
 		// Use Kubernetes API proxy to access pod's metrics endpoint
-		// The metrics endpoint serves HTTPS, so we need to use https: prefix
+		// The metrics endpoint serves HTTPS (TLS certs provided via keyFile/crtFile)
+		// secureMetrics=false means no client cert auth required, not HTTP
 		// Format: pods/https:{podName}:{port}/proxy/{path}
 		req := e2e.KubeClient.CoreV1().RESTClient().Get().
 			Namespace(constants.OpenshiftNS).

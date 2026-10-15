@@ -121,5 +121,12 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 	}
 
 	collector.AddSecurityContextTo(exporterContainer)
+
+	// Override the Dockerfile USER directive to run as root (release-6.2 only).
+	// The upstream log-file-metric-exporter image sets USER 65532:0 (non-root),
+	// but on OpenShift 4.20, the non-root user cannot read log files in
+	// /var/log/pods due to SELinux policy limitations.
+	exporterContainer.SecurityContext.RunAsUser = utils.GetPtr[int64](0)
+
 	return exporterContainer
 }

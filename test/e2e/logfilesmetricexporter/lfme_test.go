@@ -26,6 +26,13 @@ var validCR string
 //go:embed invalid.yaml
 var inValidCR string
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 
 	defer GinkgoRecover()
@@ -57,16 +64,48 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(e2e.WaitForDaemonSet(constants.OpenshiftNS, constants.LogfilesmetricexporterName)).To(Succeed())
 
-		// Give the exporter a moment to start collecting logs
-		time.Sleep(5 * time.Second)
+		// Wait for at least one pod to be running and ready
+		var podName string
+		log.V(3).Info("Waiting for LFME pod to be ready")
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*60, true, func(ctx context.Context) (bool, error) {
+			pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
+			})
+			if err != nil {
+				log.V(3).Info("Failed to list pods", "error", err)
+				return false, nil
+			}
+			if len(pods.Items) == 0 {
+				log.V(3).Info("No LFME pods found yet")
+				return false, nil
+			}
 
-		// Get a pod from the DaemonSet using the standard Kubernetes label
-		pods, err := e2e.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.LogfilesmetricexporterName),
+			log.V(3).Info("Checking pod readiness", "podCount", len(pods.Items))
+			// Find a running and ready pod
+			for _, pod := range pods.Items {
+				log.V(3).Info("Pod status", "podName", pod.Name, "phase", pod.Status.Phase)
+				if pod.Status.Phase == "Running" {
+					for _, condition := range pod.Status.Conditions {
+						if condition.Type == "Ready" {
+							log.V(3).Info("Pod Ready condition", "podName", pod.Name, "status", condition.Status, "reason", condition.Reason, "message", condition.Message)
+							if condition.Status == "True" {
+								podName = pod.Name
+								log.V(3).Info("Found ready pod", "podName", podName)
+								return true, nil
+							}
+						}
+					}
+				}
+			}
+			log.V(3).Info("Waiting for pod to be ready", "phase", pods.Items[0].Status.Phase, "podName", pods.Items[0].Name)
+			return false, nil
 		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods.Items).ToNot(BeEmpty(), "Expected to find at least one LFME pod")
-		podName := pods.Items[0].Name
+		Expect(err).ToNot(HaveOccurred(), "Expected to find at least one ready LFME pod")
+
+		log.V(3).Info("Pod is ready, waiting 5 seconds for metrics collection to start", "podName", podName)
+		// Give the exporter a moment to start collecting logs after pod is ready
+		time.Sleep(5 * time.Second)
+		log.V(3).Info("Starting metrics polling", "podName", podName)
 
 		// Use Kubernetes API proxy to access pod's metrics endpoint
 		// The metrics endpoint serves HTTPS, so we need to use https: prefix
@@ -78,21 +117,40 @@ var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
 			Name(fmt.Sprintf("https:%s:2112", podName)).
 			Suffix("metrics")
 
-		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Second*30, true, func(ctx context.Context) (done bool, err error) {
+		var attempt int
+		err = wait.PollUntilContextTimeout(context.TODO(), time.Second*2, time.Second*60, true, func(ctx context.Context) (done bool, err error) {
+			attempt++
+			log.V(3).Info("Polling metrics endpoint", "attempt", attempt, "podName", podName)
+
 			// Execute the request through the Kubernetes proxy
 			result := req.Do(ctx)
 			body, err := result.Raw()
 			if err != nil {
-				log.V(5).Info("Failed to fetch metrics", "error", err)
+				log.V(3).Info("Failed to fetch metrics (will retry)", "error", err, "attempt", attempt, "podName", podName)
 				return false, nil
 			}
 
 			out := string(body)
-			log.V(5).Info("Polling metrics", "result", out)
+			log.V(3).Info("Received metrics response", "attempt", attempt, "bodyLength", len(out))
+
 			if !strings.Contains(out, "log_logged_bytes_total") {
+				log.V(3).Info("Metric log_logged_bytes_total not found yet (will retry)", "attempt", attempt, "bodyPreview", out[:min(200, len(out))])
 				return false, nil
 			}
-			return regexp.MatchString(`log_logged_bytes_total{.*} [1-9][0-9]*`, out)
+
+			matched, err := regexp.MatchString(`log_logged_bytes_total{.*} [1-9][0-9]*`, out)
+			if err != nil {
+				log.V(3).Info("Regex match error", "error", err, "attempt", attempt)
+				return false, nil
+			}
+
+			if matched {
+				log.V(3).Info("Successfully found log_logged_bytes_total metric with non-zero value", "attempt", attempt)
+				return true, nil
+			}
+
+			log.V(3).Info("Metric found but value is zero (will retry)", "attempt", attempt)
+			return false, nil
 		})
 		Expect(err).ToNot(HaveOccurred(), "Exp. to find log_logged_bytes_total being calculated")
 	})

@@ -140,7 +140,7 @@ function os::cmd::try_until_text() {
 }
 readonly -f os::cmd::try_until_text
 
-# os::cmd::try_until_not_text runs the cmd until either the command doesnot output the text or times out
+# os::cmd::try_until_not_text runs the cmd until either the command doesn't output the text or times out
 # the default time-out for os::cmd::try_until_not_text is 60 seconds.
 function os::cmd::try_until_not_text() {
 	if [[ $# -lt 2 ]]; then echo "os::cmd::try_until_not_text expects at least two arguments, got $#"; return 1; fi

@@ -320,6 +320,14 @@ spec:
   storageClassName: gp3-csi
   tenants:
     mode: openshift-logging
+    openshift:
+      otlp:
+        # Promote k8s.container.name, k8s.pod.name, etc. to Loki stream labels so
+        # that OTLP-mode queries can use {k8s_container_name="..."} as a stream
+        # selector.  Without this the loki operator only promotes the required base
+        # attributes (log_type, log_source, …) and container-scoped queries never
+        # match.
+        enableConsoleLabels: true
   rules:
     enabled: true
     selector:

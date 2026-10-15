@@ -184,8 +184,17 @@ func NewContainerSource(spec obs.InputSpec, namespace, includes, excludes string
 			remap.VRL = fmt.Sprintf(
 				`
 .log_source = %q
+if exists(.file) && !exists(.kubernetes.namespace_name) {
+  parsed_path, err = parse_regex(string!(.file), r'^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_(?P<uid>[a-f0-9-]{36})/(?P<container>[^/]+)/\d+\.log$')
+  if err == null {
+    .kubernetes.namespace_name = parsed_path.namespace
+    .kubernetes.pod_name = parsed_path.pod
+    .kubernetes.pod_id = parsed_path.uid
+    .kubernetes.container_name = parsed_path.container
+  }
+}
 # If namespace is infra, label log_type as infra
-if match_any(string!(.kubernetes.namespace_name), [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
+if match_any(string(.kubernetes.namespace_name) ?? "", [r'^default$', r'^openshift(-.+)?$', r'^kube(-.+)?$']) {
     .log_type = %q
 } else {
     .log_type = %q

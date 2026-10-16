@@ -139,7 +139,8 @@ resource.attributes = append( resource.attributes,
     {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
   ]
 )
-if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
+# Use original (non-dedotted) labels to preserve keys containing dots and slashes
+if exists(._internal.kubernetes.labels) {for_each(object!(._internal.kubernetes.labels)) -> |key,value| {
     resource.attributes = append(resource.attributes,
         [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
     )
@@ -671,7 +672,8 @@ resource.attributes = append( resource.attributes,
     {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
   ]
 )
-if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
+# Use original (non-dedotted) labels to preserve keys containing dots and slashes
+if exists(._internal.kubernetes.labels) {for_each(object!(._internal.kubernetes.labels)) -> |key,value| {
     resource.attributes = append(resource.attributes,
         [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
     )

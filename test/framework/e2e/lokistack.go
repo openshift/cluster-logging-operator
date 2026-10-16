@@ -531,6 +531,12 @@ func (tc *E2ETestFramework) waitForLokistackReadyCondition(namespace, name strin
 	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(ctx context.Context) (bool, error) {
 		raw, err := tc.Client().RESTClient().Get().RequestURI(uri).DoRaw(ctx)
 		if err != nil {
+			// The LokiStack may not exist yet while it is being created, so keep
+			// polling on NotFound. Any other error (e.g. Forbidden) will not be
+			// resolved by waiting, so return it rather than run out the timeout.
+			if !apierrors.IsNotFound(err) {
+				return false, err
+			}
 			return false, nil
 		}
 		lokistack := struct {

@@ -26,7 +26,7 @@ OPENSHIFT_VERSIONS?="v4.20-v4.23"
 export LOGGING_VERSION?=6.6
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
-export LOKI_OPERATOR_CHANNEL?=stable-6.4
+export LOKI_OPERATOR_CHANNEL?=stable-6.6
 
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.54.0
 IMAGE_VECTOR_RECEIVER?=quay.io/openshift-logging/vector:v0.54.0-devel

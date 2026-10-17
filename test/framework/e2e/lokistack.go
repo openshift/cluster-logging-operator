@@ -23,6 +23,7 @@ import (
 	lokitesthelper "github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +59,7 @@ const (
 	minioImage = "quay.io/openshift-logging/minio-mirror:RELEASE.2025-09-07T16-13-09Z"
 )
 
-var lokiOperatorChannel = "stable-6.4"
+var lokiOperatorChannel = "stable-6.6"
 
 func init() {
 	if value := os.Getenv("LOKI_OPERATOR_CHANNEL"); value != "" {
@@ -196,6 +197,28 @@ minio server /data --console-address ":9001"
 }
 
 func (tc *E2ETestFramework) DeployLokiOperator() error {
+	// Only install when the operator deployment is confirmed absent. If it already
+	// exists (e.g. pre-installed on the cluster or left over from a prior run),
+	// reinstalling would register cleanups that delete an operator we did not
+	// create, so handle the existing deployment without entering the install path.
+	dep, err := tc.KubeClient.AppsV1().Deployments(test.OpenshiftOperatorsRedhatNS).Get(context.TODO(), lokiOperatorDeploymentName, metav1.GetOptions{})
+	switch {
+	case err == nil:
+		if dep.Spec.Replicas != nil && dep.Status.AvailableReplicas == *dep.Spec.Replicas {
+			clolog.V(1).Info("loki operator already available; skipping install",
+				"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
+			return nil
+		}
+		// Deployment exists but is not yet fully available; wait for it rather
+		// than attempting a second install.
+		clolog.V(1).Info("loki operator deployment exists but not yet available; waiting",
+			"namespace", test.OpenshiftOperatorsRedhatNS, "deployment", lokiOperatorDeploymentName)
+		return tc.WaitForDeployment(test.OpenshiftOperatorsRedhatNS, lokiOperatorDeploymentName, defaultRetryInterval, defaultTimeout)
+	case !apierrors.IsNotFound(err):
+		// Unexpected error looking up the deployment; do not guess that it is absent.
+		return err
+	}
+
 	clolog.V(1).Info("deploying loki operator", "namespace", test.OpenshiftOperatorsRedhatNS, "channel", lokiOperatorChannel)
 	operatorGroupYaml := `
 apiVersion: operators.coreos.com/v1
@@ -228,7 +251,7 @@ spec:
 
 	// Create operator group
 	ogUri := fmt.Sprintf(operatorGroupURI, test.OpenshiftOperatorsRedhatNS, "loki-operator-group")
-	err := tc.Client().RESTClient().Post().
+	err = tc.Client().RESTClient().Post().
 		RequestURI(ogUri).
 		SetHeader("Content-Type", "application/yaml").
 		Body([]byte(operatorGroupYaml)).
@@ -297,6 +320,14 @@ spec:
   storageClassName: gp3-csi
   tenants:
     mode: openshift-logging
+    openshift:
+      otlp:
+        # Promote k8s.container.name, k8s.pod.name, etc. to Loki stream labels so
+        # that OTLP-mode queries can use {k8s_container_name="..."} as a stream
+        # selector.  Without this the loki operator only promotes the required base
+        # attributes (log_type, log_source, …) and container-scoped queries never
+        # match.
+        enableConsoleLabels: true
   rules:
     enabled: true
     selector:
@@ -308,8 +339,8 @@ spec:
   limits:
     global:
       ingestion:
-        ingestionBurstSize: 10
-        ingestionRate: 10
+        ingestionBurstSize: 50
+        ingestionRate: 50
 `, LokistackName, namespace, minioName+"-secret")
 
 	uri := fmt.Sprintf(lokistackURI, namespace, LokistackName)
@@ -457,8 +488,17 @@ func (ls LokistackLogStore) GetApplicationLogsWithPipeline(saName, expression st
 	return result, errors.Wrap(err, "error getting application logs with log pipeline expression")
 }
 
-func (ls LokistackLogStore) HasApplicationLogs(saName string, timeToWait time.Duration) (bool, error) {
-	query := fmt.Sprintf(`{log_type=%q}`, obs.InputTypeApplication)
+// HasApplicationLogs reports whether any application logs have been ingested. Optional
+// labelKeyValues (alternating key, value arguments) are appended to the stream selector
+// as additional {key="value"} matchers to narrow the query, e.g. to a specific
+// container so the check is not satisfied by collateral application logs from another
+// workload. An incomplete trailing key without a value is ignored.
+func (ls LokistackLogStore) HasApplicationLogs(saName string, timeToWait time.Duration, labelKeyValues ...string) (bool, error) {
+	selector := fmt.Sprintf("log_type=%q", obs.InputTypeApplication)
+	for i := 0; i+1 < len(labelKeyValues); i += 2 {
+		selector += fmt.Sprintf(", %s=%q", labelKeyValues[i], labelKeyValues[i+1])
+	}
+	query := fmt.Sprintf("{%s}", selector)
 	result, err := ls.QueryUntil(query, "", string(obs.InputTypeApplication), saName, 1, timeToWait)
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has application logs")
 }
@@ -481,8 +521,49 @@ func (ls LokistackLogStore) HasAuditLogs(saName string, timeToWait time.Duration
 	return len(result) > 0, errors.Wrap(err, "error determining if logstore has audit logs")
 }
 
+// waitForLokistackReadyCondition waits until the LokiStack custom resource reports its
+// "Ready" condition as true. The loki operator sets this only once all components —
+// including the ingesters — are available and the stack can actually ingest. Gating on
+// the workloads alone can return before the stack is serving, because a Deployment/
+// StatefulSet can report ready replicas a moment before Loki's ring is active.
+func (tc *E2ETestFramework) waitForLokistackReadyCondition(namespace, name string) error {
+	uri := fmt.Sprintf(lokistackURI, namespace, name)
+	return wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, defaultTimeout, true, func(ctx context.Context) (bool, error) {
+		raw, err := tc.Client().RESTClient().Get().RequestURI(uri).DoRaw(ctx)
+		if err != nil {
+			// The LokiStack may not exist yet while it is being created, so keep
+			// polling on NotFound. Any other error (e.g. Forbidden) will not be
+			// resolved by waiting, so return it rather than run out the timeout.
+			if !apierrors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		lokistack := struct {
+			Status struct {
+				Conditions []metav1.Condition `json:"conditions"`
+			} `json:"status"`
+		}{}
+		if err := json.Unmarshal(raw, &lokistack); err != nil {
+			return false, nil
+		}
+		for _, c := range lokistack.Status.Conditions {
+			if c.Type == "Ready" && c.Status == metav1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 func (tc *E2ETestFramework) WaitForLokistackReady(namespace string) error {
 	var err error
+
+	// Gate on the operator's own Ready condition first: it reports ready only when all
+	// components (including the ingesters) are up and the stack can ingest.
+	if err = tc.waitForLokistackReadyCondition(namespace, LokistackName); err != nil {
+		return errors.Wrap(err, "error waiting for lokistack Ready condition")
+	}
 
 	// Wait stateful sets
 	if err = tc.waitForStatefulSet(namespace, LokistackName+lokistackCompactor, defaultRetryInterval, defaultTimeout); err != nil {

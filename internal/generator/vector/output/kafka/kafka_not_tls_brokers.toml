@@ -11,6 +11,8 @@ inputs = ["kafka_receiver_topic"]
 bootstrap_servers = "broker1:9092,broker2:9092,broker3:9092"
 topic = "{{ _internal.kafka_receiver_topic }}"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.kafka_receiver.healthcheck]
 enabled = false
 

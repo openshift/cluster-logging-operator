@@ -80,11 +80,12 @@ type Request struct {
 }
 
 type BaseSink struct {
-	Compression      CompressionType   `json:"compression,omitempty" yaml:"compression,omitempty" toml:"compression,omitempty"`
-	Encoding         *Encoding         `json:"encoding,omitempty" yaml:"encoding,omitempty" toml:"encoding,omitempty"`
-	Acknowledgements *Acknowledgements `json:"acknowledgements,omitempty" yaml:"acknowledgements,omitempty" toml:"acknowledgements,omitempty"`
-	Batch            *Batch            `json:"batch,omitempty" yaml:"batch,omitempty" toml:"batch,omitempty"`
-	Buffer           *Buffer           `json:"buffer,omitempty" yaml:"buffer,omitempty" toml:"buffer,omitempty"`
-	Request          *Request          `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`
-	TLS              *transport.TLS    `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
+	Compression                                  CompressionType   `json:"compression,omitempty" yaml:"compression,omitempty" toml:"compression,omitempty"`
+	DangerouslyAllowUnconfinedTemplateResolution bool              `json:"dangerously_allow_unconfined_template_resolution,omitempty" yaml:"dangerously_allow_unconfined_template_resolution,omitempty" toml:"dangerously_allow_unconfined_template_resolution,omitempty"`
+	Encoding                                     *Encoding         `json:"encoding,omitempty" yaml:"encoding,omitempty" toml:"encoding,omitempty"`
+	Acknowledgements                             *Acknowledgements `json:"acknowledgements,omitempty" yaml:"acknowledgements,omitempty" toml:"acknowledgements,omitempty"`
+	Batch                                        *Batch            `json:"batch,omitempty" yaml:"batch,omitempty" toml:"batch,omitempty"`
+	Buffer                                       *Buffer           `json:"buffer,omitempty" yaml:"buffer,omitempty" toml:"buffer,omitempty"`
+	Request                                      *Request          `json:"request,omitempty" yaml:"request,omitempty" toml:"request,omitempty"`
+	TLS                                          *transport.TLS    `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
 }

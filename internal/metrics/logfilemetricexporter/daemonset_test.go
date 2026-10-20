@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	helpers "github.com/openshift/cluster-logging-operator/test/helpers/types"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -29,9 +30,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient(
-			namespace,
-		)
+		reqClient = fake.NewFakeClient(namespace)
 
 		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{
 			ObjectMeta: metav1.ObjectMeta{
@@ -54,7 +53,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner, helpers.AnyString)).To(Succeed())
 
 		// Check if daemonset is available
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -77,7 +76,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner, helpers.AnyString)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -104,7 +103,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner, helpers.AnyString)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -139,7 +138,7 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		Expect(ReconcileDaemonset(*lfmeInstance,
 			reqClient,
 			constants.OpenshiftNS,
-			constants.LogfilesmetricexporterName, dsOwner)).To(Succeed())
+			constants.LogfilesmetricexporterName, dsOwner, helpers.AnyString)).To(Succeed())
 
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())

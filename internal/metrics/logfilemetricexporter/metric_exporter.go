@@ -22,7 +22,9 @@ import (
 func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 	requestClient client.Client,
 	uncachedReader client.Reader,
-	owner metav1.OwnerReference) error {
+	owner metav1.OwnerReference,
+	clusterVersion string,
+) error {
 
 	// Adding common labels
 	commonLabels := func(o runtime.Object) {
@@ -81,6 +83,7 @@ func Reconcile(lfmeInstance *loggingv1alpha1.LogFileMetricExporter,
 		lfmeInstance.Namespace,
 		resNames.CommonName,
 		owner,
+		clusterVersion,
 		commonLabels); err != nil {
 		msg := fmt.Sprintf("Unable to reconcile LogFileMetricExporter: %v", err)
 		log.Error(err, msg)

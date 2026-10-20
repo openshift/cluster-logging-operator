@@ -38,17 +38,14 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient(
-			namespace,
-		)
+		reqClient = fake.NewFakeClient(namespace)
+		reader    = reqClient.(client.Reader)
 
-		reader = reqClient.(client.Reader)
-
-		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{}
+		lfmeInstance *loggingv1alpha1.LogFileMetricExporter
 
 		// Daemonset
 		dsKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
-		dsInstance = &appsv1.DaemonSet{}
+		dsInstance *appsv1.DaemonSet
 		reqMem1    = resource.MustParse("50Gi")
 		reqCPU1    = resource.MustParse("300m")
 		reqMem2    = resource.MustParse("15Gi")
@@ -56,14 +53,19 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 
 		// Service
 		serviceKey      = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
-		serviceInstance = &corev1.Service{}
+		serviceInstance *corev1.Service
 
 		// Service Monitor
 		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
-		smInstance        = &monitoringv1.ServiceMonitor{}
+		smInstance        *monitoringv1.ServiceMonitor
 	)
 
-	It("Should reconcile successfully a daemonset, service, and service monitor", func() {
+	BeforeEach(func() {
+		// Reset instances before each test
+		lfmeInstance = &loggingv1alpha1.LogFileMetricExporter{}
+		dsInstance = &appsv1.DaemonSet{}
+		serviceInstance = &corev1.Service{}
+		smInstance = &monitoringv1.ServiceMonitor{}
 
 		runtime.Initialize(lfmeInstance, constants.OpenshiftNS, constants.SingletonName)
 
@@ -79,10 +81,39 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 				},
 			},
 		}
+	})
 
-		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+	Context("when OpenShift version is 4.21 or older", func() {
+		DescribeTable("SecurityContext configuration based on OpenShift version",
+			func(version string, expectedUser int64, expectedNonRoot bool) {
+				Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance), version)).To(Succeed())
 
+				Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
+				Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+				sc := dsInstance.Spec.Template.Spec.Containers[0].SecurityContext
+				Expect(sc).To(Not(BeNil()))
+				Expect(*sc.RunAsUser).To(Equal(expectedUser))
+				Expect(*sc.RunAsNonRoot).To(Equal(expectedNonRoot))
+			},
+			Entry("OpenShift 4.19 (older, needs root workaround)", "4.19.0", int64(0), false),
+			Entry("OpenShift 4.20 (older, needs root workaround) with pre-release tags", "4.20.0-alfa123", int64(0), false),
+			Entry("OpenShift 4.22 (newer, secure non-root)", "4.22.2", int64(1000), true),
+			Entry("OpenShift 5.0 (newer, secure non-root)", "5.0.2", int64(1000), true),
+			Entry("Invalid version string (fallback to secure defaults)", "invalid-version", int64(1000), true),
+		)
+	})
+
+	Context("when OpenShift version is 4.22 or newer", func() {
+		It("Should reconcile successfully and use secure non-root defaults", func() {
+			Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance), "4.22.0")).To(Succeed())
+
+			// Daemonset
+			// Get and check the daemonset
+			Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
+			Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(Not(BeNil()))
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits).To(Not(BeNil()))
 		// Daemonset
 		// Get and check the daemonset
 		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
@@ -92,40 +123,41 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests).To(Not(BeNil()))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits).To(Not(BeNil()))
 
-		// Check resource limits
-		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Cmp(reqCPU2)).To(Equal(0))
-		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().Cmp(reqMem2)).To(Equal(0))
+			// Check resource limits
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Cmp(reqCPU2)).To(Equal(0))
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().Cmp(reqMem2)).To(Equal(0))
 
-		// Check request limits
-		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().Cmp(reqCPU1)).To(Equal(0))
-		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().Cmp(reqMem1)).To(Equal(0))
+			// Check request limits
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().Cmp(reqCPU1)).To(Equal(0))
+			Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().Cmp(reqMem1)).To(Equal(0))
 
-		// Service
-		// Get and check the service
-		Expect(reqClient.Get(context.TODO(), serviceKey, serviceInstance)).Should(Succeed())
+			// Service
+			// Get and check the service
+			Expect(reqClient.Get(context.TODO(), serviceKey, serviceInstance)).Should(Succeed())
 
-		Expect(serviceInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
-		Expect(serviceInstance.Spec.Ports).ToNot(BeEmpty(), "Exp. to have spec.Ports")
+			Expect(serviceInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
+			Expect(serviceInstance.Spec.Ports).ToNot(BeEmpty(), "Exp. to have spec.Ports")
 
-		Expect(serviceInstance.Spec.Ports[0].Port).
-			To(Equal(exporterPort), fmt.Sprintf("Exp service port of: %v", exporterPort))
+			Expect(serviceInstance.Spec.Ports[0].Port).
+				To(Equal(exporterPort), fmt.Sprintf("Exp service port of: %v", exporterPort))
 
-		Expect(serviceInstance.Annotations[constants.AnnotationServingCertSecretName]).
-			To(Equal(ExporterMetricsSecretName))
+			Expect(serviceInstance.Annotations[constants.AnnotationServingCertSecretName]).
+				To(Equal(ExporterMetricsSecretName))
 
-		// ServiceMonitor
-		// Get and check the ServiceMonitor
-		Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())
+			// ServiceMonitor
+			// Get and check the ServiceMonitor
+			Expect(reqClient.Get(context.TODO(), serviceMonitorKey, smInstance)).Should(Succeed())
 
-		Expect(smInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
+			Expect(smInstance.Name).To(Equal(constants.LogfilesmetricexporterName))
 
-		expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
-		Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
-		Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
-		Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(constants.MetricsPortName))
+			expJobLabel := fmt.Sprintf("monitor-%s", constants.LogfilesmetricexporterName)
+			Expect(smInstance.Spec.JobLabel).To(Equal(expJobLabel))
+			Expect(smInstance.Spec.Endpoints).ToNot(BeEmpty())
+			Expect(smInstance.Spec.Endpoints[0].Port).To(Equal(constants.MetricsPortName))
 
-		svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
-		Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
-			To(Equal(svcURL))
+			svcURL := fmt.Sprintf("%s.openshift-logging.svc", constants.LogfilesmetricexporterName)
+			Expect(smInstance.Spec.Endpoints[0].TLSConfig.SafeTLSConfig.ServerName).
+				To(Equal(svcURL))
+		})
 	})
 })

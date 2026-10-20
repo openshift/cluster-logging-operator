@@ -77,7 +77,7 @@ func (r *ReconcileLogFileMetricExporter) Reconcile(ctx context.Context, request 
 	}
 
 	log.V(3).Info("logfilemetricexporter-controller run reconciler...")
-	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.UncachedReader, utils.AsOwner(lfmeInstance))
+	reconcileErr := logmetricexporter.Reconcile(lfmeInstance, r.Client, r.UncachedReader, utils.AsOwner(lfmeInstance), r.ClusterVersion)
 
 	if reconcileErr != nil {
 		condition := condNotReady(loggingv1alpha1.ReasonInvalid, "%s", reconcileErr.Error())

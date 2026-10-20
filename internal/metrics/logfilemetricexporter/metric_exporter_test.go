@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	helpers "github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -43,9 +44,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 			},
 		}
 
-		reqClient = fake.NewFakeClient(
-			namespace,
-		)
+		reqClient = fake.NewFakeClient(namespace)
 
 		reader = reqClient.(client.Reader)
 
@@ -86,7 +85,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		}
 
 		// Reconcile the LogFileMetricExporter
-		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance), helpers.AnyString)).To(Succeed())
 
 		// Daemonset
 		// Get and check the daemonset
@@ -186,7 +185,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 			Expect(lfmeInstance.Spec.NetworkPolicy).To(BeNil())
 
 			// Reconcile the LogFileMetricExporter
-			Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+			Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance), helpers.AnyString)).To(Succeed())
 
 			// Verify NetworkPolicy was not created
 			err := reqClient.Get(context.TODO(), networkPolicyKey, networkPolicyInstance)
@@ -201,7 +200,7 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 				}
 
 				// Reconcile the LogFileMetricExporter
-				Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+				Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance), helpers.AnyString)).To(Succeed())
 
 				// Get and verify the NetworkPolicy was created
 				Expect(reqClient.Get(context.TODO(), networkPolicyKey, networkPolicyInstance)).Should(Succeed())

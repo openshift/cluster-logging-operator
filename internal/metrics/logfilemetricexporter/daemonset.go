@@ -15,10 +15,12 @@ func ReconcileDaemonset(exporter loggingv1alpha1.LogFileMetricExporter,
 	k8sClient client.Client,
 	namespace,
 	name string,
-	owner metav1.OwnerReference, visitors ...func(o runtime.Object)) error {
+	owner metav1.OwnerReference,
+	clusterVersion string,
+	visitors ...func(o runtime.Object)) error {
 
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
-	desired := NewDaemonSet(exporter, namespace, name, tls.GetClusterTLSProfileSpec(tlsProfile), visitors...)
+	desired := NewDaemonSet(exporter, namespace, name, tls.GetClusterTLSProfileSpec(tlsProfile), clusterVersion, visitors...)
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.DaemonSet(k8sClient, desired)
 }

@@ -3,6 +3,7 @@ package logfilemetricexporter
 import (
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -71,14 +72,13 @@ func tolerations(exporter loggingv1a1.LogFileMetricExporter) []v1.Toleration {
 	return finalTolerations
 }
 
-func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, tlsProfileSpec configv1.TLSProfileSpec, visitors ...func(o runtime.Object)) *apps.DaemonSet {
-	podSpec := NewPodSpec(exporter, tlsProfileSpec)
+func NewDaemonSet(exporter loggingv1a1.LogFileMetricExporter, namespace, name string, tlsProfileSpec configv1.TLSProfileSpec, clusterVersion string, visitors ...func(o runtime.Object)) *apps.DaemonSet {
+	podSpec := NewPodSpec(exporter, tlsProfileSpec, clusterVersion)
 	ds := coreFactory.NewDaemonSet(namespace, name, exporter.Name, constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, lfmeMaxUnavailable, *podSpec, visitors...)
 	return ds
 }
 
-func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.PodSpec {
-
+func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec, clusterVersion string) *v1.PodSpec {
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(nodeSelector(exporter)),
 		PriorityClassName:             clusterLoggingPriorityClassName,
@@ -92,7 +92,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 		},
 	}
 
-	exporterContainer := newLogMetricsExporterContainer(exporter, tlsProfileSpec)
+	exporterContainer := newLogMetricsExporterContainer(exporter, tlsProfileSpec, clusterVersion)
 	podSpec.Containers = []v1.Container{
 		*exporterContainer,
 	}
@@ -100,7 +100,7 @@ func NewPodSpec(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec confi
 	return podSpec
 }
 
-func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
+func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, tlsProfileSpec configv1.TLSProfileSpec, clusterVersion string) *v1.Container {
 	exporterContainer := runtime.NewContainer(constants.LogfilesmetricexporterName,
 		utils.GetComponentImage(constants.LogfilesmetricexporterName),
 		v1.PullIfNotPresent, resourceRequirements(exporter))
@@ -126,5 +126,22 @@ func newLogMetricsExporterContainer(exporter loggingv1a1.LogFileMetricExporter, 
 	}
 
 	collector.AddSecurityContextTo(exporterContainer)
+
+	if exporterContainer.SecurityContext == nil {
+		exporterContainer.SecurityContext = &v1.SecurityContext{}
+	}
+	exporterContainer.SecurityContext.RunAsUser = utils.GetPtr[int64](1000)
+	exporterContainer.SecurityContext.RunAsNonRoot = utils.GetPtr(true)
+
+	// Override the Dockerfile USER directive to run as root.
+	// The upstream log-file-metric-exporter image sets USER 65532:0 (non-root),
+	// but on OpenShift < 4.22, the non-root user cannot read log files in
+	// /var/log/pods due to SELinux policy limitations.
+	if cv, err := semver.ParseTolerant(clusterVersion); err == nil {
+		if cv.Major == 4 && cv.Minor < 22 {
+			exporterContainer.SecurityContext.RunAsUser = utils.GetPtr[int64](0)
+			exporterContainer.SecurityContext.RunAsNonRoot = utils.GetPtr(false)
+		}
+	}
 	return exporterContainer
 }

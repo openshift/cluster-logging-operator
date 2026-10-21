@@ -47,7 +47,7 @@ var _ = Describe("#FIPSEnabled", func() {
 })
 
 var _ = Describe("#FilterGroupsForFIPS", func() {
-	It("drops the post-quantum hybrid groups when FIPS is enabled", func() {
+	It("drops the groups unavailable to the FIPS provider when FIPS is enabled", func() {
 		groups := []configv1.TLSGroup{
 			configv1.TLSGroupX25519MLKEM768,
 			configv1.TLSGroupX25519,
@@ -58,7 +58,6 @@ var _ = Describe("#FilterGroupsForFIPS", func() {
 		}
 		withFIPSFile("1\n", func() {
 			Expect(FilterGroupsForFIPS(groups)).To(Equal([]configv1.TLSGroup{
-				configv1.TLSGroupX25519,
 				configv1.TLSGroupSecP256r1,
 				configv1.TLSGroupSecP384r1,
 			}))
@@ -73,7 +72,7 @@ var _ = Describe("#FilterGroupsForFIPS", func() {
 	})
 
 	It("returns an empty list when no group is FIPS-approved", func() {
-		groups := []configv1.TLSGroup{configv1.TLSGroupX25519MLKEM768, configv1.TLSGroupSecP256r1MLKEM768}
+		groups := []configv1.TLSGroup{configv1.TLSGroupX25519, configv1.TLSGroupX25519MLKEM768, configv1.TLSGroupSecP256r1MLKEM768}
 		withFIPSFile("1\n", func() {
 			Expect(FilterGroupsForFIPS(groups)).To(BeEmpty())
 		})
@@ -81,7 +80,7 @@ var _ = Describe("#FilterGroupsForFIPS", func() {
 })
 
 var _ = Describe("#TLSGroupsToOpenSSL on a FIPS-enabled host", func() {
-	It("omits the post-quantum hybrid groups from the generated list", func() {
+	It("omits the groups unavailable to the FIPS provider from the generated list", func() {
 		withFIPSFile("1\n", func() {
 			groups := []configv1.TLSGroup{
 				configv1.TLSGroupX25519MLKEM768,
@@ -89,7 +88,7 @@ var _ = Describe("#TLSGroupsToOpenSSL on a FIPS-enabled host", func() {
 				configv1.TLSGroupSecP256r1,
 				configv1.TLSGroupSecP384r1,
 			}
-			Expect(TLSGroupsToOpenSSL(groups)).To(Equal("X25519:prime256v1:secp384r1"))
+			Expect(TLSGroupsToOpenSSL(groups)).To(Equal("prime256v1:secp384r1"))
 		})
 	})
 
@@ -100,13 +99,10 @@ var _ = Describe("#TLSGroupsToOpenSSL on a FIPS-enabled host", func() {
 		})
 	})
 
-	It("omits the hybrid group from the default intermediate profile", func() {
+	It("omits the groups unavailable to the FIPS provider from the default intermediate profile", func() {
 		withFIPSFile("1\n", func() {
 			openSSLGroups := TLSGroupsToOpenSSL(configv1.TLSProfiles[configv1.TLSProfileIntermediateType].Groups)
-			Expect(openSSLGroups).ToNot(ContainSubstring("MLKEM"))
-			Expect(openSSLGroups).To(ContainSubstring("X25519"))
-			Expect(openSSLGroups).To(ContainSubstring("prime256v1"))
-			Expect(openSSLGroups).To(ContainSubstring("secp384r1"))
+			Expect(openSSLGroups).To(Equal("prime256v1:secp384r1"))
 		})
 	})
 })

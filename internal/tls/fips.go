@@ -14,8 +14,10 @@ import (
 // the whole cluster. It is a variable so tests can point it at a fixture.
 var fipsEnabledFile = "/proc/sys/crypto/fips_enabled"
 
-// nonFIPSTLSGroups are the post-quantum hybrid TLS groups, which are not
-// FIPS-approved and must be omitted by components running in FIPS mode:
+// nonFIPSTLSGroups are the TLS groups that are unavailable to the OpenSSL
+// FIPS provider and must be omitted by components running in FIPS mode:
+// X25519, which the FIPS provider does not offer, and the post-quantum
+// hybrid groups, which are not FIPS-approved:
 //
 //	"X25519MLKEM768 is a post-quantum hybrid group that is not FIPS-approved
 //	 and should be ignored by components running in FIPS mode."
@@ -25,6 +27,7 @@ var fipsEnabledFile = "/proc/sys/crypto/fips_enabled"
 // crash-loops — when any group in the list is unavailable to the active
 // providers, and the FIPS provider does not provide these groups.
 var nonFIPSTLSGroups = map[configv1.TLSGroup]struct{}{
+	configv1.TLSGroupX25519:             {},
 	configv1.TLSGroupX25519MLKEM768:     {},
 	configv1.TLSGroupSecP256r1MLKEM768:  {},
 	configv1.TLSGroupSecP384r1MLKEM1024: {},
@@ -41,9 +44,10 @@ func FIPSEnabled() bool {
 	return strings.TrimSpace(string(enabled)) == "1"
 }
 
-// FilterGroupsForFIPS removes the post-quantum hybrid groups, which are not
-// FIPS-approved, when the host is running in FIPS mode. When FIPS is not
-// enabled the groups are returned unchanged.
+// FilterGroupsForFIPS removes the TLS groups that are unavailable to the
+// OpenSSL FIPS provider — X25519 and the post-quantum hybrid groups — when
+// the host is running in FIPS mode. When FIPS is not enabled the groups are
+// returned unchanged.
 func FilterGroupsForFIPS(groups []configv1.TLSGroup) []configv1.TLSGroup {
 	if !FIPSEnabled() {
 		return groups

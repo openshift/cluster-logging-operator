@@ -100,7 +100,12 @@ func TLSGroupToID(group configv1.TLSGroup) (tls.CurveID, error) {
 
 // TLSGroupsToOpenSSL converts OpenShift API TLS groups to a colon-separated
 // string of OpenSSL curve names for use in Vector TLS configuration.
+// Groups that are unavailable to the OpenSSL FIPS provider are omitted on
+// FIPS-enabled hosts because Vector passes the list to OpenSSL's
+// SSL_CTX_set1_groups_list, which fails when a group is unavailable to the
+// active providers.
 func TLSGroupsToOpenSSL(groups []configv1.TLSGroup) string {
+	groups = FilterGroupsForFIPS(groups)
 	names := make([]string, 0, len(groups))
 	for _, g := range groups {
 		if name, ok := opensslGroupNames[g]; ok {

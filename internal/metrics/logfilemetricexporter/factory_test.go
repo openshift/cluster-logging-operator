@@ -3,6 +3,7 @@ package logfilemetricexporter
 import (
 	"context"
 	"fmt"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
@@ -61,6 +62,19 @@ var _ = Describe("Reconcile LogFileMetricExporter", func() {
 		serviceMonitorKey = types.NamespacedName{Name: constants.LogfilesmetricexporterName, Namespace: namespace.Name}
 		smInstance        = &monitoringv1.ServiceMonitor{}
 	)
+
+	It("when OpenShift version is 4.21 or older", func() {
+		runtime.Initialize(lfmeInstance, constants.OpenshiftNS, constants.SingletonName)
+
+		Expect(Reconcile(lfmeInstance, reqClient, reader, utils.AsOwner(lfmeInstance))).To(Succeed())
+
+		Expect(reqClient.Get(context.TODO(), dsKey, dsInstance)).Should(Succeed())
+		Expect(dsInstance.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+		sc := dsInstance.Spec.Template.Spec.Containers[0].SecurityContext
+		Expect(sc).To(Not(BeNil()))
+		Expect(*sc.RunAsUser).To(Equal(int64(0)))
+	})
 
 	It("Should reconcile successfully a daemonset, service, and service monitor", func() {
 

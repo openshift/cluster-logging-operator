@@ -19,6 +19,6 @@ spec:
             - name: RELATED_IMAGE_FLUENTD
               value: quay.io/openshift-logging/fluentd:5.9.0
             - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
-              value: quay.io/openshift-logging/log-file-metric-exporter:1.0
+              value: quay.io/openshift-logging/log-file-metric-exporter:latest
             - name: OPERATOR_NAME
               value: cluster-logging-operator

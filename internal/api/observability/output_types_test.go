@@ -340,6 +340,46 @@ var _ = Describe("S3 secret handling", func() {
 			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
 		})
 
+		It("should return true for HTTP with service account token", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeHTTP,
+					HTTP: &obsv1.HTTP{
+						URLSpec: obsv1.URLSpec{URL: "https://my-logstore.com"},
+						Authentication: &obsv1.HTTPAuthentication{
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromServiceAccount,
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeTrue())
+		})
+
+		It("should return false for HTTP with token from secret", func() {
+			outputs := Outputs{
+				obsv1.OutputSpec{
+					Type: obsv1.OutputTypeHTTP,
+					HTTP: &obsv1.HTTP{
+						URLSpec: obsv1.URLSpec{URL: "https://my-logstore.com"},
+						Authentication: &obsv1.HTTPAuthentication{
+							Token: &obsv1.BearerToken{
+								From: obsv1.BearerTokenFromSecret,
+								Secret: &obsv1.BearerTokenSecretKey{
+									Name: "token-secret",
+									Key:  "token",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(outputs.NeedServiceAccountToken()).To(BeFalse())
+		})
+
 		It("should return true for Loki with service account token", func() {
 			outputs := Outputs{
 				obsv1.OutputSpec{

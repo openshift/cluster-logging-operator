@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obstestruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -105,6 +106,41 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 			}
 		}),
 	)
+
+	Context("with bearer token auth (LOG-10451)", func() {
+		It("should forward logs when authentication.token.from is a secret", func() {
+			const tokenSecretName = "http-bearer-token-secret"
+			framework.Secrets = append(framework.Secrets, runtime.NewSecret(
+				framework.Namespace, tokenSecretName,
+				map[string][]byte{
+					constants.TokenKey: []byte("functional-bearer-token"),
+				},
+			))
+
+			framework.Forwarder.Spec.Outputs[0].HTTP.Authentication = &obs.HTTPAuthentication{
+				Token: &obs.BearerToken{
+					From: obs.BearerTokenFromSecret,
+					Secret: &obs.BearerTokenSecretKey{
+						Name: tokenSecretName,
+						Key:  constants.TokenKey,
+					},
+				},
+			}
+
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				func(b *runtime.PodBuilder) error {
+					return framework.AddVectorHttpOutput(b, framework.Forwarder.Spec.Outputs[0])
+				},
+			})).To(BeNil())
+
+			msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "bearer-token-test message", false)
+			Expect(framework.WriteMessagesToApplicationLog(msg, 1)).To(BeNil())
+
+			raw, err := framework.ReadRawApplicationLogsFrom(string(obs.OutputTypeHTTP))
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).ToNot(BeEmpty(), "Expected at least one log line from the HTTP receiver")
+		})
+	})
 
 	Context("with journal logs", func() {
 		It("should populate hostname for journal logs", func() {

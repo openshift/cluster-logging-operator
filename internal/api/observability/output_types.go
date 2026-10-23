@@ -82,6 +82,10 @@ func getOutputBearerToken(o obsv1.OutputSpec) *obsv1.BearerToken {
 		if o.Elasticsearch != nil && o.Elasticsearch.Authentication != nil {
 			return o.Elasticsearch.Authentication.Token
 		}
+	case obsv1.OutputTypeHTTP:
+		if o.HTTP != nil && o.HTTP.Authentication != nil {
+			return o.HTTP.Authentication.Token
+		}
 	case obsv1.OutputTypeOTLP:
 		if o.OTLP != nil && o.OTLP.Authentication != nil {
 			return o.OTLP.Authentication.Token

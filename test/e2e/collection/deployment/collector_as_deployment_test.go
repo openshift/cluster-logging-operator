@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Test collector deployment type", func() {
+var _ = Describe("Test collector deployment type", Serial, func() {
 	const (
 		receiverPort = 8080
 		receiverName = "http-audit"

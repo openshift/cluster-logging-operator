@@ -31,6 +31,8 @@ credentials_path = "/var/run/ocp-collector/secrets/gcl-1/google-application-cred
 log_id = "{{ _internal.gcl_1_log_id }}"
 severity_key = "level"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.gcl_1.resource]
 type = "k8s_node"
 node_name = "{{hostname}}"

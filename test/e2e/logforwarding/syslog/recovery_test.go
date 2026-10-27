@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("[ClusterLogForwarder] Syslog UDP connection recovery", func() {
+var _ = Describe("[ClusterLogForwarder] Syslog UDP connection recovery", Serial, func() {
 	var (
 		err              error
 		e2e              *framework.E2ETestFramework

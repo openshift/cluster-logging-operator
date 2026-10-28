@@ -15,11 +15,30 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// suiteFramework owns the loki operator, which is a cluster singleton shared by
+// every spec. It is deployed once before any spec runs and torn down once after
+// all specs complete, rather than being redeployed in each spec's BeforeEach.
+var suiteFramework *framework.E2ETestFramework
+
+var _ = BeforeSuite(func() {
+	suiteFramework = framework.NewE2ETestFramework()
+	if err := suiteFramework.DeployLokiOperator(); err != nil {
+		Fail(err.Error())
+	}
+})
+
+var _ = AfterSuite(func() {
+	if suiteFramework != nil {
+		suiteFramework.Cleanup()
+	}
+})
+
 var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 	const (
 		forwarderName = "my-forwarder"
 		logGenName    = "log-generator"
 		outputName    = "lokistack-output"
+		otlpKey       = "k8s_container_name"
 	)
 	var (
 		err               error
@@ -38,9 +57,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		if err = e2e.DeployMinio(); err != nil {
 			Fail(err.Error())
 		}
-		if err = e2e.DeployLokiOperator(); err != nil {
-			Fail(err.Error())
-		}
+		// The loki operator is deployed once for the suite (see BeforeSuite).
 		if lokistackReceiver, err = e2e.DeployLokistackInNamespace(deployNS); err != nil {
 			Fail(err.Error())
 		}
@@ -99,7 +116,12 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		// Deploy log generator
 		logGenNS = e2e.CreateTestNamespaceWithPrefix("clo-test-loader")
 		generatorOpt := framework.NewDefaultLogGeneratorOptions()
+		// Generate continuously but at a low rate. An unbounded, zero-delay stream
+		// overruns the lokistack per-stream ingestion rate limit (especially in the
+		// Otel data model, whose entries carry more labels), so the generator's logs
+		// get rejected and are never ingested within the query timeout.
 		generatorOpt.Count = -1
+		generatorOpt.Delay = 100 * time.Millisecond
 		if err = e2e.DeployLogGeneratorWithNamespaceName(logGenNS, logGenName, generatorOpt); err != nil {
 			Fail(fmt.Sprintf("unable to deploy log generator %v.", err))
 		}
@@ -116,11 +138,10 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(err.Error())
 		}
 
-		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 
-		otlpKey := "k8s_container_name"
 		res, err := lokistackReceiver.GetApplicationLogsByKeyValue(serviceAccount.Name, otlpKey, logGenName, framework.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil())
 		Expect(res).ToNot(BeEmpty())
@@ -145,7 +166,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(err.Error())
 		}
 
-		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 
@@ -298,7 +319,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(err.Error())
 		}
 
-		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 
@@ -312,7 +333,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		stream := res[0].Stream
 		Expect(len(stream)).To(Equal(10))
 		wantStreamLabels := []string{
-			"k8s_container_name",
+			otlpKey,
 			"k8s_namespace_name",
 			"k8s_pod_name",
 			"k8s_node_name",
@@ -342,7 +363,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 			Fail(err.Error())
 		}
 
-		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
 		Expect(err).To(BeNil())
 		Expect(found).To(BeTrue())
 
@@ -391,7 +412,7 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 					Fail(fmt.Sprintf("unable to deploy trace log generator %v.", err))
 				}
 
-				found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+				found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
 				Expect(err).To(BeNil())
 				Expect(found).To(BeTrue())
 
@@ -407,8 +428,8 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 				streamLabels := stream.Stream
 				_, hasK8sNamespace := streamLabels["k8s_namespace_name"]
 				Expect(hasK8sNamespace).To(BeTrue(), "Expected OTEL-style label k8s_namespace_name")
-				_, hasK8sContainer := streamLabels["k8s_container_name"]
-				Expect(hasK8sContainer).To(BeTrue(), "Expected OTEL-style label k8s_container_name")
+				_, hasK8sContainer := streamLabels[otlpKey]
+				Expect(hasK8sContainer).To(BeTrue(), "Expected OTEL-style label otlpKey")
 
 				if verifyTraceContextLabels {
 					actTraceId, found := streamLabels["trace_id"]

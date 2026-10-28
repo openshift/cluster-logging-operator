@@ -61,12 +61,13 @@ func NewDataDirInitContainer(dataPath string) corev1.Container {
 		Image:   utils.GetComponentImage(constants.VectorName),
 		Command: []string{"/bin/sh", "-c"},
 		Args: []string{
-			"set -e; " +
-				"mkdir -p \"$1\" && " +
-				"chmod -R 2770 \"$1\" && " +
-				"(chcon -R -t container_file_t \"$1\" || true)",
-			"--",
-			dataPath,
+			`set -e
+			mkdir -p "$VECTOR_DATA_DIR"
+			chmod -R 2770 "$VECTOR_DATA_DIR"
+			chcon -R -t container_file_t "$VECTOR_DATA_DIR" || true`,
+		},
+		Env: []corev1.EnvVar{
+			{Name: "VECTOR_DATA_DIR", Value: dataPath},
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{Name: common.DataDir, MountPath: dataPath},

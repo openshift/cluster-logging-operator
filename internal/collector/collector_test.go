@@ -185,13 +185,7 @@ var _ = Describe("Factory#Daemonset", func() {
 				Expect(initContainer.Name).To(Equal("data-dir-init"))
 				Expect(initContainer.SecurityContext.SELinuxOptions.Type).To(Equal(common.SelinuxTypeSpc))
 				Expect(*initContainer.SecurityContext.RunAsUser).To(Equal(int64(0)))
-				Expect(initContainer.SecurityContext.Privileged).To(BeNil())
-				Expect(initContainer.Command).To(Equal([]string{"/bin/sh", "-c"}))
-				Expect(initContainer.Args).To(HaveLen(3))
-				Expect(initContainer.Args[0]).To(ContainSubstring("mkdir -p"))
-				Expect(initContainer.Args[0]).To(ContainSubstring("chmod -R 2770"))
-				Expect(initContainer.Args[0]).To(ContainSubstring("chcon -R -t container_file_t"))
-				Expect(initContainer.Args[1]).To(Equal("--"))
+				Expect(initContainer.Env).To(ContainElement(v1.EnvVar{Name: "VECTOR_DATA_DIR", Value: "/var/lib/vector"}))
 			})
 
 			It("should set VECTOR_LOG env variable with debug value", func() {

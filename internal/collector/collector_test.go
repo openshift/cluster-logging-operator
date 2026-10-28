@@ -156,20 +156,36 @@ var _ = Describe("Factory#Daemonset", func() {
 						FieldRef: &v1.ObjectFieldSelector{
 							APIVersion: "v1", FieldPath: "status.podIP"}}}))
 			})
-			It("should set a security context", func() {
+			It("should set a strict security context with container_logwriter_t and enforce non-root", func() {
 				Expect(collector.SecurityContext).To(Equal(&v1.SecurityContext{
 					Capabilities: &v1.Capabilities{
 						Drop: auth.RequiredDropCapabilities,
 					},
 					SELinuxOptions: &v1.SELinuxOptions{
-						Type: "spc_t",
+						Type: common.SelinuxTypeLogWriter,
 					},
+					RunAsUser:                utils.GetPtr[int64](common.NonRootUser),
+					RunAsGroup:               utils.GetPtr[int64](0),
+					RunAsNonRoot:             utils.GetPtr(true),
 					ReadOnlyRootFilesystem:   utils.GetPtr(true),
 					AllowPrivilegeEscalation: utils.GetPtr(false),
 					SeccompProfile: &v1.SeccompProfile{
 						Type: v1.SeccompProfileTypeRuntimeDefault,
 					},
 				}))
+			})
+
+			It("should not use spc_t SELinux type (regression guard)", func() {
+				Expect(collector.SecurityContext.SELinuxOptions.Type).ToNot(Equal(common.SelinuxTypeSpc))
+			})
+
+			It("should include init container to prepare data directory", func() {
+				Expect(podSpec.InitContainers).To(HaveLen(1))
+				initContainer := podSpec.InitContainers[0]
+				Expect(initContainer.Name).To(Equal("data-dir-init"))
+				Expect(initContainer.SecurityContext.SELinuxOptions.Type).To(Equal(common.SelinuxTypeSpc))
+				Expect(*initContainer.SecurityContext.RunAsUser).To(Equal(int64(0)))
+				Expect(initContainer.Env).To(ContainElement(v1.EnvVar{Name: "VECTOR_DATA_DIR", Value: "/var/lib/vector"}))
 			})
 
 			It("should set VECTOR_LOG env variable with debug value", func() {
@@ -597,20 +613,10 @@ var _ = Describe("Factory#Deployment", func() {
 						FieldRef: &v1.ObjectFieldSelector{
 							APIVersion: "v1", FieldPath: "status.podIP"}}}))
 			})
-			It("should not set security context", func() {
-				Expect(collector.SecurityContext).ToNot(Equal(&v1.SecurityContext{
-					Capabilities: &v1.Capabilities{
-						Drop: auth.RequiredDropCapabilities,
-					},
-					SELinuxOptions: &v1.SELinuxOptions{
-						Type: "spc_t",
-					},
-					ReadOnlyRootFilesystem:   utils.GetPtr(true),
-					AllowPrivilegeEscalation: utils.GetPtr(false),
-					SeccompProfile: &v1.SeccompProfile{
-						Type: v1.SeccompProfileTypeRuntimeDefault,
-					},
-				}))
+			It("should not set explicit security context (uses pod/namespace defaults)", func() {
+				// Deployments don't call AddSecurityContextTo, so SecurityContext is nil
+				// They rely on pod and namespace-level security policies
+				Expect(collector.SecurityContext).To(BeNil())
 			})
 		})
 

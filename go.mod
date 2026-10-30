@@ -30,7 +30,7 @@ require (
 	golang.org/x/sys v0.49.0
 	gonum.org/v1/plot v0.17.0
 	k8s.io/api v0.35.9
-	k8s.io/apimachinery v0.35.9
+	k8s.io/apimachinery v0.35.10
 	k8s.io/apiserver v0.35.9
 	k8s.io/client-go v0.35.9
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4

@@ -182,6 +182,9 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 	logOpts := &corev1.PodLogOptions{
 		Container: containerName,
 		Previous:  previous,
+		// Timestamps restores per-line RFC3339 prefixes, matching the previous
+		// `oc adm inspect`-based gather (LOG-10434).
+		Timestamps: true,
 	}
 
 	req := n.client.KubernetesClient.CoreV1().Pods(namespace).GetLogs(podName, logOpts)

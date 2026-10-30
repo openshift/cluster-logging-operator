@@ -7,8 +7,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/openshift/cluster-logging-operator/must-gather"
+	mustgather "github.com/openshift/cluster-logging-operator/must-gather"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func main() {
@@ -16,12 +18,37 @@ func main() {
 		destDir          string
 		loggingNamespace string
 		logFileName      string
+		since            time.Duration
+		sinceTimeStr     string
 	)
 
 	flag.StringVar(&destDir, "dest-dir", "/must-gather", "Destination directory for collecting must-gather data")
 	flag.StringVar(&loggingNamespace, "logging-namespace", "openshift-logging", "Namespace where cluster logging operator is deployed")
 	flag.StringVar(&logFileName, "log-file", "gather-debug.log", "Name of the debug log file")
+	flag.DurationVar(&since, "since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h")
+	flag.StringVar(&sinceTimeStr, "since-time", "", "Only return logs after a specific date (RFC3339)")
 	flag.Parse()
+
+	if since > 0 && sinceTimeStr != "" {
+		fmt.Fprintf(os.Stderr, "--since and --since-time are mutually exclusive\n")
+		os.Exit(1)
+	}
+
+	var sinceSeconds *int64
+	if since > 0 {
+		s := int64(since.Seconds())
+		sinceSeconds = &s
+	}
+
+	var sinceTime *metav1.Time
+	if sinceTimeStr != "" {
+		t, err := time.Parse(time.RFC3339, sinceTimeStr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid --since-time value %q: must be RFC3339 (e.g. 2006-01-02T15:04:05Z)\n", sinceTimeStr)
+			os.Exit(1)
+		}
+		sinceTime = &metav1.Time{Time: t}
+	}
 
 	// Ensure destination directory exists
 	if err := os.MkdirAll(destDir, 0755); err != nil {
@@ -46,7 +73,7 @@ func main() {
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 
 	// Create and run the gather
-	gather, err := mustgather.NewGather(destDir, loggingNamespace, logFileName, multiWriter)
+	gather, err := mustgather.NewGather(destDir, loggingNamespace, logFileName, multiWriter, sinceSeconds, sinceTime)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create gather: %v\n", err)
 		os.Exit(1)

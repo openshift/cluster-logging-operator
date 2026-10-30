@@ -19,19 +19,23 @@ import (
 
 // Collector collects cluster logging operator resources
 type Collector struct {
-	client    *client.Client
-	logger    api.Logger
-	namespace string
-	destDir   api.Path
+	client       *client.Client
+	logger       api.Logger
+	namespace    string
+	destDir      api.Path
+	sinceSeconds *int64
+	sinceTime    *metav1.Time
 }
 
 // NewCollector creates a new CLO resource collector
-func NewCollector(c *client.Client, logger api.Logger, loggingNamespace string, destDir api.Path) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, loggingNamespace string, destDir api.Path, sinceSeconds *int64, sinceTime *metav1.Time) *Collector {
 	return &Collector{
-		client:    c,
-		logger:    logger,
-		namespace: loggingNamespace,
-		destDir:   destDir,
+		client:       c,
+		logger:       logger,
+		namespace:    loggingNamespace,
+		destDir:      destDir,
+		sinceSeconds: sinceSeconds,
+		sinceTime:    sinceTime,
 	}
 }
 
@@ -64,7 +68,7 @@ func (c *Collector) Collect(ctx context.Context, gvrs ...schema.GroupVersionReso
 
 	// Collect namespace resources with collection-specific GVRs
 	gvrs = append(gvrs, clfGVR, lfmeGVR)
-	nsCollector := namespace.NewCollector(c.client, c.logger, namespaces, c.destDir)
+	nsCollector := namespace.NewCollector(c.client, c.logger, namespaces, c.destDir, c.sinceSeconds, c.sinceTime)
 	return nsCollector.Collect(ctx, gvrs...)
 }
 

@@ -79,6 +79,8 @@ updates:
       - "jcantrill"
     labels:
       - "kind/dependency-change"
+      - "verified"
+      - "approved"
     commit-message:
       prefix: "chore"
     # Rebase strategy: auto-rebase PRs when base branch is updated

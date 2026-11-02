@@ -7,6 +7,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
@@ -33,7 +34,14 @@ func UnMarshalClusterLogForwarder(clfYaml string) (obs.ClusterLogForwarder, erro
 	return *forwarder, nil
 }
 
+// Generate produces the collector configuration for the default (vector) collector
 func Generate(clfYaml string, debugOutput bool, client client.Client) (string, error) {
+	return GenerateFor(constants.VectorName, clfYaml, debugOutput, client)
+}
+
+// GenerateFor produces the collector configuration for the given collector
+// implementation (e.g. constants.VectorName, constants.ComponentNameOtelc)
+func GenerateFor(collectorType, clfYaml string, debugOutput bool, client client.Client) (string, error) {
 	var err error
 	forwarder, err := UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
@@ -67,7 +75,7 @@ func Generate(clfYaml string, debugOutput bool, client client.Client) (string, e
 	//k8shandler.EvaluateAnnotationsForEnabledCapabilities(forwarder.Annotations, op)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(nil)
 
-	configGenerator := forwardergenerator.New()
+	configGenerator := forwardergenerator.New(collectorType)
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")
 	}

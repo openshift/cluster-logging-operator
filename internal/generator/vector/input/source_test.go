@@ -6,7 +6,7 @@ import (
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"

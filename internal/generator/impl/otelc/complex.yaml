@@ -1,0 +1,236 @@
+receivers:
+    filelog/input_infrastructure_container:
+        include:
+            - /var/log/pods/default_*/*/*.log
+            - /var/log/pods/kube*_*/*/*.log
+            - /var/log/pods/openshift*_*/*/*.log
+        exclude:
+            - /var/log/pods/*/*/*.gz
+            - /var/log/pods/*/*/*.log.*
+            - /var/log/pods/*/*/*.tmp
+            - /var/log/pods/openshift-logging_*/gateway/*.log
+            - /var/log/pods/openshift-logging_*/loki*/*.log
+            - /var/log/pods/openshift-logging_*/opa/*.log
+            - /var/log/pods/openshift-logging_elasticsearch-*/*/*.log
+            - /var/log/pods/openshift-logging_kibana-*/*/*.log
+            - /var/log/pods/openshift-logging_logfilesmetricexporter-*/*/*.log
+        start_at: end
+        max_log_size: 3145728
+        include_file_path: true
+        operators:
+            - type: regex_parser
+              id: parser-crio
+              output: extract_metadata_from_filepath
+              regex: ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+              timestamp:
+                layout: 2006-01-02T15:04:05.999999999Z07:00
+                layout_type: gotime
+                parse_from: attributes.time
+            - type: regex_parser
+              id: extract_metadata_from_filepath
+              output: move_log_to_body
+              cache:
+                size: 128
+              parse_from: attributes["log.file.path"]
+              regex: ^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[^\/]+)\/(?P<container_name>[^\/]+)\/(?P<restart_count>\d+)\.log$
+            - type: move
+              id: move_log_to_body
+              output: set_iostream
+              from: attributes.log
+              to: body
+            - type: move
+              id: set_iostream
+              output: move_namespace_to_resource
+              from: attributes.stream
+              to: attributes["log.iostream"]
+            - type: move
+              id: move_namespace_to_resource
+              output: move_pod_name_to_resource
+              from: attributes.namespace
+              to: resource["k8s.namespace.name"]
+            - type: move
+              id: move_pod_name_to_resource
+              output: move_pod_uid_to_resource
+              from: attributes.pod_name
+              to: resource["k8s.pod.name"]
+            - type: move
+              id: move_pod_uid_to_resource
+              output: move_container_name_to_resource
+              from: attributes.uid
+              to: resource["k8s.pod.uid"]
+            - type: move
+              id: move_container_name_to_resource
+              output: remove_restartcount
+              from: attributes.container_name
+              to: resource["k8s.container.name"]
+            - type: remove
+              id: remove_restartcount
+              output: remove_logtag
+              field: attributes.restart_count
+            - type: remove
+              id: remove_logtag
+              output: remove_time
+              field: attributes.logtag
+            - type: remove
+              id: remove_time
+              field: attributes.time
+            - type: add
+              id: add_node_name
+              field: resource["k8s.node.name"]
+              value: ${env:NODE_NAME}
+            - type: add
+              id: add_cluster_uid
+              output: add_log_source
+              field: resource["openshift.cluster.uid"]
+              value: ${env:OPENSHIFT_CLUSTER_ID}
+            - type: add
+              id: add_log_source
+              output: add_log_type
+              field: resource["openshift.log.source"]
+              value: container
+            - type: add
+              id: add_log_type
+              field: resource["openshift.log.type"]
+              value: infrastructure
+    filelog/input_mytestapp_container:
+        include:
+            - /var/log/pods/test-ns_*/*/*.log
+        exclude:
+            - /var/log/pods/*/*/*.gz
+            - /var/log/pods/*/*/*.log.*
+            - /var/log/pods/*/*/*.tmp
+            - /var/log/pods/default_*/*/*.log
+            - /var/log/pods/kube*_*/*/*.log
+            - /var/log/pods/openshift*_*/*/*.log
+        start_at: end
+        max_log_size: 3145728
+        include_file_path: true
+        operators:
+            - type: regex_parser
+              id: parser-crio
+              output: extract_metadata_from_filepath
+              regex: ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+              timestamp:
+                layout: 2006-01-02T15:04:05.999999999Z07:00
+                layout_type: gotime
+                parse_from: attributes.time
+            - type: regex_parser
+              id: extract_metadata_from_filepath
+              output: move_log_to_body
+              cache:
+                size: 128
+              parse_from: attributes["log.file.path"]
+              regex: ^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[^\/]+)\/(?P<container_name>[^\/]+)\/(?P<restart_count>\d+)\.log$
+            - type: move
+              id: move_log_to_body
+              output: set_iostream
+              from: attributes.log
+              to: body
+            - type: move
+              id: set_iostream
+              output: move_namespace_to_resource
+              from: attributes.stream
+              to: attributes["log.iostream"]
+            - type: move
+              id: move_namespace_to_resource
+              output: move_pod_name_to_resource
+              from: attributes.namespace
+              to: resource["k8s.namespace.name"]
+            - type: move
+              id: move_pod_name_to_resource
+              output: move_pod_uid_to_resource
+              from: attributes.pod_name
+              to: resource["k8s.pod.name"]
+            - type: move
+              id: move_pod_uid_to_resource
+              output: move_container_name_to_resource
+              from: attributes.uid
+              to: resource["k8s.pod.uid"]
+            - type: move
+              id: move_container_name_to_resource
+              output: remove_restartcount
+              from: attributes.container_name
+              to: resource["k8s.container.name"]
+            - type: remove
+              id: remove_restartcount
+              output: remove_logtag
+              field: attributes.restart_count
+            - type: remove
+              id: remove_logtag
+              output: remove_time
+              field: attributes.logtag
+            - type: remove
+              id: remove_time
+              field: attributes.time
+            - type: add
+              id: add_node_name
+              field: resource["k8s.node.name"]
+              value: ${env:NODE_NAME}
+            - type: add
+              id: add_cluster_uid
+              output: add_log_source
+              field: resource["openshift.cluster.uid"]
+              value: ${env:OPENSHIFT_CLUSTER_ID}
+            - type: add
+              id: add_log_source
+              output: add_log_type
+              field: resource["openshift.log.source"]
+              value: container
+            - type: add
+              id: add_log_type
+              field: resource["openshift.log.type"]
+              value: application
+processors:
+    k8sattributes:
+        extract:
+            metadata:
+                - k8s.namespace.name
+                - k8s.pod.name
+                - k8s.pod.uid
+            labels:
+                - tag_name: k8s.pod.label.$$1
+                  key_regex: (.*)
+                  from: pod
+        pod_association:
+            - sources:
+                - from: resource_attribute
+                  name: k8s.pod.uid
+            - sources:
+                - from: resource_attribute
+                  name: k8s.pod.name
+                - from: resource_attribute
+                  name: k8s.namespace.name
+    resource/openshift_labels:
+        attributes:
+            - key: openshift.label.key1
+              value: value1
+              action: upsert
+            - key: openshift.label.key2
+              value: value2
+              action: upsert
+exporters:
+    otlphttp/output_default_lokistack_application:
+        endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp
+        tls:
+            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+    otlphttp/output_default_lokistack_audit:
+        endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp
+        tls:
+            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+    otlphttp/output_default_lokistack_infrastructure:
+        endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp
+        tls:
+            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+service:
+    pipelines:
+        logs/pipeline:
+            receivers:
+                - filelog/input_infrastructure_container
+                - filelog/input_mytestapp_container
+            processors:
+                - k8sattributes
+                - resource/openshift_labels
+            exporters:
+                - otlphttp/output_default_lokistack_application
+                - otlphttp/output_default_lokistack_audit
+                - otlphttp/output_default_lokistack_infrastructure

@@ -7,9 +7,10 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
@@ -29,7 +30,7 @@ const (
 )
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {
-	componentID := vectorhelpers.MakeID(id, "topic")
+	componentID := helpers.MakeID(id, "topic")
 	tfs := api.Transforms{
 		componentID: commontemplate.NewTemplateRemap(inputs, topic(o.Kafka), componentID),
 	}

@@ -7,13 +7,13 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -187,7 +187,7 @@ if length(parts) > 0 {
 )
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
-	parseEncodingID := vectorhelpers.MakeID(id, "parse_encoding")
+	parseEncodingID := helpers.MakeID(id, "parse_encoding")
 	tfs = api.Transforms{}
 	tfs[parseEncodingID] = parseEncoding(inputs, o.Syslog)
 

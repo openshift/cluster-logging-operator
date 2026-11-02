@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/auth"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
@@ -28,10 +28,10 @@ const (
 )
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
-	componentID := vectorhelpers.MakeID(id, "normalize_streams")
+	componentID := helpers.MakeID(id, "normalize_streams")
 	tfs = api.Transforms{}
 	tfs[componentID] = NormalizeStreamName(inputs)
-	groupNameID := vectorhelpers.MakeID(id, "group_name")
+	groupNameID := helpers.MakeID(id, "group_name")
 	tfs[groupNameID] = commontemplate.NewTemplateRemap([]string{componentID}, o.Cloudwatch.GroupName, groupNameField)
 	sink = sinks.NewAwsCloudwatchLogs(func(s *sinks.AwsCloudwatchLogs) {
 		s.Region = o.Cloudwatch.Region

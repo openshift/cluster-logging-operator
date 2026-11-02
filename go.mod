@@ -29,6 +29,7 @@ require (
 	golang.org/x/sync v0.25.0
 	golang.org/x/sys v0.50.0
 	gonum.org/v1/plot v0.17.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.35.10
 	k8s.io/apimachinery v0.35.10
 	k8s.io/apiserver v0.35.10

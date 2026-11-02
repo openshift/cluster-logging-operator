@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/aws"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/aws/cloudwatch"
 

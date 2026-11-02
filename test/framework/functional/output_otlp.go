@@ -22,6 +22,11 @@ receivers:
       http:
         endpoint: "localhost:4318"
 service:
+  telemetry:
+    metrics:
+      # the collector under test also defaults its telemetry to :8888; avoid
+      # the bind conflict when two otelcols run in the same functional pod
+      address: ":8889"
   pipelines:
     logs:
       receivers: [otlp]

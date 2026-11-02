@@ -3,6 +3,7 @@ package adapters
 import (
 	openshiftv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 )
 
 // Input is an internal representation of the public API input
@@ -36,4 +37,8 @@ func NewInput(spec obs.InputSpec) *Input {
 		InputSpec: spec,
 	}
 	return &i
+}
+
+func (i *Input) IsContainerSource() bool {
+	return internalobs.Inputs([]obs.InputSpec{i.InputSpec}).HasContainerSource()
 }

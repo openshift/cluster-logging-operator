@@ -37,6 +37,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	commonlog "github.com/openshift/cluster-logging-operator/test/framework/common/log"
+	frameworkotelc "github.com/openshift/cluster-logging-operator/test/framework/functional/otelc"
 	frameworkvector "github.com/openshift/cluster-logging-operator/test/framework/functional/vector"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	corev1 "k8s.io/api/core/v1"
@@ -96,7 +97,19 @@ func NewCollectorFunctionalFramework(testOptions ...client.TestOption) *Collecto
 	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0)
 }
 
+// NewCollectorFunctionalFrameworkUsingCollector returns a framework running the
+// given collector implementation (constants.VectorName or
+// constants.ComponentNameOtelc) as the collector under test
+func NewCollectorFunctionalFrameworkUsingCollector(collectorType string, testOptions ...client.TestOption) *CollectorFunctionalFramework {
+	test := client.NewTest(testOptions...)
+	return newCollectorFunctionalFramework(test, test.Close, 0, collectorType)
+}
+
 func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *CollectorFunctionalFramework {
+	return newCollectorFunctionalFramework(t, fnClose, verbosity, constants.VectorName)
+}
+
+func newCollectorFunctionalFramework(t *client.Test, fnClose func(), verbosity int, collectorType string) *CollectorFunctionalFramework {
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
 			verbosity = i
@@ -104,6 +117,11 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 	}
 	var collectorImpl CollectorFramework = &frameworkvector.VectorCollector{
 		Test: t,
+	}
+	if collectorType == constants.ComponentNameOtelc {
+		collectorImpl = &frameworkotelc.OtelcCollector{
+			Test: t,
+		}
 	}
 
 	failureLogger, delayedWriter := commonlog.NewLogger("functional-Framework", verbosity)
@@ -241,7 +259,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
 	if strings.TrimSpace(f.Conf) == "" {
-		if f.Conf, err = forwarder.Generate(string(clfYaml), debugOutput, testClient); err != nil {
+		if f.Conf, err = forwarder.GenerateFor(f.collector.String(), string(clfYaml), debugOutput, testClient); err != nil {
 			return err
 		}
 		//mock sources to facilitate functional testing

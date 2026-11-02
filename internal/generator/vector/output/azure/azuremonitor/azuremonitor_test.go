@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -101,7 +101,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 		}
 
 		adapter = adapters.NewOutput(outputSpec)
-		id, sink, transforms := New(vectorhelpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, nil)
+		id, sink, transforms := New(helpers.MakeOutputID(outputSpec.Name), adapter, []string{"pipelineName"}, secrets, nil)
 		Expect(exp).To(EqualConfigFrom(api.NewConfig(func(c *api.Config) {
 			c.Sinks[id] = sink
 			c.AddTransforms(transforms)

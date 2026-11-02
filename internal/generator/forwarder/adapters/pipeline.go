@@ -7,10 +7,11 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/component"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
 
@@ -36,7 +37,7 @@ func (p *Pipeline) Transforms() (api.Transforms, error) {
 	return tfs, nil
 }
 
-func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]helpers.InputComponent, outputs map[string]*Output, filters map[string]*InternalFilterSpec, inputSpecs []obs.InputSpec, addPostFilters func(p *Pipeline)) *Pipeline {
+func NewPipeline(index int, p obs.PipelineSpec, inputs map[string]component.Provider, outputs map[string]*Output, filters map[string]*InternalFilterSpec, inputSpecs []obs.InputSpec, addPostFilters func(p *Pipeline)) *Pipeline {
 	pipeline := &Pipeline{
 		PipelineSpec: p,
 		index:        index,

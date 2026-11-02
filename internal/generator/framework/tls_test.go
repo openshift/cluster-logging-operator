@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	configv1 "github.com/openshift/api/config/v1"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 

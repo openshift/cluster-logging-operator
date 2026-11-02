@@ -1,7 +1,7 @@
 package framework
 
 import (
-	utils "github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 const (

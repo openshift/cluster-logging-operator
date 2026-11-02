@@ -6,14 +6,15 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -94,14 +95,14 @@ func elasticsearchAuth(s *sinks.Elasticsearch, o *adapters.Output, op utils.Opti
 		switch o.Elasticsearch.Authentication.Token.From {
 		case obs.BearerTokenFromSecret:
 			if key.Secret != nil {
-				token = helpers.SecretFrom(&obs.SecretReference{
+				token = vectorhelpers.SecretFrom(&obs.SecretReference{
 					SecretName: key.Secret.Name,
 					Key:        key.Secret.Key,
 				})
 			}
 		case obs.BearerTokenFromServiceAccount:
 			if name, found := utils.GetOption(op, framework.OptionServiceAccountTokenSecretName, ""); found {
-				token = helpers.SecretFrom(&obs.SecretReference{
+				token = vectorhelpers.SecretFrom(&obs.SecretReference{
 					Key:        constants.TokenKey,
 					SecretName: name,
 				})
@@ -112,8 +113,8 @@ func elasticsearchAuth(s *sinks.Elasticsearch, o *adapters.Output, op utils.Opti
 		s.Auth = &sinks.ElasticsearchAuth{
 			Strategy: sinks.HttpAuthStrategyBasic,
 			HttpAuthBasic: sinks.HttpAuthBasic{
-				User:     helpers.SecretFrom(o.Elasticsearch.Authentication.Username),
-				Password: helpers.SecretFrom(o.Elasticsearch.Authentication.Password),
+				User:     vectorhelpers.SecretFrom(o.Elasticsearch.Authentication.Username),
+				Password: vectorhelpers.SecretFrom(o.Elasticsearch.Authentication.Password),
 			},
 		}
 	}

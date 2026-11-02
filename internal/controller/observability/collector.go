@@ -179,7 +179,7 @@ func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourc
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clf.Annotations, op)
-	g := forwardergenerator.New()
+	g := forwardergenerator.New(constants.VectorName)
 	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
 	if err != nil {

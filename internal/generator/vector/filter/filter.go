@@ -5,7 +5,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/multilineexception"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/parse"

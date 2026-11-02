@@ -6,14 +6,15 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -25,7 +26,7 @@ func NewViaqReceiverSource(spec *adapters.Input, resNames factory.ForwarderResou
 	serverTls := tls.NewTlsEnabled(spec, secrets, op)
 	switch spec.Receiver.Type {
 	case obs.ReceiverTypeSyslog:
-		server := sources.NewSyslogServer(helpers.ListenOnAllLocalInterfacesAddress(), spec.Receiver.Port, sources.SyslogModeTcp)
+		server := sources.NewSyslogServer(vectorhelpers.ListenOnAllLocalInterfacesAddress(), spec.Receiver.Port, sources.SyslogModeTcp)
 		server.TLS = serverTls
 		tfs[metaID] = NewReceiverInternalNormalization(obs.ReceiverTypeSyslog, setEnvelopeToStructured, base)
 		spec.Ids = append(spec.Ids, metaID)
@@ -33,7 +34,7 @@ func NewViaqReceiverSource(spec *adapters.Input, resNames factory.ForwarderResou
 	case obs.ReceiverTypeHTTP:
 		itemsID := helpers.MakeID(base, "items")
 		tfs[itemsID] = newItemsTransform(base, base)
-		server := sources.NewHttpServer(helpers.ListenOnAllLocalInterfacesAddress(), spec.Receiver.Port)
+		server := sources.NewHttpServer(vectorhelpers.ListenOnAllLocalInterfacesAddress(), spec.Receiver.Port)
 		server.TLS = serverTls
 		server.Decoding = &sources.Decoding{
 			Codec: codec.CodecTypeJSON,

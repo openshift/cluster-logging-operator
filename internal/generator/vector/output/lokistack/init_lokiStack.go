@@ -5,12 +5,8 @@ import (
 	"slices"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/output/lokistack"
 	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
-)
-
-const (
-	lokiOtlpEndpoint = "/otlp/v1/logs"
 )
 
 // GenerateOutput returns either a Loki or OTLP output spec when migrating Lokistacks
@@ -63,21 +59,10 @@ func GenerateOtlpSpec(ls *obs.LokiStack, tenant string) *obs.OTLP {
 }
 
 func lokiStackURL(lokiStackSpec *obs.LokiStack, tenant string, otlp bool) string {
-	service := lokiStackGatewayService(lokiStackSpec.Target.Name)
-	if !internalobs.ReservedInputTypes.Has(tenant) {
-		return ""
-	}
-	baseURL := fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, lokiStackSpec.Target.Namespace, tenant)
-
-	// return OTLP endpoint appended to the base lokistack URL if output is OTLP
 	if otlp {
-		return baseURL + lokiOtlpEndpoint
+		return lokistack.OtlpURL(lokiStackSpec, tenant)
 	}
-	return baseURL
-}
-
-func lokiStackGatewayService(lokiStackServiceName string) string {
-	return fmt.Sprintf("%s-gateway-http", lokiStackServiceName)
+	return lokistack.URL(lokiStackSpec, tenant)
 }
 
 // lokiStackLabelKeysForTenant returns the per-tenant labelKeys for a Loki output based on the LokiStack configuration.

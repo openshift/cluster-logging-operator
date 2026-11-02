@@ -3,12 +3,13 @@ package observability
 import (
 	"fmt"
 	"hash/fnv"
+	"path/filepath"
 	"sort"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 // NewSecretReference returns a SecretReference with the given key name and secret
@@ -89,7 +90,16 @@ func (s Secrets) AsStringFromBearerToken(key *obs.BearerToken) string {
 // Path returns the path to the given secret key if it exists or empty
 func (s Secrets) Path(key *obs.SecretReference, formatter ...string) string {
 	if s.Value(key) != nil {
-		return helpers.SecretPath(key.SecretName, key.Key, formatter...)
+		return SecretPath(key.SecretName, key.Key, formatter...)
 	}
 	return ""
+}
+
+// SecretPath is the quoted path for any secret visible to the collector
+func SecretPath(secretName string, file string, formatter ...string) string {
+	formatString := "%q"
+	if len(formatter) > 0 {
+		formatString = formatter[0]
+	}
+	return fmt.Sprintf(formatString, filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }

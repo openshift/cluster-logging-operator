@@ -60,7 +60,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 		// Read app logs
-		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
+		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication), 2)
 		Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 		Expect(logs).ToNot(BeEmpty())
 
@@ -104,7 +104,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 
 		// Parse the logs
 		var appLogs []types.ApplicationLog
-		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
+		logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication), 2)
 		Expect(err).To(BeNil())
 		jsonString := fmt.Sprintf("[%s]", strings.Join(logs, ","))
 		err = types.ParseLogsFrom(jsonString, &appLogs, false)
@@ -264,7 +264,7 @@ var _ = Describe("Forwarding to Splunk", func() {
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 			// Read app logs
-			logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication))
+			logs, err := framework.ReadLogsByTypeFromSplunk(string(obs.InputTypeApplication), 2)
 
 			Expect(err).To(BeNil(), "expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())

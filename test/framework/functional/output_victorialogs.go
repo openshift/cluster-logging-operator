@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -57,10 +58,22 @@ func (f *CollectorFunctionalFramework) AddVLOutput(b *runtime.PodBuilder, output
 	return nil
 }
 
+// GetLogsFromVL reads all logs from the VictoriaLogs instance. Besides the
+// "port" option, the "minHits" option sets the number of results to wait for:
+// when omitted it defaults to 1 (any result); when set, the poll retries until
+// at least that many results are available. Pass the expected count whenever
+// the caller asserts on an exact number of records, so the read does not return
+// mid-delivery while the collector is still forwarding.
 func (f *CollectorFunctionalFramework) GetLogsFromVL(outputName string, headers map[string]string, options ...Option) (results []string, err error) {
 	port := "9428"
 	if found, o := OptionsInclude("port", options); found {
 		port = o.Value
+	}
+	minHits := 1
+	if found, o := OptionsInclude("minHits", options); found {
+		if v, convErr := strconv.Atoi(o.Value); convErr == nil {
+			minHits = v
+		}
 	}
 
 	pod := runtime.NewPod(f.Test.NS.Name, outputName)
@@ -77,12 +90,15 @@ func (f *CollectorFunctionalFramework) GetLogsFromVL(outputName string, headers 
 		var result string
 		result, err = f.RunCommandInPod(pod, fmt.Sprintf("%s-sidecar", outputName), "sh", "-c", cmd)
 		if result != "" && err == nil {
+			// Rebuild the results from this poll attempt only so retrying
+			// does not accumulate duplicates from earlier attempts.
+			results = nil
 			scanner := bufio.NewScanner(strings.NewReader(result))
 			log.V(2).Info("results", "response", results)
 			for scanner.Scan() {
 				results = append(results, scanner.Text())
 			}
-			return true, nil
+			return len(results) >= minHits, nil
 		}
 		log.V(4).Info("Polling from VictoriaLogs", "err", err, "result", result)
 		return false, nil

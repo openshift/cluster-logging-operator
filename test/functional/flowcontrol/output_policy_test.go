@@ -2,6 +2,7 @@ package flowcontrol
 
 import (
 	"fmt"
+	"time"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -39,19 +40,30 @@ var _ = Describe("[Functional][FlowControl] Policies at Output", func() {
 
 	Context("when Output is rate limited", func() {
 		It("should apply the policy for all output records", func() {
-
+			const maxRecordsPerSecond = 10
 			Expect(f.Deploy()).To(BeNil())
 			Expect(f.WritesApplicationLogsWithDelay(1000, 0.0001)).To(Succeed())
 
-			if _, err := l.QueryUntil(fmt.Sprintf(LokiNsQuery, AllLogs), "", 10); err != nil {
+			query := fmt.Sprintf(LokiNsQuery, AllLogs)
+			if _, err := l.QueryUntil(query, "", 10); err != nil {
 				Fail(fmt.Sprintf("Failed to read logs from Loki Server: %v", err))
 			}
-			r, err := l.Query(fmt.Sprintf(LokiNsQuery, AllLogs), "", 20)
-			Expect(err).To(BeNil())
-			records := r[0].Records()
-			Expect(len(records) >= 10).To(BeTrue(), fmt.Sprintf("Expected number of records %d >= 10", len(records)))
-			Expect(len(records) <= 15).To(BeTrue(), fmt.Sprintf("Expected number of records %d <= 15", len(records)))
 
+			// The throttle (a governor quota of 10 records per 1s window)
+			// paces delivery of the written backlog, so the number of records
+			// stored in Loki grows at the configured rate. Asserting on a raw
+			// record count is inherently racy: it depends on how much time
+			// elapses between the writes and the query. Instead, measure the
+			// observed delivery rate by sampling the Loki record count over a
+			// fixed window of wall-clock time and verify it tracks the
+			// configuration. The Loki entry timestamps cannot be used for this:
+			// they are the events' own write-time timestamps, which all fall
+			// within the ~1s it takes to write the backlog.
+			rate := observedDeliveryRate(l, query, 10*time.Second)
+			Expect(rate).To(BeNumerically(">=", 2),
+				fmt.Sprintf("Expected delivery rate %.2f records/s to be at least roughly the configured %d records/s", rate, maxRecordsPerSecond))
+			Expect(rate).To(BeNumerically("<=", 4*maxRecordsPerSecond),
+				fmt.Sprintf("Expected delivery rate %.2f records/s to be throttled near the configured %d records/s", rate, maxRecordsPerSecond))
 		})
 	})
 })

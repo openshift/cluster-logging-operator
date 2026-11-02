@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	nsPodPathFmt       = "%s_%s-*/*/*.log"
-	nsContainerPathFmt = "%s_*/%s/*.log"
+	nsPodPathFmt       = "%s_%s-*/*/*"
+	nsContainerPathFmt = "%s_*/%s/*"
 )
 
 var (
@@ -35,7 +35,10 @@ var (
 		fmt.Sprintf(nsContainerPathFmt, constants.OpenshiftNS, "opa"),
 	).AddExtensions(excludeExtensions...).
 		Build()
-	excludeExtensions = []string{"gz", "tmp", "log.*"}
+	// Rotated CRI-O files (*.gz, *.log.<timestamp>) must remain visible to the
+	// source so the unread tail of a rotated file is not silently lost; only
+	// kubelet's in-progress *.tmp rotation files are excluded.
+	excludeExtensions = []string{"tmp"}
 	infraNamespaces   = []string{"default", "openshift*", "kube*"}
 )
 
@@ -66,7 +69,7 @@ func NewContainerSource(spec *adapters.Input, includes, excludes []string, logTy
 	metaID := helpers.MakeID(base, "meta")
 	source = sources.NewKubernetesLogs(func(kl *sources.KubernetesLogs) {
 		kl.MaxReadBytes = 3145728
-		kl.GlobMinimumCooldownMillis = 15000
+		kl.GlobMinimumCooldownMillis = 1000
 		kl.AutoPartialMerge = true
 		kl.MaxMergedLineBytes = uint64(maxMsgSize)
 		kl.IncludePathsGlobPatterns = includes

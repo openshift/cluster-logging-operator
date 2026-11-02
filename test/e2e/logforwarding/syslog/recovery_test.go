@@ -13,6 +13,7 @@ import (
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/rand"
 	helpersyslog "github.com/openshift/cluster-logging-operator/test/helpers/syslog"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
@@ -131,6 +132,19 @@ var _ = Describe("[ClusterLogForwarder] Syslog UDP connection recovery", func() 
 				By("Replacing the ClusterIP service with a NodePort service")
 				_, err = e2e.CreateSyslogService(syslogDeployment, corev1.ProtocolUDP, corev1.ServiceTypeNodePort)
 				Expect(err).To(BeNil(), "should successfully create NodePort service")
+
+				// The recreated service has a new ClusterIP, and the collector's
+				// UDP sink resolves the service DNS only when it first has an
+				// event to send, then never re-resolves unless a send fails with
+				// a socket error. If the collector already connected to the old
+				// ClusterIP before the swap, its UDP datagrams are silently
+				// dropped (no ICMP error) and it never recovers. Restart the
+				// collector so it connects to the new service IP, keeping this
+				// test focused on recovery from receiver pod restarts.
+				By("Restarting the collector to connect to the new service IP")
+				Expect(oc.Literal().From("oc -n %s delete pod -l%s=collector", deployNS, constants.LabelK8sComponent).Output()).To(Succeed())
+				Expect(e2e.WaitForDaemonSet(deployNS, forwarder.Name)).To(Succeed(), "collector should restart")
+
 				podDeleteTest()
 			})
 		})

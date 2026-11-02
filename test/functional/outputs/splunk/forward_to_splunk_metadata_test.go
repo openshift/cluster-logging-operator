@@ -360,7 +360,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 			// Read logs
-			logs, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex)
+			logs, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex, 2)
 			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())
 			Expect(len(logs)).To(Equal(2))
@@ -413,7 +413,7 @@ var _ = Describe("Forwarding to Splunk with Metadata", func() {
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 2)).To(BeNil())
 
 			// Read logs from Splunk
-			logs, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex)
+			logs, err := framework.ReadAppLogsByIndexFromSplunk(functional.SplunkDefaultIndex, 2)
 			Expect(err).To(BeNil(), "Expected no errors getting logs from splunk")
 			Expect(logs).ToNot(BeEmpty())
 			Expect(len(logs)).To(Equal(2))

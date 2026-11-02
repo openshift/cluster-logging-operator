@@ -53,7 +53,8 @@ var _ = Describe("[Functional][Outputs][HTTP] Logforwarding to VictoriaLogs", fu
 					requestHeaders[headerName] = v
 				}
 			}
-			raw, err := framework.GetLogsFromVL(string(obs.OutputTypeHTTP), requestHeaders)
+			// 10 UTF-8 messages + 1 non-UTF8 message
+			raw, err := framework.GetLogsFromVL(string(obs.OutputTypeHTTP), requestHeaders, functional.Option{Name: "minHits", Value: "11"})
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 			// Parse log line

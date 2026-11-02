@@ -2,6 +2,7 @@ package flowcontrol
 
 import (
 	"fmt"
+	"time"
 
 	obsruntime "github.com/openshift/cluster-logging-operator/test/runtime/observability"
 
@@ -46,18 +47,59 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 	})
 	Context("when Source is Application", func() {
 		It("should apply policy at the container level", func() {
+			const maxRecordsPerSecond = 10
 			Expect(f.Deploy()).To(BeNil())
 			Expect(f.WritesApplicationLogsWithDelay(1000, 0.0001)).To(Succeed())
 
-			if _, err := l.QueryUntil(fmt.Sprintf(LokiNsQuery, AllLogs), "", 10); err != nil {
+			query := fmt.Sprintf(LokiNsQuery, AllLogs)
+			if _, err := l.QueryUntil(query, "", 10); err != nil {
 				Fail(fmt.Sprintf("Failed to read logs from Loki Server: %v", err))
 			}
-			// Wait until at least 10 logs have been received
-			r, err := l.Query(fmt.Sprintf(LokiNsQuery, AllLogs), "", 20)
-			Expect(err).To(BeNil())
-			records := r[0].Records()
-			Expect(len(records) >= 10).To(BeTrue(), fmt.Sprintf("Expected number of records %d >= 10", len(records)))
-			Expect(len(records) <= 15).To(BeTrue(), fmt.Sprintf("Expected number of records %d <= 10", len(records)))
+
+			// The throttle (a governor quota of 10 records per 1s window)
+			// paces delivery of the written backlog, so the number of records
+			// stored in Loki grows at the configured rate. Asserting on a raw
+			// record count is inherently racy: it depends on how much time
+			// elapses between the writes and the query. Instead, measure the
+			// observed delivery rate by sampling the Loki record count over a
+			// fixed window of wall-clock time and verify it tracks the
+			// configuration. The Loki entry timestamps cannot be used for this:
+			// they are the events' own write-time timestamps, which all fall
+			// within the ~1s it takes to write the backlog.
+			rate := observedDeliveryRate(l, query, 10*time.Second)
+			Expect(rate).To(BeNumerically(">=", 2),
+				fmt.Sprintf("Expected delivery rate %.2f records/s to be at least roughly the configured %d records/s", rate, maxRecordsPerSecond))
+			Expect(rate).To(BeNumerically("<=", 4*maxRecordsPerSecond),
+				fmt.Sprintf("Expected delivery rate %.2f records/s to be throttled near the configured %d records/s", rate, maxRecordsPerSecond))
 		})
 	})
 })
+
+// observedDeliveryRate samples the total record count stored in Loki at the
+// start and end of a fixed wall-clock window and returns the delivery rate in
+// records/second computed from the delta. It waits until the first records have
+// arrived so the window measures the throttled steady state rather than the
+// initial discovery delay.
+func observedDeliveryRate(l *loki.Receiver, query string, window time.Duration) float64 {
+	count := func() int {
+		// The test Loki enforces max_entries_limit=5000, so the query limit
+		// must stay at or below it or every query fails with a 400.
+		streams, err := l.Query(query, "", 5000)
+		ExpectWithOffset(2, err).To(BeNil(), "Expected no errors querying Loki")
+		n := 0
+		for _, s := range streams {
+			n += len(s.Values)
+		}
+		return n
+	}
+
+	initial := count()
+	start := time.Now()
+	for time.Since(start) < window {
+		time.Sleep(500 * time.Millisecond)
+	}
+	final := count()
+	elapsed := time.Since(start).Seconds()
+	ExpectWithOffset(2, elapsed).To(BeNumerically(">", 0))
+	return float64(final-initial) / elapsed
+}

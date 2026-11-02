@@ -169,10 +169,22 @@ func getAuth(options []Option) string {
 	return ""
 }
 
+// GetLogsFromElasticSearchIndex reads all logs from the given index. Besides the
+// standard options (port, username, password, token), the "minHits" option sets
+// the number of hits to wait for: when omitted it defaults to 1 (any hit); when
+// set, the poll retries until at least that many hits are available. Pass the
+// expected count whenever the caller asserts on an exact number of records, so
+// the read does not return mid-delivery while the collector is still forwarding.
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string, options ...Option) (results []string, err error) {
 	port := "9200"
 	if found, o := OptionsInclude("port", options); found {
 		port = o.Value
+	}
+	minHits := 1
+	if found, o := OptionsInclude("minHits", options); found {
+		if v, convErr := strconv.Atoi(o.Value); convErr == nil {
+			minHits = v
+		}
 	}
 
 	pod := runtime.NewPod(f.Test.NS.Name, outputName)
@@ -207,6 +219,9 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 						}
 					}
 					hits := resultHits["hits"].([]interface{})
+					// Rebuild the results from this poll attempt only so retrying
+					// does not accumulate duplicates from earlier attempts.
+					results = nil
 					for i := 0; i < len(hits); i++ {
 						hit := hits[i].(map[string]interface{})
 						jsonHit, err := json.Marshal(hit["_source"])
@@ -216,7 +231,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 							log.V(4).Info("Marshall failed", "err", err)
 						}
 					}
-					return true, nil
+					return len(results) >= minHits, nil
 				}
 			} else {
 				log.V(4).Info("Unmarshall failed", "err", err)

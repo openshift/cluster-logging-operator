@@ -1,10 +1,10 @@
 [sources.input_my_app_container]
 type = "kubernetes_logs"
 max_read_bytes = 3145728
-glob_minimum_cooldown_ms = 15000
+glob_minimum_cooldown_ms = 1000
 auto_partial_merge = true
-include_paths_glob_patterns = ["/var/log/pods/kube-apiserver_*/*/*.log", "/var/log/pods/openshift*_*/*/*.log", "/var/log/pods/test-ns-foo_*/*/*.log"]
-exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.log.*", "/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*.log", "/var/log/pods/openshift-logging_*/*/*.log", "/var/log/pods/test-ns1_*/*/*.log"]
+include_paths_glob_patterns = ["/var/log/pods/kube-apiserver_*/*/*", "/var/log/pods/openshift*_*/*/*", "/var/log/pods/test-ns-foo_*/*/*"]
+exclude_paths_glob_patterns = ["/var/log/pods/*/*/*.tmp", "/var/log/pods/default_*/*/*", "/var/log/pods/openshift-logging_*/*/*", "/var/log/pods/test-ns1_*/*/*"]
 rotate_wait_secs = 5
 use_apiserver_cache = true
 

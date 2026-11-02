@@ -163,7 +163,17 @@ func (f *CollectorFunctionalFramework) ReadSplunkStatus() (string, error) {
 	return output, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(logType string) (results []string, err error) {
+// ReadLogsByTypeFromSplunk reads logs of the given type from Splunk. The optional
+// expResults argument sets the number of results to wait for: when omitted, the
+// poll returns as soon as any result is available; when set, it retries until at
+// least expResults results are available. Pass the expected count whenever the
+// caller asserts on an exact number of records, so the read does not return
+// mid-delivery while the collector is still forwarding.
+func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(logType string, expResults ...int) (results []string, err error) {
+	exp := 1
+	if len(expResults) > 0 {
+		exp = expResults[0]
+	}
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search log_type=%s -auth "admin:%s"`, logType, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
@@ -171,18 +181,24 @@ func (f *CollectorFunctionalFramework) ReadLogsByTypeFromSplunk(logType string) 
 		if output == "" || err != nil {
 			return false, err
 		}
-		return true, nil
+		results = strings.Split(output, "\n")
+		return len(results) >= exp, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	results = strings.Split(output, "\n")
 	return results, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(index string) (results []string, err error) {
+// ReadAppLogsByIndexFromSplunk reads application logs from the given Splunk index.
+// The optional expResults argument behaves as in ReadLogsByTypeFromSplunk.
+func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(index string, expResults ...int) (results []string, err error) {
+	exp := 1
+	if len(expResults) > 0 {
+		exp = expResults[0]
+	}
 	var output string
 	cmd := fmt.Sprintf(`/opt/splunk/bin/splunk search index=%s -auth "admin:%s"`, index, AdminPassword)
 	err = wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
@@ -190,14 +206,14 @@ func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(index string
 		if output == "" || err != nil {
 			return false, err
 		}
-		return true, nil
+		results = strings.Split(output, "\n")
+		return len(results) >= exp, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	results = strings.Split(output, "\n")
 	return results, nil
 }
 

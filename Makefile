@@ -22,10 +22,10 @@ export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(or $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null),no-branch)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 
-export LOGGING_VERSION?=6.7
+export LOGGING_VERSION?=6.8
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
-export LOKI_OPERATOR_CHANNEL?=stable-6.6
+export LOKI_OPERATOR_CHANNEL?=stable-6.7
 
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:v0.54.0
 IMAGE_VECTOR_RECEIVER?=quay.io/openshift-logging/vector:v0.54.0-devel

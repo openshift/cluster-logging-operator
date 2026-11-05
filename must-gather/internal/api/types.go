@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -21,6 +22,14 @@ type Config struct {
 
 	// Logger is where log output should be written
 	Logger io.Writer
+
+	// SinceSeconds restricts pod log collection to lines no older than this many seconds.
+	// Corresponds to --since passed to oc adm must-gather.
+	SinceSeconds *int64
+
+	// SinceTime restricts pod log collection to lines after this absolute timestamp.
+	// Corresponds to --since-time passed to oc adm must-gather.
+	SinceTime *metav1.Time
 }
 
 // Collector defines the interface for all must-gather collectors

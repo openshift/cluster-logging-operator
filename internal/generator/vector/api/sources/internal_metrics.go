@@ -5,8 +5,8 @@ import (
 )
 
 type InternalMetrics struct {
-	Type                 types.SourceType `json:"type" yaml:"type" toml:"type"`
-	ScrapIntervalSeconds uint             `json:"scrape_interval_seconds,omitempty" yaml:"scrape_interval_seconds,omitempty" toml:"scrape_interval_seconds,omitempty"`
+	Type               types.SourceType `json:"type" yaml:"type" toml:"type"`
+	ScrapeIntervalSecs uint             `json:"scrape_interval_secs,omitempty" yaml:"scrape_interval_secs,omitempty" toml:"scrape_interval_secs,omitempty"`
 }
 
 func (i *InternalMetrics) SourceType() types.SourceType {

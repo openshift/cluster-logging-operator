@@ -22,6 +22,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -159,6 +160,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -190,6 +192,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -221,6 +224,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 

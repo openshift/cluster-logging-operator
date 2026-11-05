@@ -6,6 +6,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -16,6 +17,9 @@ import (
 func Service(k8Client client.Client, desired *corev1.Service) error {
 	sm := runtime.NewService(desired.Namespace, desired.Name)
 	op, err := controllerutil.CreateOrUpdate(context.TODO(), k8Client, sm, func() error {
+		if err := utils.EnsureCanUpdateOwnedResource(sm, desired.OwnerReferences...); err != nil {
+			return err
+		}
 
 		// Set annotations upon creation
 		if sm.CreationTimestamp.IsZero() {

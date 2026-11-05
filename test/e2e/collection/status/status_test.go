@@ -21,7 +21,7 @@ import (
 // The goal of the test is to make sure that the CLF resource remains stable for a sufficiently long duration - which
 // we establish here as 15 seconds which in testing was enough to detect the issue.
 // Ref: https://github.com/openshift/cluster-logging-operator/issues/2315
-var _ = Describe("ClusterLogForwarderReconciliation", func() {
+var _ = Describe("ClusterLogForwarderReconciliation", Serial, func() {
 
 	const miscellaneousReceiverName = "miscellaneous-receiver"
 

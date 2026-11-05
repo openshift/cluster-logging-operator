@@ -24,7 +24,7 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("[E2E][Operator][TLS] TLS Scanner Validation", func() {
+var _ = Describe("[E2E][Operator][TLS] TLS Scanner Validation", Serial, func() {
 	const (
 		forwarderName = "tls-test-collector"
 	)

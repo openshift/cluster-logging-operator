@@ -34,7 +34,7 @@ var validCR string
 //go:embed invalid.yaml
 var inValidCR string
 
-var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", func() {
+var _ = Describe("[e2e][logfilemetricexporter] LogFileMetricsExporter", Serial, func() {
 
 	defer GinkgoRecover()
 

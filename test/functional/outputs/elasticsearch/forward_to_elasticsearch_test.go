@@ -381,7 +381,10 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			Expect(framework.DeployWithVisitor(addMultiESContainers)).To(BeNil())
 			Expect(framework.WritesApplicationLogs(10)).To(BeNil())
 
-			Expect(getLogsFromAllEndpoints()).To(Equal(10), "Expected 10 total logs across both ES nodes")
+			// The collector ingests records as they are written, so the first
+			// non-empty query on a node may observe a partial set; poll until
+			// the expected total is delivered across both endpoints.
+			Eventually(getLogsFromAllEndpoints, 5*time.Minute, time.Second).Should(Equal(10), "Expected 10 total logs across both ES nodes")
 		},
 			Entry("using endpoints only", &obs.Elasticsearch{
 				Endpoints: []obs.EndpointURL{

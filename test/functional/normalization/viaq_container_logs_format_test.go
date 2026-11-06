@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
 var _ = Describe("[Functional][LogForwarding][Normalization] tests for message format", func() {
@@ -87,15 +88,29 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		applicationLogLine = fmt.Sprintf("%s stderr F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+		logs, err := framework.ReadApplicationLogsFromCount(2, string(obs.OutputTypeElasticsearch))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		// Compare to expected template
-		outputTestLog := logs[0]
-		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+		Expect(len(logs)).To(Equal(2))
+		// Records are ingested as they are written and indexed in separate
+		// requests, so the query result order is not guaranteed; match each
+		// record to its template by stream rather than by position.
+		var stdoutLog, stderrLog *types.ApplicationLog
+		for i := range logs {
+			switch logs[i].Kubernetes.ContainerStream {
+			case "stdout":
+				stdoutLog = &logs[i]
+			case "stderr":
+				stderrLog = &logs[i]
+			}
+		}
+		Expect(stdoutLog).NotTo(BeNil(), "Expected a record from the stdout stream")
+		Expect(stderrLog).NotTo(BeNil(), "Expected a record from the stderr stream")
+
+		outputLogTemplate.Kubernetes.ContainerStream = "stdout"
+		Expect(*stdoutLog).To(FitLogFormatTemplate(outputLogTemplate))
 
 		outputLogTemplate.Kubernetes.ContainerStream = "stderr"
-		outputTestLog = logs[1]
-		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+		Expect(*stderrLog).To(FitLogFormatTemplate(outputLogTemplate))
 	})
 
 })

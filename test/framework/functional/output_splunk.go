@@ -7,6 +7,7 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -199,6 +200,22 @@ func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunk(index string
 
 	results = strings.Split(output, "\n")
 	return results, nil
+}
+
+// ReadAppLogsByIndexFromSplunkCount reads application logs from the given
+// Splunk index, retrying until at least n results are available. The
+// underlying reader returns as soon as the search yields any output; since
+// the collector ingests records as they are written, a single search may
+// observe a partial set.
+func (f *CollectorFunctionalFramework) ReadAppLogsByIndexFromSplunkCount(index string, n int) (results []string, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		results, err = f.ReadAppLogsByIndexFromSplunk(index)
+		if err != nil {
+			return false, err
+		}
+		return len(results) >= n, nil
+	})
+	return results, err
 }
 
 func (f *CollectorFunctionalFramework) ReadStatsForFieldByIndexFromSplunk(index, field, format string) (results string, err error) {

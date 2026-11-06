@@ -60,6 +60,25 @@ func (f *CollectorFunctionalFramework) ReadRawApplicationLogsFrom(outputName str
 	return f.ReadLogsFrom(outputName, applicationLog)
 }
 
+// ReadApplicationLogsFromCount reads application logs from the named output,
+// retrying until at least n records are available. The underlying readers
+// return as soon as the output is non-empty; since the collector ingests
+// records as they are written, a single read may observe a partial set.
+func (f *CollectorFunctionalFramework) ReadApplicationLogsFromCount(n int, outputName string) (logs []types.ApplicationLog, err error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		l, err := f.ReadApplicationLogsFrom(outputName)
+		if err != nil {
+			return false, err
+		}
+		if len(l) >= n {
+			logs = l
+			return true, nil
+		}
+		return false, nil
+	})
+	return logs, err
+}
+
 func (f *CollectorFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, string(obs.InputTypeInfrastructure))
 }

@@ -77,7 +77,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeHTTP))
+		logs, err := framework.ReadApplicationLogsFromCount(2, string(obs.OutputTypeHTTP))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(len(logs)).To(Equal(2))
 		Expect(logs[0].Message).Should(Equal("Run, Forest, Run!"))

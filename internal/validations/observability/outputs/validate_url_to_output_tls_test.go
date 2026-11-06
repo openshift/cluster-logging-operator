@@ -147,4 +147,111 @@ var _ = Describe("[internal][validations][observability][outputs] ClusterLogForw
 			Expect(validateURLAccordingToTLS(spec)).To(BeEmpty())
 		})
 	})
+
+	Context("#validateHTTPBearerTokenRequiresHTTPS", func() {
+
+		BeforeEach(func() {
+			spec = obs.OutputSpec{
+				Name: "myOutput",
+				Type: obs.OutputTypeHTTP,
+			}
+		})
+
+		It("should pass validation when HTTP bearer token not configured", func() {
+			spec.HTTP = &obs.HTTP{
+				URLSpec: obs.URLSpec{
+					URL: "http://local.svc:8080",
+				},
+			}
+			Expect(validateHTTPBearerTokenRequiresHTTPS(spec)).To(BeEmpty())
+		})
+
+		It("should pass validation when HTTP bearer token uses HTTPS URL", func() {
+			spec.HTTP = &obs.HTTP{
+				URLSpec: obs.URLSpec{
+					URL: "https://secure.svc:8080",
+				},
+				Authentication: &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
+						Secret: &obs.BearerTokenSecretKey{
+							Name: "my-secret",
+							Key:  "token",
+						},
+					},
+				},
+			}
+			Expect(validateHTTPBearerTokenRequiresHTTPS(spec)).To(BeEmpty())
+		})
+
+		It("should fail validation when HTTP bearer token uses plain HTTP URL", func() {
+			spec.HTTP = &obs.HTTP{
+				URLSpec: obs.URLSpec{
+					URL: "http://insecure.svc:8080",
+				},
+				Authentication: &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
+						Secret: &obs.BearerTokenSecretKey{
+							Name: "my-secret",
+							Key:  "token",
+						},
+					},
+				},
+			}
+			results := validateHTTPBearerTokenRequiresHTTPS(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("HTTP bearer token authentication requires HTTPS URL"))
+		})
+
+		It("should fail validation when HTTP bearer token from serviceAccount uses plain HTTP URL", func() {
+			spec.HTTP = &obs.HTTP{
+				URLSpec: obs.URLSpec{
+					URL: "http://insecure.svc:8080",
+				},
+				Authentication: &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromServiceAccount,
+					},
+				},
+			}
+			results := validateHTTPBearerTokenRequiresHTTPS(spec)
+			Expect(results).ToNot(BeEmpty())
+			Expect(results[0]).To(ContainSubstring("HTTP bearer token authentication requires HTTPS URL"))
+		})
+
+		It("should pass validation when HTTP bearer token is not set even with HTTPS", func() {
+			spec.HTTP = &obs.HTTP{
+				URLSpec: obs.URLSpec{
+					URL: "https://secure.svc:8080",
+				},
+				Authentication: &obs.HTTPAuthentication{
+					Username: &obs.SecretReference{
+						SecretName: "my-secret",
+						Key:        "username",
+					},
+				},
+			}
+			Expect(validateHTTPBearerTokenRequiresHTTPS(spec)).To(BeEmpty())
+		})
+
+		It("should pass validation for non-HTTP output types", func() {
+			spec.Type = obs.OutputTypeLoki
+			spec.Loki = &obs.Loki{
+				URLSpec: obs.URLSpec{
+					URL: "http://insecure.svc:3100",
+				},
+				Authentication: &obs.HTTPAuthentication{
+					Token: &obs.BearerToken{
+						From: obs.BearerTokenFromSecret,
+						Secret: &obs.BearerTokenSecretKey{
+							Name: "my-secret",
+							Key:  "token",
+						},
+					},
+				},
+			}
+			Expect(validateHTTPBearerTokenRequiresHTTPS(spec)).To(BeEmpty())
+		})
+	})
 })

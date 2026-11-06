@@ -52,3 +52,19 @@ func validateURLAccordingToTLS(output obs.OutputSpec) (results []string) {
 	}
 	return results
 }
+
+// validateHTTPBearerTokenRequiresHTTPS validates that HTTP outputs using bearer token authentication use HTTPS URLs
+func validateHTTPBearerTokenRequiresHTTPS(output obs.OutputSpec) (results []string) {
+	if output.Type != obs.OutputTypeHTTP {
+		return results
+	}
+	if output.HTTP == nil || output.HTTP.Authentication == nil || output.HTTP.Authentication.Token == nil {
+		return results
+	}
+	if !url.IsSecure(output.HTTP.URL) {
+		log.V(3).Info("validateHTTPBearerTokenRequiresHTTPS failed", "reason", "HTTP bearer token requires HTTPS",
+			"output URL", output.HTTP.URL, "output Name", output.Name)
+		results = append(results, fmt.Sprintf("HTTP bearer token authentication requires HTTPS URL, got: %v", output.HTTP.URL))
+	}
+	return results
+}

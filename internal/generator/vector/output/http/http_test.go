@@ -117,6 +117,13 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			}, secrets, framework.NoOptions, "http_with_auth_token.toml"),
+			Entry("with serviceAccount token auth", func(spec *obs.OutputSpec) {
+				spec.HTTP.Authentication.Token = &obs.BearerToken{
+					From: obs.BearerTokenFromServiceAccount,
+				}
+			}, secrets, framework.Options{
+				framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
+			}, "http_with_auth_sa_token.toml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = tlsSpec

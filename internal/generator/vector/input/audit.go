@@ -25,6 +25,15 @@ func auditIgnoreOlderSecs(input *adapters.Input) int64 {
 	return IgnoreOlderSecs
 }
 
+func auditMaxLineBytes(input *adapters.Input) int64 {
+	if input.Audit != nil && input.Audit.Tuning != nil && input.Audit.Tuning.MaxMessageSize != nil {
+		if size, ok := input.Audit.Tuning.MaxMessageSize.AsInt64(); ok {
+			return size
+		}
+	}
+	return MaxLineBytes
+}
+
 func NewAuditAuditdSource(input *adapters.Input) (id string, _ types.Source, tfs api.Transforms) {
 	tfs = api.Transforms{}
 	id = helpers.MakeInputID(input.Name, "host")
@@ -33,7 +42,8 @@ func NewAuditAuditdSource(input *adapters.Input) (id string, _ types.Source, tfs
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
 	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
-	f.MaxLineBytes = MaxLineBytes
+	f.MaxLineBytes = auditMaxLineBytes(input)
+	f.MaxLineByteAction = "truncate"
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
 	tfs.Add(metaID, NewInternalNormalization(obs.AuditSourceAuditd, obs.InputTypeAudit, id, v1.ParseHostAuditLogs))
@@ -50,7 +60,8 @@ func NewK8sAuditSource(input *adapters.Input) (id string, _ types.Source, tfs ap
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
 	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
-	f.MaxLineBytes = MaxLineBytes
+	f.MaxLineBytes = auditMaxLineBytes(input)
+	f.MaxLineByteAction = "truncate"
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
 	tfs.Add(metaID, NewAuditInternalNormalization(obs.AuditSourceKube, id, true))
@@ -66,7 +77,8 @@ func NewOpenshiftAuditSource(input *adapters.Input) (id string, _ types.Source, 
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
 	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
-	f.MaxLineBytes = MaxLineBytes
+	f.MaxLineBytes = auditMaxLineBytes(input)
+	f.MaxLineByteAction = "truncate"
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
 	tfs.Add(metaID, NewAuditInternalNormalization(obs.AuditSourceOpenShift, id, true))
@@ -82,7 +94,8 @@ func NewOVNAuditSource(input *adapters.Input) (id string, _ types.Source, tfs ap
 	f.HostKey = "hostname"
 	f.GlobalMinimumCooldownMilliSeconds = GlobalMinimumCooldown
 	f.IgnoreOlderSecs = auditIgnoreOlderSecs(input)
-	f.MaxLineBytes = MaxLineBytes
+	f.MaxLineBytes = auditMaxLineBytes(input)
+	f.MaxLineByteAction = "truncate"
 	f.MaxReadBytes = MaxReadBytes
 	f.RotateWaitSecs = RotateWaitSecs
 	tfs.Add(metaID, NewInternalNormalization(obs.AuditSourceOVN, obs.InputTypeAudit, id, v1.ParseOVNAuditLogTimestamp))

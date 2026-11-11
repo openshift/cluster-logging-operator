@@ -352,6 +352,18 @@ var _ = Describe("inputs", func() {
 		},
 			"audit_host_with_ignore_older.toml",
 		),
+		Entry("with an audit input for auditd with MaxMessageSize", obs.InputSpec{
+			Name: "myaudit",
+			Type: obs.InputTypeAudit,
+			Audit: &obs.Audit{
+				Sources: []obs.AuditSource{obs.AuditSourceAuditd},
+				Tuning: &obs.AuditInputTuningSpec{
+					MaxMessageSize: utils.GetPtr(resource.MustParse("1Mi")),
+				},
+			},
+		},
+			"audit_host_with_max_message_size.toml",
+		),
 		Entry("with an http audit receiver input should generate an http receiver audit source", obs.InputSpec{
 			Type: obs.InputTypeReceiver,
 			Name: "myreceiver",

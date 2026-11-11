@@ -278,6 +278,13 @@ type AuditInputTuningSpec struct {
 	// +kubebuilder:validation:Optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Ignore Older"
 	IgnoreOlder *metav1.Duration `json:"ignoreOlder,omitempty"`
+
+	// MaxMessageSize  The maximum message length in bytes that a single log event can be.
+	// Messages exceeding this limit are dropped. Note: file-based audit sources do not support
+	// line merging, so this setting applies to individual log lines as read from the file.
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Max Message Size"
+	MaxMessageSize *resource.Quantity `json:"maxMessageSize,omitempty"`
 }
 
 // Audit enables audit logs.

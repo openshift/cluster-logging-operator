@@ -12,8 +12,25 @@ oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/e
 oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/audit=privileged --overwrite
 oc label ns/"${CLUSTER_LOGGING_OPERATOR_NAMESPACE}" pod-security.kubernetes.io/warn=privileged --overwrite
 
-GOFLAGS=-mod=mod go test -p 1 -v -timeout=90m ./test/e2e/... \
-   -ginkgo.v -ginkgo.trace -ginkgo.no-color \
-   -ginkgo.skip="FlowControl" \
-   -ginkgo.poll-progress-after=300s \
-   -ginkgo.poll-progress-interval=30s
+# Only the input_selection suite is parallel-safe; it is driven by the ginkgo
+# CLI (Ginkgo v2 only parallelizes when driven by its own CLI; go test cannot)
+# with --procs capped to keep the shared, claimed cluster from being
+# overwhelmed. Every other suite runs serially: several of them deploy
+# cluster-scoped resources (e.g. the lokistack suite's reader ClusterRole and
+# LokiStacks) that parallel specs would delete out from under each other, and
+# the claimed cluster cannot sustain more than one LokiStack at a time.
+GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
+   -v --trace --no-color \
+   --skip="FlowControl|InputSelection" \
+   --poll-progress-after=300s \
+   --poll-progress-interval=30s \
+   --timeout=90m \
+   ./test/e2e/...
+
+GOFLAGS=-mod=mod go run github.com/onsi/ginkgo/v2/ginkgo \
+   -p --procs=4 \
+   -v --trace --no-color \
+   --poll-progress-after=300s \
+   --poll-progress-interval=30s \
+   --timeout=90m \
+   ./test/e2e/input_selection/

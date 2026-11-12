@@ -31,7 +31,7 @@ const (
 	curlImage              = "registry.access.redhat.com/ubi9/ubi"
 )
 
-var _ = Describe("Manager", Ordered, func() {
+var _ = Describe("Manager", Ordered, Serial, func() {
 	var controllerPodName string
 
 	// Before running the tests, set up the environment by creating the namespace,

@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var _ = Describe("[tuning] deliveryMode AtLeastOnce", func() {
+var _ = Describe("[tuning] deliveryMode AtLeastOnce", Serial, func() {
 
 	const (
 		componentName  = "log-generator"

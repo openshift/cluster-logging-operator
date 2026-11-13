@@ -49,23 +49,30 @@ var _ = Describe("[Functional][FlowControl] Policies at Input", func() {
 		It("should apply policy at the container level", func() {
 			const maxRecordsPerSecond = 10
 			Expect(f.Deploy()).To(BeNil())
-			Expect(f.WritesApplicationLogsWithDelay(1000, 0.0001)).To(Succeed())
+
+			// The throttle transform DISCARDS records over the budget rather
+			// than queueing them, so a finite burst is drained almost
+			// immediately (the limiter's burst allowance passes, the rest are
+			// dropped) and delivery stops. To observe the pacing, write
+			// continuously at well above the configured rate while sampling the
+			// Loki record count over a fixed window of wall-clock time, and
+			// verify the delivery rate tracks the configuration. The Loki entry
+			// timestamps cannot be used for this: they are the events' own
+			// write-time timestamps, not delivery times.
+			writeDone := make(chan error, 1)
+			go func() {
+				// ~33 writes/s, sustained past the sampling window
+				writeDone <- f.WritesApplicationLogsWithDelay(600, 0.03)
+			}()
+			defer func() {
+				Expect(<-writeDone).To(Succeed(), "Expected the log writer to finish")
+			}()
 
 			query := fmt.Sprintf(LokiNsQuery, AllLogs)
 			if _, err := l.QueryUntil(query, "", 10); err != nil {
 				Fail(fmt.Sprintf("Failed to read logs from Loki Server: %v", err))
 			}
 
-			// The throttle (a governor quota of 10 records per 1s window)
-			// paces delivery of the written backlog, so the number of records
-			// stored in Loki grows at the configured rate. Asserting on a raw
-			// record count is inherently racy: it depends on how much time
-			// elapses between the writes and the query. Instead, measure the
-			// observed delivery rate by sampling the Loki record count over a
-			// fixed window of wall-clock time and verify it tracks the
-			// configuration. The Loki entry timestamps cannot be used for this:
-			// they are the events' own write-time timestamps, which all fall
-			// within the ~1s it takes to write the backlog.
 			rate := observedDeliveryRate(l, query, 10*time.Second)
 			Expect(rate).To(BeNumerically(">=", 2),
 				fmt.Sprintf("Expected delivery rate %.2f records/s to be at least roughly the configured %d records/s", rate, maxRecordsPerSecond))

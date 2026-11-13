@@ -87,7 +87,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		applicationLogLine = fmt.Sprintf("%s stderr F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
-		logs, err := framework.ReadApplicationLogsFrom(string(obs.OutputTypeElasticsearch))
+		logs, err := framework.ReadApplicationLogsFromExpecting(2, string(obs.OutputTypeElasticsearch))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]

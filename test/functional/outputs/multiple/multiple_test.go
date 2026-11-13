@@ -52,7 +52,8 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).To(HaveLen(2), "Expected syslog to have received all the records")
 
-			raw, err := framework.GetLogsFromElasticSearch(string(obs.OutputTypeElasticsearch), string(obs.InputTypeApplication))
+			raw, err := framework.GetLogsFromElasticSearch(string(obs.OutputTypeElasticsearch), string(obs.InputTypeApplication),
+				functional.Option{Name: "minHits", Value: "2"})
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 

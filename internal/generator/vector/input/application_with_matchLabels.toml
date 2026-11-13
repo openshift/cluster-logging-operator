@@ -50,18 +50,22 @@ if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
   level = null
   message = ._internal.message
 
-  # attempt 1: parse as logfmt (e.g. level=error msg="Failed to connect")
-
-  parsed_logfmt, err = parse_logfmt(message)
-  if err == null && is_string(parsed_logfmt.level) {
-    level = downcase!(parsed_logfmt.level)
+  # attempt 1: logfmt-style level token (e.g. level=error, severity=WARN, lvl="info").
+  # A single linear-time regex replaces parse_logfmt, whose nom-based parser rescans
+  # the remaining input per token when no '=' follows (quadratic on multi-MB lines,
+  # see LOG-8640) and builds a map of every key to extract one field.
+  parsed_level, err = parse_regex(message, r'(?i)(?:^|\s)(?:level|severity|lvl)="?(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"?')
+  if err == null {
+    level = downcase!(parsed_level.level)
   }
 
-  # attempt 2: parse as klog (e.g. I0920 14:22:00.089385 1 scheduler.go:592] "Successfully bound pod to node")
+  # attempt 2: klog header (e.g. I0920 14:22:00.089385 1 scheduler.go:592] "Successfully bound pod to node").
+  # A linear-time regex replaces parse_klog, which also parsed/validated the timestamp
+  # and built a full map only for the severity letter to be discarded.
   if level == null {
-    parsed_klog, err = parse_klog(message)
-    if err == null && is_string(parsed_klog.level) {
-      level = parsed_klog.level
+    parsed_klog, err = parse_regex(message, r'^\s*(?P<level>[IWEF])\d{4} \d{2}:\d{2}:\d{2}\.\d{6}\s+\d+ .+:\d+\]\s')
+    if err == null {
+      level = if parsed_klog.level == "I" { "info" } else if parsed_klog.level == "W" { "warning" } else if parsed_klog.level == "E" { "error" } else { "fatal" }
     }
   }
 
@@ -89,26 +93,27 @@ if exists(._internal.file) && !exists(._internal.kubernetes.namespace_name) {
   if level == null {
     level = "default"
 
-    # attempt 4: Match on well known structured patterns
+    # attempt 4: Match on well known structured patterns (klog severity prefixes,
+    # Value:<sev>, JSON "level":"<sev>" - the level=<sev> token moved to attempt 1)
     # Order: emergency, alert, critical, error, warn, notice, info, debug, trace
 
-    if match!(message, r'^EM[0-9]+|(?i:level=emergency|Value:emergency|"level":"emergency")') {
+    if match!(message, r'^EM[0-9]+|(?i:Value:emergency|"level":"emergency")') {
       level = "emergency"
-    } else if match!(message, r'^A[0-9]+|(?i:level=alert|Value:alert|"level":"alert")') {
+    } else if match!(message, r'^A[0-9]+|(?i:Value:alert|"level":"alert")') {
       level = "alert"
-    } else if match!(message, r'^C[0-9]+|(?i:level=critical|Value:critical|"level":"critical")') {
+    } else if match!(message, r'^C[0-9]+|(?i:Value:critical|"level":"critical")') {
       level = "critical"
-    } else if match!(message, r'^E[0-9]+|(?i:level=error|Value:error|"level":"error")') {
+    } else if match!(message, r'^E[0-9]+|(?i:Value:error|"level":"error")') {
       level = "error"
-    } else if match!(message, r'^W[0-9]+|(?i:level=warn|Value:warn|"level":"warn")') {
+    } else if match!(message, r'^W[0-9]+|(?i:Value:warn|"level":"warn")') {
       level = "warn"
-    } else if match!(message, r'^N[0-9]+|(?i:level=notice|Value:notice|"level":"notice")') {
+    } else if match!(message, r'^N[0-9]+|(?i:Value:notice|"level":"notice")') {
       level = "notice"
-    } else if match!(message, r'^I[0-9]+|(?i:level=info|Value:info|"level":"info")') {
+    } else if match!(message, r'^I[0-9]+|(?i:Value:info|"level":"info")') {
       level = "info"
-    } else if match!(message, r'^D[0-9]+|(?i:level=debug|Value:debug|"level":"debug")') {
+    } else if match!(message, r'^D[0-9]+|(?i:Value:debug|"level":"debug")') {
       level = "debug"
-    } else if match!(message, r'^T[0-9]+|(?i:level=trace|Value:trace|"level":"trace")') {
+    } else if match!(message, r'^T[0-9]+|(?i:Value:trace|"level":"trace")') {
       level = "trace"
     }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const sccName = "logging-scc"
@@ -27,13 +27,12 @@ var (
 		"KILL",
 	}
 
-	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
+	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected", "hostPath"}
 )
 
 func NewSCC() *security.SecurityContextConstraints {
-
 	scc := runtime.NewSCC(sccName)
-	scc.AllowPrivilegedContainer = false
+	scc.AllowPrivilegedContainer = false // Forbids privileged containers
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true
 	scc.Volumes = DesiredSCCVolumes
@@ -43,11 +42,13 @@ func NewSCC() *security.SecurityContextConstraints {
 		Type: security.RunAsUserStrategyRunAsAny,
 	}
 	scc.SELinuxContext = security.SELinuxContextStrategyOptions{
-		Type: security.SELinuxStrategyRunAsAny,
+		Type: security.SELinuxStrategyRunAsAny, // Permits spc_t on init container
 	}
 	scc.ReadOnlyRootFilesystem = true
 	scc.ForbiddenSysctls = []string{"*"}
-	scc.SeccompProfiles = []string{"runtime/default"}
+	scc.SeccompProfiles = []string{
+		"runtime/default",
+	}
 	return scc
 }
 

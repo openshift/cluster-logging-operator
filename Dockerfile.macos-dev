@@ -3,44 +3,37 @@
 # The original Dockerfile compiles Go inside the container, which requires
 # QEMU amd64 emulation on ARM Macs. QEMU crashes with segfaults during
 # `go mod download` (network syscall emulation issue). This Dockerfile skips
-# the in-container Go build and instead expects a pre-built binary at
-# bin/cluster-logging-operator, cross-compiled natively on the host.
+# the in-container Go build and instead expects pre-built binaries at
+# bin/cluster-logging-operator and bin/must-gather, cross-compiled natively
+# on the host.
 #
 # Usage:
 #   GOOS=linux GOARCH=amd64 make build
 #   podman build -t $(IMAGE_TAG) . -f Dockerfile.macos-dev
 
-FROM --platform=linux/amd64 quay.io/openshift/origin-cli-artifacts:latest AS origincli
+FROM registry.access.redhat.com/ubi9/ubi:latest AS packages
 
-RUN case $(uname -m) in \
-    x86_64) cp /usr/share/openshift/linux_amd64/oc.rhel9 /tmp/oc ;; \
-    aarch64) cp /usr/share/openshift/linux_arm64/oc.rhel9 /tmp/oc ;; \
-    ppc64le) cp /usr/share/openshift/linux_ppc64le/oc.rhel9 /tmp/oc ;; \
-    s390x) cp /usr/share/openshift/linux_s390x/oc /tmp/oc ;; \
-    *) echo "Unsupported architecture"; exit 1 ;; \
-esac
-
-FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal
-
-ENV SRC_DIR=./
-
-RUN INSTALL_PKGS=" \
-      openssl \
+RUN mkdir -p /mnt/rootfs && \
+    dnf install -y --installroot=/mnt/rootfs \
+      --releasever=9 \
+      --setopt=install_weak_deps=false \
+      --nodocs \
+      openssl-libs \
+      ca-certificates \
       rsync \
       file \
-      xz \
-      " && \
-    microdnf install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
-    microdnf clean all && \
-    mkdir /tmp/ocp-clo && \
-    chmod og+w /tmp/ocp-clo
+      xz && \
+    dnf --installroot=/mnt/rootfs clean all && \
+    mkdir -p /mnt/rootfs/tmp/ocp-clo && \
+    chmod og+w /mnt/rootfs/tmp/ocp-clo
 
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-micro
+
+COPY --from=packages /mnt/rootfs/ /
 COPY bin/cluster-logging-operator /usr/bin/
+COPY bin/must-gather /usr/bin/
 
-COPY --from=origincli /tmp/oc /usr/bin/oc
-
-COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
+RUN ln -s /usr/bin/must-gather /usr/bin/gather
 
 USER 1000
 WORKDIR /usr/bin

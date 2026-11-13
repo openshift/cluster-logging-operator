@@ -43,6 +43,31 @@ func OptionsInclude(name string, options []Option) (bool, Option) {
 	return false, Option{}
 }
 
+// ReadApplicationLogsFromExpecting polls the output until at least expCount raw
+// logs of the application type are available, then parses them. Use this instead
+// of ReadApplicationLogsFrom whenever the caller asserts on an exact number of
+// records, so the read does not return mid-delivery while the collector is
+// still forwarding.
+func (f *CollectorFunctionalFramework) ReadApplicationLogsFromExpecting(expCount int, outputName string) ([]types.ApplicationLog, error) {
+	var raw []string
+	err := wait.PollUntilContextTimeout(context.TODO(), defaultRetryInterval, f.GetMaxReadDuration(), true, func(cxt context.Context) (done bool, err error) {
+		raw, err = f.ReadLogsFrom(outputName, applicationLog)
+		if err != nil || len(raw) < expCount {
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var logs []types.ApplicationLog
+	if err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs); err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
 func (f *CollectorFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
 	raw, err := f.ReadLogsFrom(outputName, applicationLog)
 	if err != nil {

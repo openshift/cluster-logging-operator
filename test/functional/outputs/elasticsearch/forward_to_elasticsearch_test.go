@@ -381,7 +381,10 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] Logforwarding to ElasticS
 			Expect(framework.DeployWithVisitor(addMultiESContainers)).To(BeNil())
 			Expect(framework.WritesApplicationLogs(10)).To(BeNil())
 
-			Expect(getLogsFromAllEndpoints()).To(Equal(10), "Expected 10 total logs across both ES nodes")
+			// Both nodes are queried in parallel and each poll inside
+			// GetLogsFromElasticSearchIndex returns as soon as it sees a hit, so
+			// the total can be observed mid-delivery; retry until all 10 arrive.
+			Eventually(getLogsFromAllEndpoints, 5*time.Minute, 10*time.Second).Should(Equal(10))
 		},
 			Entry("using endpoints only", &obs.Elasticsearch{
 				Endpoints: []obs.EndpointURL{

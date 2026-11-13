@@ -98,6 +98,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 				Https:   o.Loki.ProxyURL,
 			}
 		}
+		s.DangerouslyAllowUnconfinedTemplateResolution = true
 	}, remapLabelID)
 
 	if hasTenantKey(o.Loki) {

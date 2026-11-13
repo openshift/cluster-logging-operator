@@ -2,9 +2,11 @@ package logfilemetricexporter
 
 import (
 	"context"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	configv1 "github.com/openshift/api/config/v1"
 	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/api/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/auth"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -203,5 +205,52 @@ var _ = Describe("Reconcile LogFileMetricExporter Daemonset", func() {
 		// Check resource requests
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().Cmp(reqCPU1)).To(Equal(0))
 		Expect(dsInstance.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().Cmp(reqMem1)).To(Equal(0))
+	})
+
+	It("should reject deprecated TLS versions from Old profile in DaemonSet args (CWE-327)", func() {
+		// Use the OpenShift "Old" profile which specifies TLS 1.0
+		oldProfile := *configv1.TLSProfiles[configv1.TLSProfileOldType]
+
+		ds := NewDaemonSet(*lfmeInstance, constants.OpenshiftNS, constants.LogfilesmetricexporterName, oldProfile)
+		Expect(ds.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+		container := ds.Spec.Template.Spec.Containers[0]
+		var tlsMinVersionArg string
+		for _, arg := range container.Args {
+			if strings.HasPrefix(arg, "-tlsMinVersion=") {
+				tlsMinVersionArg = arg
+				break
+			}
+		}
+
+		Expect(tlsMinVersionArg).ToNot(BeEmpty(), "tlsMinVersion arg should be present")
+		// Should NOT contain VersionTLS10 or VersionTLS11
+		Expect(tlsMinVersionArg).ToNot(ContainSubstring("VersionTLS10"))
+		Expect(tlsMinVersionArg).ToNot(ContainSubstring("VersionTLS11"))
+		// Should contain VersionTLS12 as the fallback
+		Expect(tlsMinVersionArg).To(ContainSubstring("VersionTLS12"))
+	})
+
+	It("should filter insecure ciphers from Old profile in DaemonSet args (CWE-327)", func() {
+		// Use the OpenShift "Old" profile which includes insecure ciphers
+		oldProfile := *configv1.TLSProfiles[configv1.TLSProfileOldType]
+
+		ds := NewDaemonSet(*lfmeInstance, constants.OpenshiftNS, constants.LogfilesmetricexporterName, oldProfile)
+		Expect(ds.Spec.Template.Spec.Containers).To(HaveLen(1))
+
+		container := ds.Spec.Template.Spec.Containers[0]
+		var cipherSuitesArg string
+		for _, arg := range container.Args {
+			if strings.HasPrefix(arg, "-cipherSuites=") {
+				cipherSuitesArg = arg
+				break
+			}
+		}
+
+		Expect(cipherSuitesArg).ToNot(BeEmpty(), "cipherSuites arg should be present")
+		// Should NOT contain insecure ciphers
+		Expect(cipherSuitesArg).ToNot(ContainSubstring("DES-CBC3-SHA"), "3DES should be filtered")
+		Expect(cipherSuitesArg).ToNot(ContainSubstring("AES128-SHA"), "weak MAC cipher should be filtered")
+		Expect(cipherSuitesArg).ToNot(ContainSubstring("AES256-SHA"), "weak MAC cipher should be filtered")
 	})
 })

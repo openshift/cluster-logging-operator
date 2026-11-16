@@ -89,13 +89,22 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 		logs, err := framework.ReadApplicationLogsFromExpecting(2, string(obs.OutputTypeElasticsearch))
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		// Compare to expected template
-		outputTestLog := logs[0]
-		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
-
-		outputLogTemplate.Kubernetes.ContainerStream = "stderr"
-		outputTestLog = logs[1]
-		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+		// The two records can be flushed in separate batches and indexed (and
+		// therefore returned) out of order, so locate them by stream rather
+		// than relying on the hit order.
+		Expect(logs).To(HaveLen(2), fmt.Sprintf("Expected exactly two logs, got: %v", logs))
+		for _, outputTestLog := range logs {
+			switch outputTestLog.Kubernetes.ContainerStream {
+			case "stdout":
+				Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+			case "stderr":
+				stderrTemplate := outputLogTemplate
+				stderrTemplate.Kubernetes.ContainerStream = "stderr"
+				Expect(outputTestLog).To(FitLogFormatTemplate(stderrTemplate))
+			default:
+				Fail(fmt.Sprintf("Unexpected container stream %q", outputTestLog.Kubernetes.ContainerStream))
+			}
+		}
 	})
 
 })

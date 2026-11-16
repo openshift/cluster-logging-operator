@@ -34,8 +34,8 @@ var klogLevels = map[string]string{"I": "info", "W": "warning", "E": "error", "F
 // patterns) of SetLogLevel in evaluation order. Attempts 3 (grok) and 5 (keyword) are
 // not simulated.
 func firstLevel(message string) string {
-	// attempt 1: logfmt-style level token
-	for _, match := range attemptRe.FindAllStringSubmatch(SetLogLevel, -1) {
+	// attempt 1: logfmt-style level token (the first parse_regex in SetLogLevel)
+	if match := attemptRe.FindStringSubmatch(SetLogLevel); match != nil {
 		re, err := regexp.Compile(match[1])
 		Expect(err).NotTo(HaveOccurred())
 		if m := re.FindStringSubmatch(message); m != nil {
@@ -46,7 +46,6 @@ func firstLevel(message string) string {
 				}
 			}
 		}
-		break // only the first parse_regex in SetLogLevel is attempt 1
 	}
 
 	// attempt 2: klog header

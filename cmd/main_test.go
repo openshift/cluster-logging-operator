@@ -42,6 +42,7 @@ var _ = Describe("waitForMetricsCertificate", func() {
 		Expect(os.WriteFile(certPath, []byte("cert"), 0o600)).To(Succeed())
 
 		go func() {
+			defer GinkgoRecover()
 			time.Sleep(50 * time.Millisecond)
 			Expect(os.WriteFile(keyPath, []byte("key"), 0o600)).To(Succeed())
 		}()
@@ -54,6 +55,7 @@ var _ = Describe("waitForMetricsCertificate", func() {
 		Expect(os.WriteFile(keyPath, []byte("key"), 0o600)).To(Succeed())
 
 		go func() {
+			defer GinkgoRecover()
 			time.Sleep(50 * time.Millisecond)
 			Expect(os.WriteFile(certPath, []byte("cert"), 0o600)).To(Succeed())
 		}()

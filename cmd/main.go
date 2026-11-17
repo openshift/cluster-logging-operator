@@ -172,13 +172,17 @@ func main() {
 		// endpoint permanently untrusted by the service CA (and by
 		// Prometheus). Block until the files exist, and exit on timeout so
 		// the pod restarts and picks up the secret once it is populated.
-		if err := waitForMetricsCertificate(
+		// Only wait when the metrics server is actually enabled and serving
+		// over TLS; otherwise the cert files are never read.
+		if secureMetrics && metricsAddr != "0" {
+			if err := waitForMetricsCertificate(
 			filepath.Join(metricsCertPath, metricsCertName),
 			filepath.Join(metricsCertPath, metricsCertKey),
-			time.Second, 2*time.Minute); err != nil {
-			log.Error(err, "timed out waiting for the metrics server certificate",
-				"metrics-cert-path", metricsCertPath)
-			os.Exit(1)
+				time.Second, 2*time.Minute); err != nil {
+				log.Error(err, "timed out waiting for the metrics server certificate",
+					"metrics-cert-path", metricsCertPath)
+				os.Exit(1)
+			}
 		}
 
 		metricsServerOptions.CertDir = metricsCertPath

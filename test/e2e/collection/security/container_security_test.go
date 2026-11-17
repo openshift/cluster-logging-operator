@@ -127,7 +127,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 				}
 				for _, cs := range p.Status.ContainerStatuses {
 					if cs.Name == constants.CollectorName && cs.Ready {
-						return p.Name
+						collector = p.Name
+						return collector
 					}
 				}
 			}

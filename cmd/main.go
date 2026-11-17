@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -164,6 +165,21 @@ func main() {
 	if len(metricsCertPath) > 0 {
 		log.Info("Initializing metrics certificate watcher using provided certificates",
 			"metrics-cert-path", metricsCertPath, "metrics-cert-name", metricsCertName, "metrics-cert-key", metricsCertKey)
+
+		// The metrics server silently falls back to serving a self-signed
+		// certificate when the cert/key files are missing at startup, and it
+		// never reloads them once they appear. That would leave the metrics
+		// endpoint permanently untrusted by the service CA (and by
+		// Prometheus). Block until the files exist, and exit on timeout so
+		// the pod restarts and picks up the secret once it is populated.
+		if err := waitForMetricsCertificate(
+			filepath.Join(metricsCertPath, metricsCertName),
+			filepath.Join(metricsCertPath, metricsCertKey),
+			time.Second, 2*time.Minute); err != nil {
+			log.Error(err, "timed out waiting for the metrics server certificate",
+				"metrics-cert-path", metricsCertPath)
+			os.Exit(1)
+		}
 
 		metricsServerOptions.CertDir = metricsCertPath
 		metricsServerOptions.CertName = metricsCertName
@@ -327,4 +343,28 @@ func cleanUpResources(k8sClient client.Client, apiReader client.Reader) error {
 		return err
 	}
 	return nil
+}
+
+// waitForMetricsCertificate blocks until both the metrics server certificate
+// and key files exist and are non-empty, or the timeout elapses.
+//
+// controller-runtime's metrics server silently falls back to serving a
+// self-signed certificate when these files are missing at startup and never
+// reloads them once they appear, which would leave the metrics endpoint
+// permanently untrusted by the cluster service CA (e.g. by Prometheus and any
+// client using the openshift-service-ca.crt bundle). See
+// sigs.k8s.io/controller-runtime/pkg/metrics/server.
+func waitForMetricsCertificate(certPath, keyPath string, interval, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		certInfo, certErr := os.Stat(certPath)
+		keyInfo, keyErr := os.Stat(keyPath)
+		if certErr == nil && keyErr == nil && certInfo.Size() > 0 && keyInfo.Size() > 0 {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("metrics certificate files not available at %s and %s after %s", certPath, keyPath, timeout)
+		}
+		time.Sleep(interval)
+	}
 }

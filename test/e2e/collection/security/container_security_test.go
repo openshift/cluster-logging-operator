@@ -110,32 +110,29 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		labelSelector := fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.CollectorName)
-		pods, err := e2e.KubeClient.CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: labelSelector,
-		})
-
-		Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
-		Expect(pods.Items).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find deployed collector pods in %q with label %q", forwarder.Namespace, labelSelector))
 		// During a rollout the pod list can include old-generation pods that
 		// are being deleted; exec against one fails with "container not
-		// found". Pick a running, non-terminating pod with a ready collector
-		// container instead of blindly taking the first listed pod.
+		// found". Poll for a running, non-terminating pod with a ready
+		// collector container instead of blindly taking the first listed pod.
 		collector = ""
-		for _, p := range pods.Items {
-			if p.DeletionTimestamp != nil || p.Status.Phase != corev1.PodRunning {
-				continue
-			}
-			for _, cs := range p.Status.ContainerStatuses {
-				if cs.Name == constants.CollectorName && cs.Ready {
-					collector = p.Name
-					break
+		Eventually(func(g Gomega) string {
+			pods, err := e2e.KubeClient.CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
+				LabelSelector: labelSelector,
+			})
+			g.Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
+			g.Expect(pods.Items).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find deployed collector pods in %q with label %q", forwarder.Namespace, labelSelector))
+			for _, p := range pods.Items {
+				if p.DeletionTimestamp != nil || p.Status.Phase != corev1.PodRunning {
+					continue
+				}
+				for _, cs := range p.Status.ContainerStatuses {
+					if cs.Name == constants.CollectorName && cs.Ready {
+						return p.Name
+					}
 				}
 			}
-			if collector != "" {
-				break
-			}
-		}
-		Expect(collector).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find a running collector pod in %q with label %q", forwarder.Namespace, labelSelector))
+			return ""
+		}, 5*time.Minute, 1*time.Second).ShouldNot(BeEmpty(), fmt.Sprintf("Exp. to find a running collector pod in %q with label %q", forwarder.Namespace, labelSelector))
 
 		By("having all Linux capabilities disabled")
 		result, err := runInCollectorContainer("getpcaps", "1")

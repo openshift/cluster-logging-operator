@@ -1,4 +1,4 @@
-FROM golang:1.26.7 AS builder
+FROM golang:1.26.10 AS builder
 
 ARG CACHE_DEPS="true"
 WORKDIR /opt/app-root/src

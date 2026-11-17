@@ -360,6 +360,9 @@ pod_node_name = "hostname"
 [sources.input_infrastructure_container.namespace_annotation_fields]
 namespace_uid = "kubernetes.namespace_id"
 
+[sources.input_infrastructure_container.node_annotation_fields]
+node_labels = ""
+
 [transforms.input_infrastructure_container_meta]
 type = "remap"
 inputs = ["input_infrastructure_container"]
@@ -587,6 +590,9 @@ pod_node_name = "hostname"
 
 [sources.input_mytestapp_container.namespace_annotation_fields]
 namespace_uid = "kubernetes.namespace_id"
+
+[sources.input_mytestapp_container.node_annotation_fields]
+node_labels = ""
 
 [transforms.input_mytestapp_container_meta]
 type = "remap"

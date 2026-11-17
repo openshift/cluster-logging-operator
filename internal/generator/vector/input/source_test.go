@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -56,6 +58,15 @@ var _ = Describe("inputs", func() {
 			config.AddTransforms(transforms)
 		})
 		Expect(exp).To(EqualConfigFrom(conf))
+		// LOG-10533: node label capture must be suppressed on kubernetes_logs
+		// sources. Node labels are captured then deleted by the VIAQ normalize
+		// filter, and capturing them inflates collector memory proportional to
+		// the number of labels on the node, which can OOMKill the collector.
+		if strings.Contains(string(exp), `type = "kubernetes_logs"`) {
+			actual := toml.MustMarshal(conf)
+			Expect(actual).To(ContainSubstring(`.node_annotation_fields]`))
+			Expect(actual).To(ContainSubstring(`node_labels = ""`))
+		}
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),

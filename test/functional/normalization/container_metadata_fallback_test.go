@@ -45,8 +45,8 @@ var _ = Describe("[Functional][Normalization] container metadata fallback from f
 
 		framework.VisitConfig = func(conf string) string {
 			// Match the entire kubernetes_logs source block including sub-tables
-			// (pod_annotation_fields, namespace_annotation_fields)
-			re := regexp.MustCompile(`(?ms)\[sources\.input_application_container\].*?\[sources\.input_application_container\.namespace_annotation_fields\][^\[]*`)
+			// (pod_annotation_fields, namespace_annotation_fields, node_annotation_fields)
+			re := regexp.MustCompile(`(?ms)\[sources\.input_application_container\].*?\[sources\.input_application_container\.node_annotation_fields\][^\[]*`)
 			return string(re.ReplaceAll([]byte(conf), []byte(fakeContainerSource)))
 		}
 		Expect(framework.Deploy()).To(BeNil())

@@ -44,7 +44,14 @@ if !exists(._internal.level) {
   # A single linear-time regex replaces parse_logfmt, whose nom-based parser rescans
   # the remaining input per token when no '=' follows (quadratic on multi-MB lines,
   # see LOG-8640) and builds a map of every key to extract one field.
-  parsed_level, err = parse_regex(message, r'(?i)(?:^|\s)(?:level|severity|lvl)="?(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"?')
+  # The key may be punctuation-delimited (e.g. "[level=error]") and the value must
+  # be a complete severity word: quoted values close immediately after the word,
+  # unquoted values end at a word boundary, so prefixes like "debugger" or quoted
+  # values containing spaces are declined.
+  parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)="(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"')
+  if err != null {
+    parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)=(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)\b')
+  }
   if err == null {
     level = downcase!(parsed_level.level)
   }
@@ -248,7 +255,14 @@ if !exists(._internal.level) {
   # A single linear-time regex replaces parse_logfmt, whose nom-based parser rescans
   # the remaining input per token when no '=' follows (quadratic on multi-MB lines,
   # see LOG-8640) and builds a map of every key to extract one field.
-  parsed_level, err = parse_regex(message, r'(?i)(?:^|\s)(?:level|severity|lvl)="?(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"?')
+  # The key may be punctuation-delimited (e.g. "[level=error]") and the value must
+  # be a complete severity word: quoted values close immediately after the word,
+  # unquoted values end at a word boundary, so prefixes like "debugger" or quoted
+  # values containing spaces are declined.
+  parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)="(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"')
+  if err != null {
+    parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)=(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)\b')
+  }
   if err == null {
     level = downcase!(parsed_level.level)
   }
@@ -407,7 +421,14 @@ if !exists(._internal.level) {
   # A single linear-time regex replaces parse_logfmt, whose nom-based parser rescans
   # the remaining input per token when no '=' follows (quadratic on multi-MB lines,
   # see LOG-8640) and builds a map of every key to extract one field.
-  parsed_level, err = parse_regex(message, r'(?i)(?:^|\s)(?:level|severity|lvl)="?(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"?')
+  # The key may be punctuation-delimited (e.g. "[level=error]") and the value must
+  # be a complete severity word: quoted values close immediately after the word,
+  # unquoted values end at a word boundary, so prefixes like "debugger" or quoted
+  # values containing spaces are declined.
+  parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)="(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"')
+  if err != null {
+    parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)=(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)\b')
+  }
   if err == null {
     level = downcase!(parsed_level.level)
   }
@@ -640,7 +661,14 @@ if !exists(._internal.level) {
   # A single linear-time regex replaces parse_logfmt, whose nom-based parser rescans
   # the remaining input per token when no '=' follows (quadratic on multi-MB lines,
   # see LOG-8640) and builds a map of every key to extract one field.
-  parsed_level, err = parse_regex(message, r'(?i)(?:^|\s)(?:level|severity|lvl)="?(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"?')
+  # The key may be punctuation-delimited (e.g. "[level=error]") and the value must
+  # be a complete severity word: quoted values close immediately after the word,
+  # unquoted values end at a word boundary, so prefixes like "debugger" or quoted
+  # values containing spaces are declined.
+  parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)="(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)"')
+  if err != null {
+    parsed_level, err = parse_regex(message, r'(?i)\b(?:level|severity|lvl)=(?P<level>emerg(?:ency)?|alert|crit(?:ical)?|err(?:or)?|fatal|severe|warn(?:ing)?|notice|info(?:rmational)?|debug|trace)\b')
+  }
   if err == null {
     level = downcase!(parsed_level.level)
   }

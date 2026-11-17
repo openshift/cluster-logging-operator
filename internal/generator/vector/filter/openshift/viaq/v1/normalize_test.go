@@ -30,12 +30,16 @@ func firstStructuredLevel(message string) string {
 // klogLevels maps the klog severity letters to the level values assigned by attempt 2.
 var klogLevels = map[string]string{"I": "info", "W": "warning", "E": "error", "F": "fatal"}
 
-// firstLevel simulates attempts 1 (logfmt token), 2 (klog header) and 4 (structured
+// firstLevel simulates attempts 1 (logfmt tokens), 2 (klog header) and 4 (structured
 // patterns) of SetLogLevel in evaluation order. Attempts 3 (grok) and 5 (keyword) are
 // not simulated.
 func firstLevel(message string) string {
-	// attempt 1: logfmt-style level token (the first parse_regex in SetLogLevel)
-	if match := attemptRe.FindStringSubmatch(SetLogLevel); match != nil {
+	// attempt 1: logfmt-style level tokens (every parse_regex before the klog attempt)
+	attempt1 := SetLogLevel
+	if i := strings.Index(attempt1, "# attempt 2"); i >= 0 {
+		attempt1 = attempt1[:i]
+	}
+	for _, match := range attemptRe.FindAllStringSubmatch(attempt1, -1) {
 		re, err := regexp.Compile(match[1])
 		Expect(err).NotTo(HaveOccurred())
 		if m := re.FindStringSubmatch(message); m != nil {
@@ -93,6 +97,12 @@ var _ = Describe("#SetLogLevel level cascade", func() {
 		Entry("token must be delimited", `alevel=error is not a level token`, ""),
 		Entry("non-vocabulary value is declined", `level=3 retries=4`, ""),
 		Entry("level token embedded in prose is accepted", `failed: level=debug ignored by caller`, "debug"),
+		Entry("punctuation-delimited token wins over an earlier keyword", `DEBUG [level=error] request failed`, "error"),
+		Entry("bracketed token is accepted", `[level=warn] throttled request`, "warn"),
+		Entry("value must be a complete word, not a prefix", `level=debugger attached to process`, ""),
+		Entry("quoted value containing spaces is declined", `ts=1 level="debug ger" msg=x`, ""),
+		Entry("quoted value with trailing text is declined", `ts=1 level="info stuff" msg=x`, ""),
+		Entry("structured fallback selects a later valid severity", `level=verbose Value:warn`, "warn"),
 
 		// attempt 2: klog header
 		Entry("klog info header", `I0920 14:22:00.089385       1 scheduler.go:592] "Successfully bound pod to node"`, "info"),

@@ -82,6 +82,13 @@ func NewContainerSource(spec *adapters.Input, includes, excludes []string, logTy
 		kl.NamespaceAnnotationFields = &sources.NamespaceAnnotationFields{
 			NamespaceUid: "kubernetes.namespace_id",
 		}
+		// Node labels are not part of the output data model (the VIAQ normalize
+		// filter deletes them), so suppress capturing them at the source.
+		// Capturing them only inflates memory usage proportional to the number
+		// of labels on the node and can OOMKill the collector (LOG-10533).
+		kl.NodeAnnotationFields = &sources.NodeAnnotationFields{
+			NodeLabels: "",
+		}
 		kl.RotateWaitSecs = 5
 		kl.UseApiServerCache = true
 	})

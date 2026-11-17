@@ -19,6 +19,7 @@ type KubernetesLogs struct {
 	UseApiServerCache         bool                       `json:"use_apiserver_cache,omitempty" yaml:"use_apiserver_cache,omitempty" toml:"use_apiserver_cache,omitempty"`
 	PodAnnotationFields       *PodAnnotationFields       `json:"pod_annotation_fields,omitempty" yaml:"pod_annotation_fields,omitempty" toml:"pod_annotation_fields,omitempty"`
 	NamespaceAnnotationFields *NamespaceAnnotationFields `json:"namespace_annotation_fields,omitempty" yaml:"namespace_annotation_fields,omitempty" toml:"namespace_annotation_fields,omitempty"`
+	NodeAnnotationFields      *NodeAnnotationFields      `json:"node_annotation_fields,omitempty" yaml:"node_annotation_fields,omitempty" toml:"node_annotation_fields,omitempty"`
 }
 
 func NewKubernetesLogs(init func(logs *KubernetesLogs)) *KubernetesLogs {
@@ -45,4 +46,13 @@ type PodAnnotationFields struct {
 
 type NamespaceAnnotationFields struct {
 	NamespaceUid string `json:"namespace_uid,omitempty" yaml:"namespace_uid,omitempty" toml:"namespace_uid,omitempty"`
+}
+
+// NodeAnnotationFields controls which node metadata fields the kubernetes_logs
+// source captures. NodeLabels must NOT be tagged omitempty: an empty string is
+// meaningful — it tells Vector to suppress capturing node labels, which are
+// otherwise attached to every event and only deleted later by the VIAQ
+// normalize filter (see LOG-10533).
+type NodeAnnotationFields struct {
+	NodeLabels string `json:"node_labels" yaml:"node_labels" toml:"node_labels"`
 }

@@ -17,6 +17,8 @@ pod_node_name = "hostname"
 [sources.input_application_container.namespace_annotation_fields]
 namespace_uid = "kubernetes.namespace_id"
 
+[sources.input_application_container.node_annotation_fields]
+node_labels = ""
 
 [transforms.input_application_container_meta]
 type = "remap"

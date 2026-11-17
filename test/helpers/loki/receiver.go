@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Image = "grafana/loki:3.3.2"
+	Image        = "grafana/loki:3.3.2"
 	Port         = int32(3100)
 	lokiReceiver = "loki-receiver"
 )

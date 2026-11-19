@@ -204,10 +204,36 @@ const ToolsContainerName = "tools"
 
 func (f *CollectorFunctionalFramework) AddToolsContainerVisitor(volumeName, mountPath string) runtime.PodBuilderVisitor {
 	return func(b *runtime.PodBuilder) error {
-		b.AddEmptyDirVolume(volumeName)
-		b.GetContainer(constants.CollectorName).
-			AddVolumeMount(volumeName, mountPath, "", false).
-			Update()
+		hasVolume := false
+		for _, v := range b.Pod.Spec.Volumes {
+			if v.Name == volumeName {
+				hasVolume = true
+				break
+			}
+		}
+		if !hasVolume {
+			b.AddEmptyDirVolume(volumeName)
+		}
+
+		collectorName := strings.ToLower(constants.CollectorName)
+		hasCollectorMount := false
+		for _, c := range b.Pod.Spec.Containers {
+			if c.Name != collectorName {
+				continue
+			}
+			for _, m := range c.VolumeMounts {
+				if m.Name == volumeName {
+					hasCollectorMount = true
+					break
+				}
+			}
+		}
+		if !hasCollectorMount {
+			b.GetContainer(constants.CollectorName).
+				AddVolumeMount(volumeName, mountPath, "", false).
+				Update()
+		}
+
 		b.AddContainer(ToolsContainerName, "registry.access.redhat.com/ubi9/ubi-minimal:latest").
 			AddVolumeMount(volumeName, mountPath, "", false).
 			WithCmd([]string{"sleep", "infinity"}).

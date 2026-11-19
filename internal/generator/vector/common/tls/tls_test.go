@@ -133,6 +133,23 @@ var _ = Describe("NewTlsEnabled", func() {
 		Expect(result).To(BeNil())
 	})
 
+	It("should return TlsEnabled when insecureSkipVerify is set without CA, certificate, or key (LOG-10600)", func() {
+		adapter := adapters.NewOutput(obs.OutputSpec{
+			Name: "test",
+			Type: obs.OutputTypeSyslog,
+			TLS: &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			},
+		})
+		result := NewTlsEnabled(adapter, secrets, utils.NoOptions)
+		Expect(result).NotTo(BeNil())
+		Expect(result.Enabled).To(BeTrue())
+		Expect(result.TLS.VerifyCertificate).NotTo(BeNil())
+		Expect(*result.TLS.VerifyCertificate).To(BeFalse())
+		Expect(result.TLS.VerifyHostname).NotTo(BeNil())
+		Expect(*result.TLS.VerifyHostname).To(BeFalse())
+	})
+
 	It("should return nil when no TLS config is provided", func() {
 		adapter := adapters.NewOutput(obs.OutputSpec{
 			Name: "test",

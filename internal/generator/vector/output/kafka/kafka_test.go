@@ -121,6 +121,28 @@ var _ = Describe("Generate vector config", func() {
 			spec.Kafka.Topic = ""
 			spec.Kafka.Brokers = []obs.BrokerURL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
 		}),
+		Entry("with NOT tls brokers and insecureSkipVerify only (LOG-10600)", "kafka_not_tls_brokers_insecure_skipverify.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Kafka.URL = ""
+			spec.Kafka.Topic = ""
+			spec.Kafka.Brokers = []obs.BrokerURL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			}
+		}),
+		Entry("with NOT tls brokers, CA, and insecureSkipVerify (LOG-10600)", "kafka_not_tls_brokers_ca_insecure_skipverify.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+			spec.Kafka.URL = ""
+			spec.Kafka.Topic = ""
+			spec.Kafka.Brokers = []obs.BrokerURL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
+			spec.TLS = &obs.OutputTLSSpec{
+				TLSSpec: obs.TLSSpec{
+					CA: &obs.ValueReference{
+						Key:        constants.TrustedCABundleKey,
+						SecretName: secretName,
+					},
+				},
+				InsecureSkipVerify: true,
+			}
+		}),
 		Entry("with tuning", "kafka_tuning.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""

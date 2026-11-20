@@ -83,7 +83,7 @@ metadata:
     certified: "false"
     console.openshift.io/operator-monitoring-default: "true"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-11-03T21:02:13Z"
+    createdAt: "2026-11-20T18:11:12Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -410,6 +410,12 @@ spec:
           The default value is 3600 (1 hour).
         displayName: Ignore Older
         path: inputs[0].audit.tuning.ignoreOlder
+      - description: |-
+          MaxMessageSize  The maximum message length in bytes that a single log event can be.
+          Messages exceeding this limit are truncated to the configured size. Note: file-based audit
+          sources do not support line merging, so this setting applies to individual log lines as read from the file.
+        displayName: Max Message Size
+        path: inputs[0].audit.tuning.maxMessageSize
       - description: Infrastructure, Enables `infrastructure` logs.
         displayName: Infrastructure Logs Input
         path: inputs[0].infrastructure

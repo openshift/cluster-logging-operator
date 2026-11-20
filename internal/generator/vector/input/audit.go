@@ -27,7 +27,7 @@ func auditIgnoreOlderSecs(input *adapters.Input) int64 {
 
 func auditMaxLineBytes(input *adapters.Input) int64 {
 	if input.Audit != nil && input.Audit.Tuning != nil && input.Audit.Tuning.MaxMessageSize != nil {
-		if size, ok := input.Audit.Tuning.MaxMessageSize.AsInt64(); ok {
+		if size, ok := input.Audit.Tuning.MaxMessageSize.AsInt64(); ok && size > 0 {
 			return size
 		}
 	}

@@ -15,8 +15,14 @@ inputs = ["input_myaudit_openshift"]
 source = '''
   . = {"_internal": .}
 
-  ._internal.structured = parse_json!(string!(._internal.message))
-  ._internal = merge!(._internal,._internal.structured)
+  ._internal.structured, err = parse_json(string!(._internal.message))
+  if err == null {
+    ._internal = merge!(._internal,._internal.structured)
+  } else {
+    log(err, level: "error")
+    ._internal.structured = {}
+    .message = ._internal.message
+  }
 
   audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
   if audit_err != null {

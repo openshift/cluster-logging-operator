@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/api/initialize"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 
@@ -203,10 +204,36 @@ const ToolsContainerName = "tools"
 
 func (f *CollectorFunctionalFramework) AddToolsContainerVisitor(volumeName, mountPath string) runtime.PodBuilderVisitor {
 	return func(b *runtime.PodBuilder) error {
-		b.AddEmptyDirVolume(volumeName)
-		b.GetContainer(constants.CollectorName).
-			AddVolumeMount(volumeName, mountPath, "", false).
-			Update()
+		hasVolume := false
+		for _, v := range b.Pod.Spec.Volumes {
+			if v.Name == volumeName {
+				hasVolume = true
+				break
+			}
+		}
+		if !hasVolume {
+			b.AddEmptyDirVolume(volumeName)
+		}
+
+		collectorName := strings.ToLower(constants.CollectorName)
+		hasCollectorMount := false
+		for _, c := range b.Pod.Spec.Containers {
+			if c.Name != collectorName {
+				continue
+			}
+			for _, m := range c.VolumeMounts {
+				if m.Name == volumeName {
+					hasCollectorMount = true
+					break
+				}
+			}
+		}
+		if !hasCollectorMount {
+			b.GetContainer(constants.CollectorName).
+				AddVolumeMount(volumeName, mountPath, "", false).
+				Update()
+		}
+
 		b.AddContainer(ToolsContainerName, "registry.access.redhat.com/ubi9/ubi-minimal:latest").
 			AddVolumeMount(volumeName, mountPath, "", false).
 			WithCmd([]string{"sleep", "infinity"}).
@@ -329,6 +356,25 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		WithCmd([]string{"/bin/sh", "-c", "sleep infinity"}).
 		WithImagePullPolicy(corev1.PullIfNotPresent).
 		End()
+
+	dataPath := vector.GetDataPath(f.Namespace, f.Forwarder.Name)
+
+	f.Pod.Spec.Volumes = append(f.Pod.Spec.Volumes, corev1.Volume{
+		Name: common.DataDir,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+
+	for i, c := range f.Pod.Spec.Containers {
+		if c.Name == constants.CollectorName {
+			f.Pod.Spec.Containers[i].VolumeMounts = append(f.Pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+				Name:      common.DataDir,
+				MountPath: dataPath,
+				ReadOnly:  false,
+			})
+		}
+	}
 
 	for _, visit := range visitors {
 		if visit != nil {

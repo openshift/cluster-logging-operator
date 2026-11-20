@@ -1,7 +1,6 @@
 package vector
 
 import (
-	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"regexp"
 	"strings"
@@ -29,7 +28,7 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfName, clfYam
 	runtime.NewConfigMapBuilder(configmap).
 		Add(vector.ConfigFile, config).
 		Add("clfyaml", clfYaml).
-		Add("run.sh", fmt.Sprintf(vector.RunVectorScript, vector.GetDataPath(c.NS.Name, clfName)))
+		Add("run.sh", vector.RunVectorScript)
 	if err := c.Create(configmap); err != nil {
 		return err
 	}

@@ -39,7 +39,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		// or container disappearing (e.g. the pod was deleted mid-test by a
 		// rollout or node drain). It deliberately does not match command-level
 		// "not found" errors such as a missing executable.
-		podOrContainerMissing = regexp.MustCompile(`container not found|cannot exec into a container in a terminated state|pods "[^"]+" not found`)
+		podOrContainerMissing = regexp.MustCompile(`container not found|cannot exec into a container in a terminated state|cannot exec into a container in a completed pod|pods "[^"]+" not found`)
 		// During a rollout the pod list can include old-generation pods that
 		// are being deleted; exec against one fails with "container not
 		// found". Poll for a running, non-terminating pod with a ready

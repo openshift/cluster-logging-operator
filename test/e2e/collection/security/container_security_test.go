@@ -3,6 +3,7 @@ package security
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -30,9 +31,56 @@ var _ = Describe("Tests of collector container security stance", func() {
 	)
 
 	var (
-		collector               string
+		collector      string
+		e2e            *framework.E2ETestFramework
+		serviceAccount *corev1.ServiceAccount
+		err            error
+		// podOrContainerMissing matches exec failures caused by the target pod
+		// or container disappearing (e.g. the pod was deleted mid-test by a
+		// rollout or node drain). It deliberately does not match command-level
+		// "not found" errors such as a missing executable.
+		podOrContainerMissing = regexp.MustCompile(`container not found|cannot exec into a container in a terminated state|pods "[^"]+" not found`)
+		// During a rollout the pod list can include old-generation pods that
+		// are being deleted; exec against one fails with "container not
+		// found". Poll for a running, non-terminating pod with a ready
+		// collector container instead of blindly taking the first listed pod.
+		selectCollectorPod = func(namespace string) string {
+			labelSelector := fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.CollectorName)
+			collector = ""
+			Eventually(func(g Gomega) string {
+				pods, err := e2e.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+					LabelSelector: labelSelector,
+				})
+				g.Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
+				g.Expect(pods.Items).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find deployed collector pods in %q with label %q", namespace, labelSelector))
+				for _, p := range pods.Items {
+					if p.DeletionTimestamp != nil || p.Status.Phase != corev1.PodRunning {
+						continue
+					}
+					for _, cs := range p.Status.ContainerStatuses {
+						if cs.Name == constants.CollectorName && cs.Ready {
+							collector = p.Name
+							return collector
+						}
+					}
+				}
+				return ""
+			}, 5*time.Minute, 1*time.Second).ShouldNot(BeEmpty(), fmt.Sprintf("Exp. to find a running collector pod in %q with label %q", namespace, labelSelector))
+			return collector
+		}
 		runInCollectorContainer = func(command string, args ...string) (string, error) {
-			return oc.Exec().WithNamespace(namespace).Pod(collector).Container(name).WithCmd(command, args...).RunFor(time.Second * 15)
+			const maxAttempts = 3
+			var result string
+			var err error
+			for attempt := 1; attempt <= maxAttempts; attempt++ {
+				result, err = oc.Exec().WithNamespace(namespace).Pod(collector).Container(name).WithCmd(command, args...).RunFor(time.Second * 15)
+				if err == nil || attempt == maxAttempts || !podOrContainerMissing.MatchString(result+fmt.Sprint(err)) {
+					return result, err
+				}
+				log.V(3).Info("Collector pod or container missing during exec; re-resolving collector pod", "pod", collector, "command", command)
+				collector = selectCollectorPod(namespace)
+			}
+			return result, err
 		}
 		checkMountReadOnly = func(mount string) {
 			touchFile := mount + "/1"
@@ -52,9 +100,6 @@ var _ = Describe("Tests of collector container security stance", func() {
 			expMatch := fmt.Sprintf(`{.*"%s":"%s".*}`, constants.PodSecurityLabelEnforce, constants.PodSecurityLabelValue)
 			Expect(labels).To(MatchRegexp(expMatch), "Expected label to be found")
 		}
-		e2e            *framework.E2ETestFramework
-		serviceAccount *corev1.ServiceAccount
-		err            error
 	)
 
 	AfterEach(func() {
@@ -110,13 +155,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		labelSelector := fmt.Sprintf("%s=%s", constants.LabelK8sComponent, constants.CollectorName)
-		pods, err := e2e.KubeClient.CoreV1().Pods(forwarder.Namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: labelSelector,
-		})
-
-		Expect(err).ToNot(HaveOccurred(), "Exp. to retrieve pods associated with the deployment")
-		Expect(pods.Items).ToNot(BeEmpty(), fmt.Sprintf("Exp. to find deployed collector pods in %q with label %q", forwarder.Namespace, labelSelector))
-		collector = pods.Items[0].Name
+		collector = selectCollectorPod(forwarder.Namespace)
 
 		By("having all Linux capabilities disabled")
 		result, err := runInCollectorContainer("getpcaps", "1")

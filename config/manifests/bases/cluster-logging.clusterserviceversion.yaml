@@ -333,6 +333,12 @@ spec:
           The default value is 3600 (1 hour).
         displayName: Ignore Older
         path: inputs[0].audit.tuning.ignoreOlder
+      - description: |-
+          MaxMessageSize  The maximum message length in bytes that a single log event can be.
+          Messages exceeding this limit are truncated to the configured size. Note: file-based audit
+          sources do not support line merging, so this setting applies to individual log lines as read from the file.
+        displayName: Max Message Size
+        path: inputs[0].audit.tuning.maxMessageSize
       - description: Infrastructure, Enables `infrastructure` logs.
         displayName: Infrastructure Logs Input
         path: inputs[0].infrastructure

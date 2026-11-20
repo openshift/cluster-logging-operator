@@ -1,0 +1,21 @@
+sinks:
+  http_receiver:
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    inputs:
+    - application
+    method: post
+    request:
+      headers:
+        h1: v1
+        h2: v2
+    tls:
+      ca_file: /var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt
+      crt_file: /var/run/ocp-collector/secrets/http-receiver/tls.crt
+      key_file: /var/run/ocp-collector/secrets/http-receiver/tls.key
+      verify_certificate: false
+      verify_hostname: false
+    type: http
+    uri: https://my-logstore.com

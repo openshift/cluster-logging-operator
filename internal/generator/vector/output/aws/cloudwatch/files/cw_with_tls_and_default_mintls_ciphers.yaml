@@ -1,0 +1,51 @@
+sinks:
+  cw:
+    auth:
+      access_key_id: SECRET[kubernetes_secret.vector-cw-secret/aws_access_key_id]
+      secret_access_key: SECRET[kubernetes_secret.vector-cw-secret/aws_secret_access_key]
+    batch:
+      max_bytes: 1048576
+    compression: none
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    group_name: '{{ _internal.cw_group_name }}'
+    healthcheck:
+      enabled: false
+    inputs:
+    - cw_group_name
+    region: us-east-test
+    stream_name: '{{ stream_name }}'
+    tls:
+      ciphersuites: TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305
+      curves: X25519MLKEM768:X25519:prime256v1:secp384r1
+      min_tls_version: VersionTLS12
+    type: aws_cloudwatch_logs
+transforms:
+  cw_group_name:
+    inputs:
+    - cw_normalize_streams
+    source: ._internal.cw_group_name = to_string!(._internal.log_type||"missing")
+    type: remap
+  cw_normalize_streams:
+    inputs:
+    - cw-forward
+    source: |-
+      .stream_name = "default"
+      if ( .log_type == "audit" ) {
+        .stream_name = (.hostname +"."+ downcase(.log_source)) ?? .stream_name
+      }
+      if ( .log_source == "container" ) {
+        k = .kubernetes
+        .stream_name = (k.namespace_name+"_"+k.pod_name+"_"+k.container_name) ?? .stream_name
+      }
+      if ( .log_type == "infrastructure" ) {
+        .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
+      }
+      if ( .log_source == "node" ) {
+        .stream_name =  ( .hostname + ".journal.system" ) ?? .stream_name
+      }
+      del(.tag)
+      del(.source_type)
+    type: remap

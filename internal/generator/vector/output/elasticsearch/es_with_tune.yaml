@@ -1,0 +1,29 @@
+sinks:
+  es_1:
+    api_version: v8
+    batch:
+      max_bytes: 10000000
+    buffer:
+      max_size: 268435488
+      type: disk
+      when_full: block
+    bulk:
+      action: create
+      index: '{{ _internal.es_1_index }}'
+    encoding:
+      except_fields:
+      - _internal
+    endpoints:
+    - https://es.svc.infra.cluster:9200
+    inputs:
+    - es_1_index
+    request:
+      retry_initial_backoff_secs: 20
+      retry_max_duration_secs: 35
+    type: elasticsearch
+transforms:
+  es_1_index:
+    inputs:
+    - application
+    source: ._internal.es_1_index = to_string!(._internal.log_type||"none")
+    type: remap

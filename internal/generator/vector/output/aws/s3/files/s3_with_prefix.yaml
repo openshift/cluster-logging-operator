@@ -1,0 +1,23 @@
+sinks:
+  s3:
+    auth:
+      access_key_id: SECRET[kubernetes_secret.s3-secret/aws_access_key_id]
+      secret_access_key: SECRET[kubernetes_secret.s3-secret/aws_secret_access_key]
+    bucket: my-test-bucket
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    healthcheck:
+      enabled: false
+    inputs:
+    - s3_key_prefix
+    key_prefix: '{{ _internal.s3_key_prefix }}'
+    region: us-east-test
+    type: aws_s3
+transforms:
+  s3_key_prefix:
+    inputs:
+    - s3-forward
+    source: ._internal.s3_key_prefix = "app-" + to_string!(._internal.log_type||"missing")
+    type: remap

@@ -22,11 +22,11 @@ import (
 	"github.com/klauspost/compress/zstd"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/yaml"
 )
 
 type s3State struct {
@@ -88,9 +88,33 @@ func (f *CollectorFunctionalFramework) createMinIOService(state *s3State) error 
 	return nil
 }
 
-// SetS3BatchTimeout parses Vector TOML config, sets batch timeout, and returns the modified config.
+// SetS3BatchTimeout parses the Vector YAML config, sets batch timeout, and returns the modified config.
 func SetS3BatchTimeout(config string, timeoutSecs int) (string, error) {
-	return toml.SetValue(config, []string{"sinks", "output_s3", "batch", "timeout_secs"}, int64(timeoutSecs))
+	var cfg map[string]interface{}
+	if err := yaml.Unmarshal([]byte(config), &cfg); err != nil {
+		return "", fmt.Errorf("unable to parse vector config as YAML: %w", err)
+	}
+	section := cfg
+	for _, key := range []string{"sinks", "output_s3", "batch"} {
+		existing, found := section[key]
+		if !found {
+			next := map[string]interface{}{}
+			section[key] = next
+			section = next
+			continue
+		}
+		next, ok := existing.(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("unexpected non-map value at key %q in vector config", key)
+		}
+		section = next
+	}
+	section["timeout_secs"] = timeoutSecs
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		return "", fmt.Errorf("unable to marshal modified vector config as YAML: %w", err)
+	}
+	return string(out), nil
 }
 
 // SetupS3Bucket sets up port-forward to minIO, then waits for it to be ready and creates the bucket

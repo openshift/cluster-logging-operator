@@ -17,7 +17,7 @@ import (
 var _ = Describe("output/factory.go", func() {
 
 	DescribeTable("#New", func(o obs.OutputSpec, secrets map[string]*corev1.Secret, expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", exp, err))
 		}
@@ -66,7 +66,7 @@ var _ = Describe("output/factory.go", func() {
 					},
 				},
 			},
-			"factory_test_loki_with_throttle.toml",
+			"factory_test_loki_with_throttle.yaml",
 		),
 	)
 })

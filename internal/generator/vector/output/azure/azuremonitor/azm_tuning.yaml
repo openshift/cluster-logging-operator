@@ -1,0 +1,20 @@
+sinks:
+  output_azure_monitor_logs:
+    batch:
+      max_bytes: 10000000
+    buffer:
+      max_size: 268435488
+      type: disk
+      when_full: block
+    customer_id: 6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt
+    encoding:
+      except_fields:
+      - _internal
+    inputs:
+    - pipelineName
+    log_type: myLogType
+    request:
+      retry_initial_backoff_secs: 20
+      retry_max_duration_secs: 35
+    shared_key: SECRET[kubernetes_secret.azure-monitor-secret/shared_key]
+    type: azure_monitor_logs

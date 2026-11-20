@@ -12,9 +12,9 @@ const (
 )
 
 type Route struct {
-	Type   types.TransformType `json:"type" yaml:"type" toml:"type"`
-	Inputs []string            `json:"inputs" yaml:"inputs" toml:"inputs"`
-	Routes map[string]string   `json:"route,omitempty" yaml:"route,omitempty" toml:"route,omitempty"`
+	Type   types.TransformType `json:"type"`
+	Inputs []string            `json:"inputs"`
+	Routes map[string]string   `json:"route,omitempty"`
 }
 
 func NewRoute(init func(*Route), inputs ...string) *Route {

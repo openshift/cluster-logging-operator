@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +19,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -42,7 +42,7 @@ var _ = Describe("inputs", func() {
 	)
 
 	DescribeTable("#NewSource", func(input obs.InputSpec, expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -62,24 +62,24 @@ var _ = Describe("inputs", func() {
 		// sources. Node labels are captured then deleted by the VIAQ normalize
 		// filter, and capturing them inflates collector memory proportional to
 		// the number of labels on the node, which can OOMKill the collector.
-		if strings.Contains(string(exp), `type = "kubernetes_logs"`) {
-			actual := toml.MustMarshal(conf)
-			Expect(actual).To(ContainSubstring(`.node_annotation_fields]`))
-			Expect(actual).To(ContainSubstring(`node_labels = ""`))
+		if strings.Contains(string(exp), `type: kubernetes_logs`) {
+			actual := test.YAMLString(conf)
+			Expect(actual).To(ContainSubstring(`node_annotation_fields:`))
+			Expect(actual).To(ContainSubstring(`node_labels: ""`))
 		}
 	},
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),
 			Type: obs.InputTypeApplication,
 		},
-			"application.toml",
+			"application.yaml",
 		),
 		Entry("with an application input should generate a container source", obs.InputSpec{
 			Name:        string(obs.InputTypeApplication),
 			Type:        obs.InputTypeApplication,
 			Application: &obs.Application{},
 		},
-			"application.toml",
+			"application.yaml",
 		),
 		Entry("with a throttled application input should generate a container source with throttling", obs.InputSpec{
 			Name: string(obs.InputTypeApplication),
@@ -92,7 +92,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_throttle.toml",
+			"application_with_throttle.yaml",
 		),
 		Entry("with an application that specs including a container from all namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -105,7 +105,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_includes_container.toml",
+			"application_includes_container.yaml",
 		),
 		Entry("with an application that specs excluding a container from all namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -118,7 +118,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_excludes_container.toml",
+			"application_excludes_container.yaml",
 		),
 		Entry("with an application that specs specific namespaces and exclude namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -144,7 +144,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_includes_excludes.toml",
+			"application_with_includes_excludes.yaml",
 		),
 		Entry("with an application that specs infra namespaces and exclude namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -171,7 +171,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_infra_includes_excludes.toml",
+			"application_with_infra_includes_excludes.yaml",
 		),
 		Entry("with an application that collects infra namespaces and excludes a container", obs.InputSpec{
 			Name: "my-app",
@@ -190,7 +190,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_exclude_container_from_infra.toml",
+			"application_exclude_container_from_infra.yaml",
 		),
 		Entry("with an application that specs infra namespaces and excludes infra namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -217,7 +217,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_infra_includes_infra_excludes.toml",
+			"application_with_infra_includes_infra_excludes.yaml",
 		),
 		Entry("with an application that specs specific infra namespace and excludes infra namespaces", obs.InputSpec{
 			Name: "my-app",
@@ -244,7 +244,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_specific_infra_includes_infra_excludes.toml",
+			"application_with_specific_infra_includes_infra_excludes.yaml",
 		),
 		Entry("with an application that specs specific match labels", obs.InputSpec{
 			Name: "my-app",
@@ -258,20 +258,20 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_matchLabels.toml",
+			"application_with_matchLabels.yaml",
 		),
 		Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
 			Name: string(obs.InputTypeInfrastructure),
 			Type: obs.InputTypeInfrastructure,
 		},
-			"infrastructure.toml",
+			"infrastructure.yaml",
 		),
 		Entry("with an infrastructure input should generate a container and journal source", obs.InputSpec{
 			Name:           string(obs.InputTypeInfrastructure),
 			Type:           obs.InputTypeInfrastructure,
 			Infrastructure: &obs.Infrastructure{},
 		},
-			"infrastructure.toml",
+			"infrastructure.yaml",
 		),
 		Entry("with an infrastructure input for containers should generate only a container source", obs.InputSpec{
 			Name: "myinfra",
@@ -280,7 +280,7 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceContainer},
 			},
 		},
-			"infrastructure_container.toml",
+			"infrastructure_container.yaml",
 		),
 		Entry("with an infrastructure input for node should generate only a journal source", obs.InputSpec{
 			Name: "myinfra",
@@ -289,20 +289,20 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.InfrastructureSource{obs.InfrastructureSourceNode},
 			},
 		},
-			"infrastructure_journal.toml",
+			"infrastructure_journal.yaml",
 		),
 		Entry("with an audit input should generate file sources", obs.InputSpec{
 			Name:  string(obs.InputTypeAudit),
 			Type:  obs.InputTypeAudit,
 			Audit: &obs.Audit{},
 		},
-			"audit.toml",
+			"audit.yaml",
 		),
 		Entry("with an audit input should generate file sources", obs.InputSpec{
 			Name: string(obs.InputTypeAudit),
 			Type: obs.InputTypeAudit,
 		},
-			"audit.toml",
+			"audit.yaml",
 		),
 		Entry("with an audit input for auditd logs should generate auditd file source", obs.InputSpec{
 			Name: "myaudit",
@@ -311,7 +311,7 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.AuditSource{obs.AuditSourceAuditd},
 			},
 		},
-			"audit_host.toml",
+			"audit_host.yaml",
 		),
 		Entry("with an audit input for kube logs should generate kube audit file source", obs.InputSpec{
 			Name: "myaudit",
@@ -320,7 +320,7 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.AuditSource{obs.AuditSourceKube},
 			},
 		},
-			"audit_kube.toml",
+			"audit_kube.yaml",
 		),
 		Entry("with an audit input for openshift logs should generate openshift audit file source", obs.InputSpec{
 			Name: "myaudit",
@@ -329,7 +329,7 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.AuditSource{obs.AuditSourceOpenShift},
 			},
 		},
-			"audit_openshift.toml",
+			"audit_openshift.yaml",
 		),
 		Entry("with an audit input for OVN logs should generate OVN audit file source", obs.InputSpec{
 			Name: "myaudit",
@@ -338,7 +338,7 @@ var _ = Describe("inputs", func() {
 				Sources: []obs.AuditSource{obs.AuditSourceOVN},
 			},
 		},
-			"audit_ovn.toml",
+			"audit_ovn.yaml",
 		),
 		Entry("with an audit input with ignoreOlder of 7 days for all sources", obs.InputSpec{
 			Name: string(obs.InputTypeAudit),
@@ -349,7 +349,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"audit_with_ignore_older.toml",
+			"audit_with_ignore_older.yaml",
 		),
 		Entry("with an audit input for auditd with ignoreOlder of 24 hours", obs.InputSpec{
 			Name: "myaudit",
@@ -361,7 +361,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"audit_host_with_ignore_older.toml",
+			"audit_host_with_ignore_older.yaml",
 		),
 		Entry("with an http audit receiver input should generate an http receiver audit source", obs.InputSpec{
 			Type: obs.InputTypeReceiver,
@@ -384,7 +384,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"receiver_http_audit.toml",
+			"receiver_http_audit.yaml",
 		),
 		Entry("with a syslog receiver input should generate VIAQ syslog receiver", obs.InputSpec{
 			Type: obs.InputTypeReceiver,
@@ -412,7 +412,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"receiver_syslog.toml",
+			"receiver_syslog.yaml",
 		),
 		Entry("with a syslog receiver and tls from configmaps", obs.InputSpec{
 			Type: obs.InputTypeReceiver,
@@ -436,7 +436,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"receiver_syslog_tls_from_configmap.toml",
+			"receiver_syslog_tls_from_configmap.yaml",
 		),
 		Entry("application input with a MaxMessageSize", obs.InputSpec{
 			Name: "my_app",
@@ -447,7 +447,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"application_with_max_merge_line_size.toml",
+			"application_with_max_merge_line_size.yaml",
 		),
 		Entry("infrastructure input with containers source and MaxMessageSize", obs.InputSpec{
 			Name: "myinfra",
@@ -461,7 +461,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"infrastructure_container_with_max_merge_line_size.toml",
+			"infrastructure_container_with_max_merge_line_size.yaml",
 		),
 		Entry("infrastructure input with containers source and MaxMessageSize", obs.InputSpec{
 			Name: "myinfra",
@@ -477,7 +477,7 @@ var _ = Describe("inputs", func() {
 				},
 			},
 		},
-			"infrastructure_container_with_throttle.toml",
+			"infrastructure_container_with_throttle.yaml",
 		),
 	)
 })

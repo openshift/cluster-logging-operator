@@ -1,9 +1,7 @@
 package transforms
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 )
@@ -11,13 +9,13 @@ import (
 // LogToMetric is the configuration for the log_to_metric transform
 type LogToMetric struct {
 	// Inputs is the IDs of the components feeding into this component
-	Inputs []string `json:"inputs" yaml:"inputs" toml:"inputs"`
+	Inputs []string `json:"inputs"`
 
 	// Type is required to be 'log_to_metric'
-	Type types.TransformType `json:"type" yaml:"type" toml:"type"`
+	Type types.TransformType `json:"type"`
 
 	// Metrics is the spec for the Metrics being exposed
-	Metrics []Metric `json:"metrics" yaml:"metrics" toml:"metrics"`
+	Metrics []Metric `json:"metrics"`
 }
 
 func NewLogToMetric(name string, metricsType MetricsType, tags Tags, inputs ...string) *LogToMetric {
@@ -54,18 +52,18 @@ const (
 )
 
 type Metric struct {
-	Field string `json:"field" yaml:"field" toml:"field"`
+	Field string `json:"field"`
 
-	Kind MetricsKind `json:"kind,omitempty" yaml:"kind,omitempty" toml:"kind,omitempty"`
+	Kind MetricsKind `json:"kind,omitempty"`
 
-	MetricName string `json:"name,omitempty" yaml:"name,omitempty" toml:"name,omitempty"`
+	MetricName string `json:"name,omitempty"`
 
-	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty" toml:"namespace,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 
 	// Tags optional tags (or labels) to apply to the metric
-	Tags Tags `json:"tags,omitempty" yaml:"tags,omitempty"  toml:"tags,omitempty,multiline"`
+	Tags Tags `json:"tags,omitempty"`
 
-	Type MetricsType `json:"type" yaml:"type" toml:"type"`
+	Type MetricsType `json:"type"`
 }
 
 // Tags optional tags (or labels) to apply to the metric
@@ -78,14 +76,4 @@ func (t Tags) AddAll(tags map[string]string) {
 	for k, v := range tags {
 		t[k] = v
 	}
-}
-
-func (t Tags) MarshalTOML() ([]byte, error) {
-	tags := []string{}
-	for key, value := range t {
-		tags = append(tags, fmt.Sprintf("%s = %q", key, value))
-	}
-	sort.Strings(tags)
-	result := strings.Join(tags, ", ")
-	return []byte(fmt.Sprintf("{%v}", result)), nil
 }

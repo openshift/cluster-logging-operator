@@ -13,39 +13,42 @@ kind: ConfigMap
 metadata:
   name: http-receiver
 data:
-  vector.toml: |
-    [sources.my_source]
-    type = "http_server"
-    address = "0.0.0.0:8090"
-    decoding.codec = "json"
-    framing.method = "newline_delimited"
-    [transforms.route_logs]
-    type = "route"
-    inputs = ["my_source"]
-    route.audit = '.log_type == "audit"'
-    route.container = 'exists(.kubernetes)'
-    route.journal = '!exists(.kubernetes)'
-    [sinks.container]
-    inputs = ["route_logs.container"]
-    type = "file"
-    path = "/tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json"
-
-    [sinks.container.encoding]
-    codec = "json"
-    [sinks.out_journal]
-    inputs = ["route_logs.journal"]
-    type = "file"
-    path = "/tmp/journal/journal.json"
-
-    [sinks.out_journal.encoding]
-    codec = "json"
-    [sinks.out_audit]
-    inputs = ["route_logs.audit"]
-    type = "file"
-    path = "/tmp/audit/audit.json"
-
-    [sinks.out_audit.encoding]
-    codec = "json"
+  vector.yaml: |
+    sources:
+      my_source:
+        type: http_server
+        address: 0.0.0.0:8090
+        decoding:
+          codec: json
+        framing:
+          method: newline_delimited
+    transforms:
+      route_logs:
+        type: route
+        inputs: [my_source]
+        route:
+          audit: '.log_type == "audit"'
+          container: exists(.kubernetes)
+          journal: '!exists(.kubernetes)'
+    sinks:
+      container:
+        inputs: [route_logs.container]
+        type: file
+        path: "/tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json"
+        encoding:
+          codec: json
+      out_journal:
+        inputs: [route_logs.journal]
+        type: file
+        path: /tmp/journal/journal.json
+        encoding:
+          codec: json
+      out_audit:
+        inputs: [route_logs.audit]
+        type: file
+        path: /tmp/audit/audit.json
+        encoding:
+          codec: json
 EOF
 
 cat <<EOF | oc create -n $NAMESPACE -f -
@@ -77,7 +80,7 @@ spec:
         image: quay.io/openshift-logging/vector:5.8.0
         command:
         - /usr/bin/vector
-        - --config-toml=/etc/vector/vector.toml
+        - --config-yaml=/etc/vector/vector.yaml
         ports:
         - containerPort: 8090
         volumeMounts:

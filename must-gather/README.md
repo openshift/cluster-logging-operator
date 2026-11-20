@@ -52,7 +52,7 @@ Example must-gather for cluster-logging output (use `tree` for up-to-date struct
 │  │  └── [nampespace_name]               ## including openshift-logging
 │  │     ├── collector-xxxxx.describe
 │  │     ├── collector-yyyyy.describe
-│  │     └── configmap_collector-config_vector.toml
+│  │     └── configmap_collector-config_vector.yaml
 ├── cluster-scoped-resources
 │  ├── apiextensions.k8s.io
 │  │  └── customresourcedefinitions

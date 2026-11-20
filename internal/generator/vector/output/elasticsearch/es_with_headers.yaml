@@ -1,0 +1,27 @@
+sinks:
+  es_1:
+    api_version: v8
+    auth:
+      password: SECRET[kubernetes_secret.es-1/password]
+      strategy: basic
+      user: SECRET[kubernetes_secret.es-1/username]
+    bulk:
+      action: create
+      index: '{{ _internal.es_1_index }}'
+    encoding:
+      except_fields:
+      - _internal
+    endpoints:
+    - https://es.svc.infra.cluster:9200
+    inputs:
+    - es_1_index
+    request:
+      headers:
+        Key: Value
+    type: elasticsearch
+transforms:
+  es_1_index:
+    inputs:
+    - application
+    source: ._internal.es_1_index = to_string!(._internal.log_type||"none")
+    type: remap

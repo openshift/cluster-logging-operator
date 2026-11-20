@@ -28,7 +28,7 @@ var _ = Describe("", func() {
 	DescribeTable("Verifying declarative API validations", func(crFile string, assert func(string, error)) {
 
 		e2e = framework.NewE2ETestFramework()
-		crYaml, err := tomlContent.ReadFile(crFile)
+		crYaml, err := expContent.ReadFile(crFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", crFile, err))
 		}

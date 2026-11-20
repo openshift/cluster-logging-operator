@@ -27,43 +27,43 @@ import (
 const (
 	HttpReceiver              = "http-receiver"
 	HttpReceiverTLSSecretName = "http-receiver-tls"
-	vectorHttpConf            = "" +
-		`[sources.my_source]
-type = "http_server"
-address = "0.0.0.0:8090"
-decoding.codec = "json"
-framing.method = "newline_delimited"
+	vectorHttpConf            = `sources:
+  my_source:
+    type: http_server
+    address: 0.0.0.0:8090
+    decoding:
+      codec: json
+    framing:
+      method: newline_delimited
 
-[transforms.route_logs]
-type = "route"
-inputs = ["my_source"]
-route.audit = '.log_type == "audit"'
-route.container = 'exists(.kubernetes)'
-route.journal = '!exists(.kubernetes)'
+transforms:
+  route_logs:
+    type: route
+    inputs: [my_source]
+    route:
+      audit: '.log_type == "audit"'
+      container: exists(.kubernetes)
+      journal: '!exists(.kubernetes)'
 
-[sinks.container]
-inputs = ["route_logs.container"]
-type = "file"
-path = "/tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json"
-		
-[sinks.container.encoding]
-codec = "json"
-
-[sinks.out_journal]
-inputs = ["route_logs.journal"]
-type = "file"
-path = "/tmp/journal/journal.json"
-		
-[sinks.out_journal.encoding]
-codec = "json"
-
-[sinks.out_audit]
-inputs = ["route_logs.audit"]
-type = "file"
-path = "/tmp/audit/audit.json"
-		
-[sinks.out_audit.encoding]
-codec = "json"
+sinks:
+  container:
+    inputs: [route_logs.container]
+    type: file
+    path: /tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json
+    encoding:
+      codec: json
+  out_journal:
+    inputs: [route_logs.journal]
+    type: file
+    path: /tmp/journal/journal.json
+    encoding:
+      codec: json
+  out_audit:
+    inputs: [route_logs.audit]
+    type: file
+    path: /tmp/audit/audit.json
+    encoding:
+      codec: json
 `
 )
 
@@ -389,56 +389,56 @@ func vectorHttpConfWithTLSProfile(profileSpec configv1.TLSProfileSpec) string {
 	ciphers := strings.Join(internaltls.TLSCiphers(profileSpec), ",")
 	curves := internaltls.TLSGroupsToOpenSSL(profileSpec.Groups)
 
-	conf := `[sources.my_source]
-type = "http_server"
-address = "0.0.0.0:8090"
-decoding.codec = "json"
-framing.method = "newline_delimited"
-
-[sources.my_source.tls]
-enabled = true
-key_file = "/etc/vector/secrets/tls.key"
-crt_file = "/etc/vector/secrets/tls.crt"
-min_tls_version = "` + minTLS + `"
-ciphersuites = "` + ciphers + `"`
+	conf := `sources:
+  my_source:
+    type: http_server
+    address: 0.0.0.0:8090
+    decoding:
+      codec: json
+    framing:
+      method: newline_delimited
+    tls:
+      enabled: true
+      key_file: /etc/vector/secrets/tls.key
+      crt_file: /etc/vector/secrets/tls.crt
+      min_tls_version: "` + minTLS + `"
+      ciphersuites: "` + ciphers + `"`
 
 	if curves != "" {
 		conf += `
-curves = "` + curves + `"`
+      curves: "` + curves + `"`
 	}
 
 	conf += `
 
-[transforms.route_logs]
-type = "route"
-inputs = ["my_source"]
-route.audit = '.log_type == "audit"'
-route.container = 'exists(.kubernetes)'
-route.journal = '!exists(.kubernetes)'
+transforms:
+  route_logs:
+    type: route
+    inputs: [my_source]
+    route:
+      audit: '.log_type == "audit"'
+      container: exists(.kubernetes)
+      journal: '!exists(.kubernetes)'
 
-[sinks.container]
-inputs = ["route_logs.container"]
-type = "file"
-path = "/tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json"
-
-[sinks.container.encoding]
-codec = "json"
-
-[sinks.out_journal]
-inputs = ["route_logs.journal"]
-type = "file"
-path = "/tmp/journal/journal.json"
-
-[sinks.out_journal.encoding]
-codec = "json"
-
-[sinks.out_audit]
-inputs = ["route_logs.audit"]
-type = "file"
-path = "/tmp/audit/audit.json"
-
-[sinks.out_audit.encoding]
-codec = "json"
+sinks:
+  container:
+    inputs: [route_logs.container]
+    type: file
+    path: /tmp/container/{{kubernetes.namespace_name}}_{{kubernetes.pod_name}}_{{kubernetes.container_name}}.json
+    encoding:
+      codec: json
+  out_journal:
+    inputs: [route_logs.journal]
+    type: file
+    path: /tmp/journal/journal.json
+    encoding:
+      codec: json
+  out_audit:
+    inputs: [route_logs.audit]
+    type: file
+    path: /tmp/audit/audit.json
+    encoding:
+      codec: json
 `
 	return conf
 }
@@ -505,7 +505,7 @@ func (tc *E2ETestFramework) DeployHttpReceiverWithTLS(ns string, profileSpec con
 		vector.RunVectorFile: fmt.Sprintf(vector.RunVectorScript, path.Join("/tmp/vector", ns, container.Name)),
 	})
 
-	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.toml", vectorConf)
+	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.yaml", vectorConf)
 	opts := metav1.CreateOptions{}
 	config, err = tc.KubeClient.CoreV1().ConfigMaps(ns).Create(context.TODO(), config, opts)
 	if err != nil {

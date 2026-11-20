@@ -16,7 +16,7 @@ spec:
         image: quay.io/openshift-logging/vector:latest
         command:
         - /usr/bin/vector
-        - --config-toml=/etc/vector/vector.toml
+        - --config-yaml=/etc/vector/vector.yaml
         - --watch-config
         ports:
         - containerPort: 8090

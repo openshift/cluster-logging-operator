@@ -1,0 +1,19 @@
+sinks:
+  http_receiver:
+    auth:
+      password: SECRET[kubernetes_secret.http-receiver/password]
+      strategy: basic
+      user: SECRET[kubernetes_secret.http-receiver/username]
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    inputs:
+    - application
+    method: post
+    request:
+      headers:
+        h1: v1
+        h2: v2
+    type: http
+    uri: https://my-logstore.com

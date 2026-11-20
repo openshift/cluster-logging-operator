@@ -1,0 +1,49 @@
+sinks:
+  splunk_hec:
+    default_token: SECRET[kubernetes_secret.vector-splunk-secret/hecToken]
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    endpoint: https://splunk-web:8088/endpoint
+    host_key: ._internal.hostname
+    index: '{{ ._internal.splunk_hec_splunk_index }}'
+    inputs:
+    - splunk_hec_metadata
+    source: '{{ ._internal.splunk.source }}'
+    sourcetype: '{{ ._internal.splunk.sourcetype }}'
+    timestamp_key: ._internal.timestamp
+    type: splunk_hec_logs
+transforms:
+  splunk_hec_metadata:
+    inputs:
+    - splunk_hec_splunk_index
+    source: |-
+      # Splunk 'source' field detection
+      if ._internal.log_type == "infrastructure" && ._internal.log_source == "node" {
+        ._internal.splunk.source = to_string!(._internal.systemd.u.SYSLOG_IDENTIFIER || "")
+      }
+      if ._internal.log_source == "container" {
+        ._internal.splunk.source = join!([._internal.kubernetes.namespace_name, ._internal.kubernetes.pod_name, ._internal.kubernetes.container_name], "_")
+      }
+      if ._internal.log_type == "audit" {
+        ._internal.splunk.source = ._internal.log_source
+      }
+      ._internal.splunk.sourcetype = "_json"
+    type: remap
+  splunk_hec_splunk_index:
+    inputs:
+    - splunk_hec_timestamp
+    source: ._internal.splunk_hec_splunk_index = "foo-" + to_string!(._internal.kubernetes.namespace_labels."test/logging.io"||"missing")
+    type: remap
+  splunk_hec_timestamp:
+    inputs:
+    - pipelineName
+    source: |-
+      ts, err = parse_timestamp(._internal.timestamp,"%+")
+      if err != null {
+        log("could not parse timestamp. err=" + err, rate_limit_secs: 0)
+      } else {
+        ._internal.timestamp = ts
+      }
+    type: remap

@@ -17,7 +17,6 @@ require (
 	github.com/openshift/cluster-logging-operator/api/observability v0.0.0-00010101000000-000000000000
 	github.com/openshift/hypershift/api v0.0.0-20250331115040-26fc3ceb1929
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
-	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
 	github.com/prometheus/client_golang v1.25.0

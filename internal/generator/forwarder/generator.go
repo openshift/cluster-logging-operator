@@ -7,9 +7,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/conf"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
 
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 )
 
 type ConfigGenerator struct {
@@ -28,5 +28,6 @@ func (cg *ConfigGenerator) GenerateConf(secrets map[string]*corev1.Secret, clfsp
 	if err != nil {
 		return "", err
 	}
-	return toml.Marshal(config)
+	yamlConf, err := yaml.Marshal(config)
+	return string(yamlConf), err
 }

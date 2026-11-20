@@ -1,0 +1,11 @@
+sinks:
+  output_azure_monitor_logs:
+    customer_id: 6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt
+    encoding:
+      except_fields:
+      - _internal
+    inputs:
+    - pipelineName
+    log_type: myLogType
+    shared_key: SECRET[kubernetes_secret.azure-monitor-secret/shared_key]
+    type: azure_monitor_logs

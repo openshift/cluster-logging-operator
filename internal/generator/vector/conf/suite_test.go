@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	//go:embed *.toml
+	//go:embed *.yaml
 	expContent embed.FS
 )
 

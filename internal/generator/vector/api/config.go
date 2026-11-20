@@ -5,21 +5,21 @@ type Config struct {
 	Global
 
 	// Api is the set of API keys to values
-	Api *Api `json:"api,omitempty" yaml:"api,omitempty" toml:"api,omitempty"`
+	Api *Api `json:"api,omitempty"`
 
 	//
-	LogSchema *LogSchema `json:"log_schema,omitempty" yaml:"log_schema,omitempty" toml:"log_schema,omitempty"`
+	LogSchema *LogSchema `json:"log_schema,omitempty"`
 
 	// Secrets is the set of secret ids to secret configurations
-	Secret map[string]*Secret `json:"secret,omitempty" yaml:"secret,omitempty" toml:"secret,omitempty"`
+	Secret map[string]*Secret `json:"secret,omitempty"`
 
 	// Sources is the set of source ids to source configurations
-	Sources Sources `json:"sources,omitempty" yaml:"sources,omitempty" toml:"sources,omitempty"`
+	Sources Sources `json:"sources,omitempty"`
 
 	// Transforms is the set of transform ids to transform configurations
-	Transforms Transforms `json:"transforms,omitempty" yaml:"transforms,omitempty" toml:"transforms,omitempty"`
+	Transforms Transforms `json:"transforms,omitempty"`
 
-	Sinks Sinks `json:"sinks,omitempty" yaml:"sinks,omitempty" toml:"sinks,omitempty"`
+	Sinks Sinks `json:"sinks,omitempty"`
 }
 
 func NewConfig(init func(*Config)) *Config {

@@ -117,7 +117,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/s3_with_aws_credentials.yaml"),
 
 			Entry("when a role_arn is provided by ccoctl", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
@@ -133,7 +133,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/s3_with_aws_credentials.yaml"),
 
 			Entry("when an assume_role is specified with accessKey auth", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
@@ -157,7 +157,7 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						ExternalID: "unique-external-id",
 					},
 				}
-			}, framework.NoOptions, "files/s3_key_auth_and_assume_role.toml"),
+			}, framework.NoOptions, "files/s3_key_auth_and_assume_role.yaml"),
 			Entry("when an assume_role is specified with iamRole", func(spec *obs.OutputSpec) {
 				spec.S3 = &obs.S3{
 					Region:    "us-east-test",
@@ -183,12 +183,12 @@ var _ = Describe("Generating vector config for s3 output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "files/s3_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/s3_with_aws_credentials.yaml"),
 
 			Entry("when URL is spec'd", func(spec *obs.OutputSpec) {
 				spec.S3.KeyPrefix = "app-{.log_type||\"missing\"}"
 				spec.S3.URL = "http://mylogreceiver"
-			}, framework.NoOptions, "files/s3_with_url.toml"),
+			}, framework.NoOptions, "files/s3_with_url.yaml"),
 		)
 	})
 })

@@ -66,7 +66,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		Expect(exp).To(EqualConfigFrom(conf))
 	},
 		Entry("with complex spec",
-			"complex.toml",
+			"complex.yaml",
 			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{
@@ -115,7 +115,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			},
 		),
 		Entry("with complex spec && http audit receiver as input source",
-			"complex_http_receiver.toml",
+			"complex_http_receiver.yaml",
 			nil,
 			obs.ClusterLogForwarderSpec{
 				Inputs: []obs.InputSpec{

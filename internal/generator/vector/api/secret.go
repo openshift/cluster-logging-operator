@@ -7,8 +7,8 @@ const (
 )
 
 type Secret struct {
-	Type SecretType `json:"type" yaml:"type" toml:"type"`
-	Path string     `json:"path" yaml:"path" toml:"path"`
+	Type SecretType `json:"type"`
+	Path string     `json:"path"`
 }
 
 func NewDirectorySecret(path string) *Secret {

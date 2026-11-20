@@ -1,0 +1,18 @@
+sinks:
+  output_azure_monitor_logs:
+    customer_id: 6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt
+    encoding:
+      except_fields:
+      - _internal
+    inputs:
+    - pipelineName
+    log_type: myLogType
+    shared_key: SECRET[kubernetes_secret.azure-monitor-secret/shared_key]
+    tls:
+      ca_file: /var/run/ocp-collector/secrets/azure-monitor-secret-tls/ca-bundle.crt
+      crt_file: /var/run/ocp-collector/secrets/azure-monitor-secret-tls/tls.crt
+      key_file: /var/run/ocp-collector/secrets/azure-monitor-secret-tls/tls.key
+      key_pass: foo
+      verify_certificate: false
+      verify_hostname: false
+    type: azure_monitor_logs

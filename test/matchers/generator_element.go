@@ -4,15 +4,21 @@ import (
 	"fmt"
 	"reflect"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
 	gformat "github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
-	"github.com/openshift/cluster-logging-operator/internal/utils/toml"
 	"github.com/openshift/cluster-logging-operator/test"
 )
 
+// GeneratorElementMatcher asserts a generator element marshals to the expected YAML.
+//
+// It is deliberately marshal-only: the element is serialized through sigs.k8s.io/yaml
+// (encoding/json semantics, honoring `json:` tags) and compared against the expected
+// YAML. The historical TOML round-trip guard — which existed because go-toml's
+// tree-based marshaling could silently misplace fields (LOG-9444) — is unnecessary
+// here: encoding/json always nests struct fields under their parent key, so that
+// failure mode cannot occur.
 type GeneratorElementMatcher struct {
 	actual       interface{}
 	matcher      matchers.MatchYAMLMatcher
@@ -45,36 +51,16 @@ func (m *GeneratorElementMatcher) Match(expected interface{}) (_ bool, err error
 		}
 		expString = string(rawExp)
 	}
-	expConfig := &api.Config{}
-	if err = toml.Unmarshal(expString, expConfig); err != nil {
-		log.V(1).Info("expected config can not be unmarshalled as toml. trying another...", "err", err.Error(), "raw", expString)
-		if err = test.Unmarshal(expString, expConfig); err != nil {
-			return false, fmt.Errorf("'expected' can not be unmarshalled as yaml: %v", err)
-		}
-	}
 
 	actualConfig, castable := m.actual.(*api.Config)
 	if !castable {
 		return false, fmt.Errorf("actual can not be converted to an api.Config: %v", m.actual)
 	}
 
-	// Round-trip the actual config through TOML marshal/unmarshal to verify
-	// that serialization preserves all fields correctly. This catches bugs
-	// where struct field ordering causes fields to be nested under the wrong
-	// TOML table (e.g. LOG-9444: compression inside [auth]).
-	tomlStr, err := toml.Marshal(actualConfig)
-	if err != nil {
-		return false, fmt.Errorf("actual config can not be marshalled to TOML: %v", err)
-	}
-	roundTripped := &api.Config{}
-	if err = toml.Unmarshal(tomlStr, roundTripped); err != nil {
-		return false, fmt.Errorf("actual config TOML output can not be unmarshalled back: %v", err)
-	}
-
 	m.matcher = matchers.MatchYAMLMatcher{
-		YAMLToMatch: test.YAMLString(expConfig),
+		YAMLToMatch: expString,
 	}
-	m.actual = test.YAMLString(roundTripped)
+	m.actual = test.YAMLString(actualConfig)
 	return m.matcher.Match(m.actual)
 }
 

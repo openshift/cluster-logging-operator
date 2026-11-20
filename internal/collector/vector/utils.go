@@ -11,7 +11,7 @@ import (
 const (
 	RunVectorFile    = "run-vector.sh"
 	DefaultDataPath  = "/var/lib/vector"
-	ConfigFile       = "vector.toml"
+	ConfigFile       = "vector.yaml"
 	vectorConfigPath = "/etc/vector"
 	entrypointValue  = "/usr/bin/run-vector.sh"
 )

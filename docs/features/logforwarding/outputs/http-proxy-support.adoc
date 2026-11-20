@@ -232,21 +232,20 @@ proxyURL must be a valid URL (e.g., http://proxy.example.com:3128 or https://pro
 
 For reference, when `proxyURL` is set, the operator generates a Vector sink configuration similar to:
 
-[source,toml]
+[source,yaml]
 ----
-[sinks.http_receiver]
-type = "http"
-inputs = ["application"]
-uri = "https://my-log-endpoint.example.com:443/logs/app"
-method = "post"
-
-[sinks.http_receiver.encoding]
-codec = "json"
-
-[sinks.http_receiver.proxy]
-enabled = true
-http = "http://my-proxy.example.com:3128"
-https = "http://my-proxy.example.com:3128"
+sinks:
+  http_receiver:
+    type: http
+    inputs: [application]
+    uri: https://my-log-endpoint.example.com:443/logs/app
+    method: post
+    encoding:
+      codec: json
+    proxy:
+      enabled: true
+      http: http://my-proxy.example.com:3128
+      https: http://my-proxy.example.com:3128
 ----
 
 NOTE: The `proxyURL` value is applied to both the `http` and `https` proxy fields in the generated configuration.

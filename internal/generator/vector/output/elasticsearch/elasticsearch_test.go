@@ -84,7 +84,7 @@ var _ = Describe("Generate Vector config", func() {
 		}
 	)
 	DescribeTable("For Elasticsearch output", func(visit func(spec *obs.OutputSpec), tune bool, op framework.Options, expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -99,7 +99,7 @@ var _ = Describe("Generate Vector config", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with username,password", nil, false, framework.NoOptions, "es_with_auth_username_password.toml"),
+		Entry("with username,password", nil, false, framework.NoOptions, "es_with_auth_username_password.yaml"),
 		Entry("with custom bearer token", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = &obs.HTTPAuthentication{
 				Token: &obs.BearerToken{
@@ -110,7 +110,7 @@ var _ = Describe("Generate Vector config", func() {
 					},
 				},
 			}
-		}, false, framework.NoOptions, "es_with_auth_custom_bearer_token.toml"),
+		}, false, framework.NoOptions, "es_with_auth_custom_bearer_token.yaml"),
 		Entry("with serviceaccount token", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = &obs.HTTPAuthentication{
 				Token: &obs.BearerToken{
@@ -119,44 +119,44 @@ var _ = Describe("Generate Vector config", func() {
 			}
 		}, false, framework.Options{
 			framework.OptionServiceAccountTokenSecretName: "my-service-account-token",
-		}, "es_with_auth_serviceaccount_token.toml"),
+		}, "es_with_auth_serviceaccount_token.yaml"),
 		Entry("with tls key,cert,ca-bundle", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.TLS = tlsSpec
 			spec.Elasticsearch.Version = 6
-		}, false, framework.NoOptions, "es_with_tls.toml"),
+		}, false, framework.NoOptions, "es_with_tls.yaml"),
 		Entry("without security", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.Index = "foo"
-		}, false, framework.NoOptions, "es_without_security.toml"),
+		}, false, framework.NoOptions, "es_without_security.yaml"),
 		Entry("without secret and TLS.insecureSkipVerify=true", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.TLS = &obs.OutputTLSSpec{
 				InsecureSkipVerify: true,
 			}
-		}, false, framework.NoOptions, "es_with_tls_skip_verify.toml"),
+		}, false, framework.NoOptions, "es_with_tls_skip_verify.yaml"),
 		Entry("with custom index with static and dynamic values", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.Index = `foo-{.kubernetes.namespace||"none"}`
-		}, false, framework.NoOptions, "es_with_custom_index.toml"),
+		}, false, framework.NoOptions, "es_with_custom_index.yaml"),
 		Entry("with tune parameters", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.Tuning = &obs.ElasticsearchTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
-		}, true, framework.NoOptions, "es_with_tune.toml"),
+		}, true, framework.NoOptions, "es_with_tune.yaml"),
 		Entry("with tuning and compression", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Elasticsearch.Tuning = &obs.ElasticsearchTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 				Compression:          "gzip",
 			}
-		}, true, framework.NoOptions, "es_with_tune_and_compression.toml"),
+		}, true, framework.NoOptions, "es_with_tune_and_compression.yaml"),
 		Entry("with headers", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Headers = map[string]string{
 				"Key": "Value",
 			}
-		}, true, framework.NoOptions, "es_with_headers.toml"),
+		}, true, framework.NoOptions, "es_with_headers.yaml"),
 		Entry("with multiple endpoints only", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.URL = ""
@@ -165,7 +165,7 @@ var _ = Describe("Generate Vector config", func() {
 				"https://es2.example.com:9200",
 				"https://es3.example.com:9200",
 			}
-		}, false, framework.NoOptions, "es_with_multi_endpoints.toml"),
+		}, false, framework.NoOptions, "es_with_multi_endpoints.yaml"),
 		Entry("with url and endpoints combined", func(spec *obs.OutputSpec) {
 			spec.Elasticsearch.Authentication = nil
 			spec.Elasticsearch.URL = "https://es-primary.example.com:9200"
@@ -173,6 +173,6 @@ var _ = Describe("Generate Vector config", func() {
 				"https://es1.example.com:9200",
 				"https://es2.example.com:9200",
 			}
-		}, false, framework.NoOptions, "es_with_url_and_endpoints.toml"),
+		}, false, framework.NoOptions, "es_with_url_and_endpoints.yaml"),
 	)
 })

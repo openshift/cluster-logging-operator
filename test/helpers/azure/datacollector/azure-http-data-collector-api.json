@@ -89,6 +89,102 @@
           "callbacks": []
         },
         {
+          "uuid": "d14b0eb6-57ee-45f6-b614-2e14b16500ae",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Accept 1 log event. The collector may flush the written records in smaller batches, so accept any batch size.",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "log-type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "938c31c8-5650-400b-be0d-cc85554d0454",
+          "body": "{}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Accept 2 batch log events. The collector may flush the written records in smaller batches, so accept any batch size.",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "log-type",
+              "value": "myLogType",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[1].message",
+              "value": "This is my new test message",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[0].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "$.[1].log_type",
+              "value": "application",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
           "uuid": "541b09b2-e130-4439-8201-598e9f6c6adb",
           "body": "{}",
           "latency": 0,

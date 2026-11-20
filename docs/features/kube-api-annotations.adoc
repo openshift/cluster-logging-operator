@@ -5,7 +5,7 @@ IMPORTANT: This feature is a *Tech-Preview Feature* and not fully tested for imp
 these features could result in unexpected issues with your logforwarder or cluster behavior.
 
 === Description
-This feature adds the `use_apiserver_cache` config to the vector.toml, as well as a configurable rolling
+This feature adds the `use_apiserver_cache` config to the vector.yaml, as well as a configurable rolling
 update `maxUnavailable` to the forwarder's DaemonSet.  Both features are currently enabled via annotations.
 
 We are working to validate the benefits and stability of this configuration, and intend to release the feature

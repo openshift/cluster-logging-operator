@@ -1,0 +1,587 @@
+sinks:
+  output_otel_collector:
+    inputs:
+    - output_otel_collector_resource_logs
+    protocol:
+      auth:
+        password: SECRET[kubernetes_secret.otlp-receiver/password]
+        strategy: basic
+        user: SECRET[kubernetes_secret.otlp-receiver/username]
+      encoding:
+        codec: json
+        except_fields:
+        - _internal
+      method: post
+      payload_prefix: '{"resourceLogs":'
+      payload_suffix: '}'
+      type: http
+      uri: http://localhost:4318/v1/logs
+    type: opentelemetry
+transforms:
+  output_otel_collector_auditd:
+    inputs:
+    - output_otel_collector_reroute.auditd
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      # Create body from internal message
+      r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      # Fill up auditd logRecord object
+      if exists(.level) { r.severityText = .level }
+      kv = parse_key_value!(to_string!(get!(.,["_internal","message"])))
+      if exists(kv.type) {
+        r.attributes = push(r.attributes, {"key": "auditd.type", "value": {"stringValue": kv.type }})
+      }
+      if exists(kv.msg) {
+        msg_str = ""
+        if is_array(kv.msg) {
+          msg_str = kv.msg[0]
+        } else {
+          msg_str = kv.msg
+        }
+        trimmed = slice!(msg_str, find!(msg_str, "(") + 1, -2)
+        parts = split!(trimmed, ":")
+        r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": parts[1] }})
+      }
+      # Openshift object for grouping (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "hostname": .hostname,
+        "cluster_id": .openshift.cluster_id
+      }
+      . = {
+        "openshift": o,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_container:
+    inputs:
+    - output_otel_collector_reroute.container
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "k8s.pod.name", "value": {"stringValue": .kubernetes.pod_name}},
+        {"key": "k8s.pod.uid", "value": {"stringValue": .kubernetes.pod_id}},
+        {"key": "k8s.container.name", "value": {"stringValue": .kubernetes.container_name}},
+        {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
+      ]
+      )
+      # Use original (non-dedotted) labels to preserve keys containing dots and slashes
+      if exists(._internal.kubernetes.labels) {for_each(object!(._internal.kubernetes.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      # Append backward compatibility attributes for container logs
+      resource.attributes = append( resource.attributes,
+      [{"key": "kubernetes.pod_name", "value": {"stringValue": .kubernetes.pod_name}},
+      {"key": "kubernetes.container_name", "value": {"stringValue": .kubernetes.container_name}},
+      {"key": "kubernetes.namespace_name", "value": {"stringValue": .kubernetes.namespace_name}}]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      r.severityText = .level
+      # Create body from original message or structured
+      value = .message
+      if (value == null) { value = encode_json(.structured) }
+      r.body = {"stringValue": string!(value)}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      r.attributes = append(r.attributes,
+      [
+        {"key": "log.iostream", "value": {"stringValue": .kubernetes.container_iostream}},
+        {"key": "level", "value": {"stringValue": .level}}
+      ]
+      )
+      # Openshift and kubernetes objects for grouping containers (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "cluster_id": .openshift.cluster_id
+      }
+      .kubernetes = {
+        "namespace_name": .kubernetes.namespace_name,
+        "pod_name": .kubernetes.pod_name,
+        "container_name": .kubernetes.container_name
+      }
+      . = {
+        "openshift": o,
+        "kubernetes": .kubernetes,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_groupby_container:
+    expire_after_ms: 15000
+    group_by:
+    - .openshift.cluster_id
+    - .kubernetes.namespace_name
+    - .kubernetes.pod_name
+    - .kubernetes.container_name
+    inputs:
+    - output_otel_collector_container
+    max_events: 1
+    merge_strategies:
+      logRecords: array
+      resource: retain
+    type: reduce
+  output_otel_collector_groupby_host:
+    expire_after_ms: 15000
+    group_by:
+    - .openshift.cluster_id
+    - .openshift.hostname
+    - .openshift.log_type
+    - .openshift.log_source
+    inputs:
+    - output_otel_collector_auditd
+    - output_otel_collector_node
+    max_events: 1
+    merge_strategies:
+      logRecords: array
+      resource: retain
+    type: reduce
+  output_otel_collector_groupby_source:
+    expire_after_ms: 15000
+    group_by:
+    - .openshift.cluster_id
+    - .openshift.log_type
+    - .openshift.log_source
+    inputs:
+    - output_otel_collector_kubeapi
+    - output_otel_collector_openshiftapi
+    - output_otel_collector_ovn
+    max_events: 1
+    merge_strategies:
+      logRecords: array
+      resource: retain
+    type: reduce
+  output_otel_collector_kubeapi:
+    inputs:
+    - output_otel_collector_reroute.kubeapi
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      # Create body from internal message
+      r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      # Openshift object for grouping (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "hostname": .hostname,
+        "cluster_id": .openshift.cluster_id
+      }
+      . = {
+        "openshift": o,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_node:
+    inputs:
+    - output_otel_collector_reroute.node
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "process.command_line", "value": {"stringValue": .systemd.t.CMDLINE}},
+        {"key": "process.executable.name", "value": {"stringValue": .systemd.t.COMM}},
+        {"key": "process.executable.path", "value": {"stringValue": .systemd.t.EXE}},
+        {"key": "process.pid", "value": {"stringValue": .systemd.t.PID}},
+        {"key": "service.name", "value": {"stringValue": .systemd.t.SYSTEMD_UNIT}}
+      ]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      r.severityText = .level
+      # Create body from original message or structured
+      value = .message
+      if (value == null) { value = encode_json(.structured) }
+      r.body = {"stringValue": string!(value)}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      r.attributes = append(r.attributes, [{"key": "level", "value": {"stringValue": .level}}])
+      # Openshift object for grouping (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "hostname": .hostname,
+        "cluster_id": .openshift.cluster_id
+      }
+      . = {
+        "openshift": o,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_openshiftapi:
+    inputs:
+    - output_otel_collector_reroute.openshiftapi
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      # Create body from internal message
+      r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      # Openshift object for grouping (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "hostname": .hostname,
+        "cluster_id": .openshift.cluster_id
+      }
+      . = {
+        "openshift": o,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_ovn:
+    inputs:
+    - output_otel_collector_reroute.ovn
+    source: |-
+      # Create base resource attributes
+      resource.attributes = []
+      resource.attributes = append(resource.attributes,
+      [
+        {"key": "openshift.cluster.uid", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "openshift.log.source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.log.type", "value": {"stringValue": .log_type}},
+        {"key": "k8s.node.name", "value": {"stringValue": .hostname}}
+      ]
+      )
+      if exists(.openshift.labels) {for_each(object!(.openshift.labels)) -> |key,value| {
+        resource.attributes = append(resource.attributes,
+        [{"key": "openshift.label." + key, "value": {"stringValue": value}}]
+      )
+      }}
+      # Append backward compatibility attributes
+      resource.attributes = append( resource.attributes,
+      [
+        {"key": "log_type", "value": {"stringValue": .log_type}},
+        {"key": "log_source", "value": {"stringValue": .log_source}},
+        {"key": "openshift.cluster_id", "value": {"stringValue": .openshift.cluster_id}},
+        {"key": "kubernetes.host", "value": {"stringValue": .hostname}}
+      ]
+      )
+      # Create logRecord object
+      r = {"attributes": []}
+      r.timeUnixNano = to_string(to_unix_timestamp(parse_timestamp!(.@timestamp, format:"%+"), unit:"nanoseconds"))
+      r.observedTimeUnixNano = to_string(to_unix_timestamp(now(), unit:"nanoseconds"))
+      # Create body from internal message
+      r.body = {"stringValue": to_string!(get!(.,["_internal","message"]))}
+      # Set trace context fields if any
+      if exists(._internal.trace_id) {
+        r.traceId = ._internal.trace_id
+      }
+      if exists(._internal.span_id) {
+        r.spanId = ._internal.span_id
+      }
+      if exists(._internal.trace_flags) {
+        r.flags = ._internal.trace_flags
+      }
+      # Fill up OVN logRecord object
+      if exists(.level) { r.severityText = .level }
+      ovnTokens = split(to_string!(get!(.,["_internal","message"])),"|")
+      if 0 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "log.sequence", "value": {"stringValue": ovnTokens[1] }})}
+      if 1 < length(ovnTokens) { r.attributes = push(r.attributes, {"key": "k8s.ovn.component", "value": {"stringValue": ovnTokens[2] }})}
+      # Openshift object for grouping (dropped before sending)
+      o = {
+        "log_type": .log_type,
+        "log_source": .log_source,
+        "hostname": .hostname,
+        "cluster_id": .openshift.cluster_id
+      }
+      . = {
+        "openshift": o,
+        "resource": resource,
+        "logRecords": r
+      }
+    type: remap
+  output_otel_collector_reroute:
+    inputs:
+    - output_otel_collector_trace_context
+    route:
+      auditd: .log_source == "auditd"
+      container: .log_source == "container"
+      kubeapi: .log_source == "kubeAPI"
+      node: .log_source == "node"
+      openshiftapi: .log_source == "openshiftAPI"
+      ovn: .log_source == "ovn"
+    type: route
+  output_otel_collector_reroute_unmatched:
+    inputs:
+    - output_otel_collector_reroute._unmatched
+    metrics:
+    - field: message
+      kind: incremental
+      name: component_event_unmatched_count
+      namespace: logcollector
+      tags:
+        component_id: output_otel_collector_reroute
+        log_source: '{{ log_source }}'
+        log_type: '{{ log_type }}'
+        output_type: lokistack
+      type: counter
+    type: log_to_metric
+  output_otel_collector_resource_logs:
+    inputs:
+    - output_otel_collector_groupby_container
+    - output_otel_collector_groupby_host
+    - output_otel_collector_groupby_source
+    source: |-
+      . = {
+        "resource": {
+          "attributes": .resource.attributes,
+        },
+        "scopeLogs": [
+          {"logRecords": .logRecords}
+        ]
+      }
+    type: remap
+  output_otel_collector_trace_context:
+    inputs:
+    - pipeline_my_pipeline_viaq_0
+    source: |-
+      trace_context = {}
+      # 1. Try to extract trace context from structured log fields
+      if exists(._internal.structured) {
+        if exists(._internal.structured.trace_id) {
+          trace_context.trace_id = ._internal.structured.trace_id
+        }
+        if exists(._internal.structured.span_id) {
+          trace_context.span_id = ._internal.structured.span_id
+        }
+        if exists(._internal.structured.trace_flags) {
+          trace_context.trace_flags = ._internal.structured.trace_flags
+        }
+      }
+      # 2. If not structured, try parsing the message as JSON
+      if !exists(._internal.structured) {
+        parsed, err = parse_json(._internal.message)
+        if err == null {
+          if exists(parsed.trace_id) {
+            trace_context.trace_id = parsed.trace_id
+          }
+          if exists(parsed.span_id) {
+            trace_context.span_id = parsed.span_id
+          }
+          if exists(parsed.trace_flags) {
+            trace_context.trace_flags = parsed.trace_flags
+          }
+        }
+      }
+      # 3. Fall back to regex for any fields still missing
+      if trace_context.trace_id == null {
+        parsed, err = parse_regex(._internal.message, r'(?i)(trace_id|traceId|traceID|trace\-id|trace\.id)[=:]\s*["\']?(?<trace_id>[0-9a-f]{32})["\']?')
+        if err == null && exists(parsed.trace_id) {
+          trace_context.trace_id = parsed.trace_id
+        }
+      }
+      if trace_context.span_id == null {
+        parsed, err = parse_regex(._internal.message, r'(?i)(span_id|spanId|spanID|span\-id|span\.id)[=:]\s*["\']?(?<span_id>[0-9a-f]{16})["\']?')
+        if err == null && exists(parsed.span_id) {
+          trace_context.span_id = parsed.span_id
+        }
+      }
+      if trace_context.trace_flags == null {
+        parsed, err = parse_regex(._internal.message, r'(?i)(trace_flags|traceFlags|flags|trace\-flags|trace\.flags)[=:]\s*["\']?(?<trace_flags>[0-9a-f]{1,2})["\']?')
+        if err == null && exists(parsed.trace_flags) {
+          trace_context.trace_flags = parsed.trace_flags
+        }
+      }
+      # 4. Validate and set each trace context field
+      if trace_context.trace_id != null {
+        trace_id_str = downcase(to_string!(trace_context.trace_id))
+        if match(trace_id_str, r'^[0-9a-f]{32}$') {
+          ._internal.trace_id = trace_id_str
+        }
+      }
+      if trace_context.span_id != null {
+        span_id_str = downcase(to_string!(trace_context.span_id))
+        if match(span_id_str, r'^[0-9a-f]{16}$') {
+          ._internal.span_id = span_id_str
+        }
+      }
+      if trace_context.trace_flags != null {
+        trace_flags_str = downcase(to_string!(trace_context.trace_flags))
+        if match(trace_flags_str, r'^0?[01]$') {
+          ._internal.trace_flags = trace_flags_str
+        }
+      }
+    type: remap

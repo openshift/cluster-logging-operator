@@ -133,23 +133,23 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 		},
 
 			Entry("when groupName is spec'd", `{.log_type||"missing"}-foo`, func(spec *obs.OutputSpec) {},
-				framework.NoOptions, "files/cw_with_groupname.toml"),
+				framework.NoOptions, "files/cw_with_groupname.yaml"),
 
 			Entry("when URL is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.URL = "http://mylogreceiver"
-			}, framework.NoOptions, "files/cw_with_url.toml"),
+			}, framework.NoOptions, "files/cw_with_url.yaml"),
 
 			Entry("when minTLS and ciphers is spec'd", `{.log_type||"missing"}`, nil,
-				testhelpers.FrameworkOptionWithDefaultTLSCiphers, "files/cw_with_tls_and_default_mintls_ciphers.toml"),
+				testhelpers.FrameworkOptionWithDefaultTLSCiphers, "files/cw_with_tls_and_default_mintls_ciphers.yaml"),
 
 			Entry("when tls is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
-			}, framework.NoOptions, "files/cw_with_tls_spec.toml"),
+			}, framework.NoOptions, "files/cw_with_tls_spec.yaml"),
 
 			Entry("when tls is spec'd with insecure verify", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.TLS = tlsSpec
 				spec.TLS.InsecureSkipVerify = true
-			}, framework.NoOptions, "files/cw_with_tls_spec_insecure_verify.toml"),
+			}, framework.NoOptions, "files/cw_with_tls_spec_insecure_verify.yaml"),
 
 			Entry("when aws role credentials are provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -164,7 +164,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.yaml"),
 
 			Entry("when a role_arn is provided", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -179,7 +179,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						},
 					},
 				}
-			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.toml"),
+			}, framework.NoOptions, "files/cw_groupname_with_aws_credentials.yaml"),
 
 			Entry("when an assume_role is specified with accessKey auth", `app-{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Authentication = &obs.AwsAuthentication{
@@ -202,11 +202,11 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 						ExternalID: "unique-external-id",
 					},
 				}
-			}, framework.NoOptions, "files/cw_key_auth_and_assume_role.toml"),
+			}, framework.NoOptions, "files/cw_key_auth_and_assume_role.yaml"),
 
 			Entry("when tuning is spec'd", `{.log_type||"missing"}`, func(spec *obs.OutputSpec) {
 				spec.Cloudwatch.Tuning = baseTune
-			}, framework.NoOptions, "files/cw_with_tuning.toml"),
+			}, framework.NoOptions, "files/cw_with_tuning.yaml"),
 		)
 	})
 

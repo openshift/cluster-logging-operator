@@ -4,115 +4,40 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	internalcontext "github.com/openshift/cluster-logging-operator/internal/api/context"
+	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("#validateOutputTemplates (LOG-9752)", func() {
+var _ = Describe("Validating output template values (LOG-10361)", func() {
 
-	It("should accept benign template fields", func() {
+	// The collector config is serialized as YAML (quoted/escaped or block
+	// scalar), so values containing the former TOML literal multiline
+	// terminator or newlines can no longer break out of the generated VRL.
+	// Admission must accept them; safety holds by construction.
+	It("should accept a kafka topic containing the former TOML literal terminator and a newline", func() {
 		out := obs.OutputSpec{
-			Type:  obs.OutputTypeKafka,
-			Kafka: &obs.Kafka{Topic: "topic-{.log_type||\"none\"}"},
+			Name: "kafka-out",
+			Type: obs.OutputTypeKafka,
+			Kafka: &obs.Kafka{
+				URL:   "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+				Topic: "top'''ic\nline2",
+			},
 		}
-		Expect(validateOutputTemplates(out)).To(BeEmpty())
-	})
-
-	It("should reject a kafka topic containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:  obs.OutputTypeKafka,
-			Kafka: &obs.Kafka{Topic: "x'''injection"},
+		context := internalcontext.ForwarderContext{
+			Forwarder: &obs.ClusterLogForwarder{
+				Spec: obs.ClusterLogForwarderSpec{
+					Outputs: []obs.OutputSpec{out},
+					Pipelines: []obs.PipelineSpec{
+						{Name: "dummy", OutputRefs: internalobs.Outputs([]obs.OutputSpec{out}).Names()},
+					},
+				},
+			},
+			AdditionalContext: utils.Options{},
 		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("kafka.topic"))
-	})
-
-	It("should reject a splunk index containing a newline", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSplunk,
-			Splunk: &obs.Splunk{Index: "line1\nline2"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("splunk.index"))
-	})
-
-	It("should reject a splunk source containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSplunk,
-			Splunk: &obs.Splunk{Source: "src'''x"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("splunk.source"))
-	})
-
-	It("should reject a splunk sourceType containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSplunk,
-			Splunk: &obs.Splunk{SourceType: "st'''x"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("splunk.sourceType"))
-	})
-
-	It("should reject a cloudwatch groupName containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:       obs.OutputTypeCloudwatch,
-			Cloudwatch: &obs.Cloudwatch{GroupName: "grp'''x"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("cloudwatch.groupName"))
-	})
-
-	It("should reject a splunk payloadKey containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSplunk,
-			Splunk: &obs.Splunk{PayloadKey: obs.FieldPath(`.foo."x'''y"`)},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("splunk.payloadKey"))
-	})
-
-	It("should reject a splunk indexedFields entry containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSplunk,
-			Splunk: &obs.Splunk{IndexedFields: []obs.FieldPath{`.good`, `.foo."x'''y"`}},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("splunk.indexedFields[1]"))
-	})
-
-	It("should reject an s3 keyPrefix containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type: obs.OutputTypeS3,
-			S3:   &obs.S3{KeyPrefix: "pre'''x"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("s3.keyPrefix"))
-	})
-
-	It("should reject a syslog facility containing the terminator", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSyslog,
-			Syslog: &obs.Syslog{Facility: "fac'''x"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("syslog.facility"))
-	})
-
-	It("should reject a syslog appName containing a newline", func() {
-		out := obs.OutputSpec{
-			Type:   obs.OutputTypeSyslog,
-			Syslog: &obs.Syslog{AppName: "app\nname"},
-		}
-		msgs := validateOutputTemplates(out)
-		Expect(msgs).ToNot(BeEmpty())
-		Expect(msgs[0]).To(ContainSubstring("syslog.appName"))
+		Validate(context)
+		Expect(context.Forwarder.Status.OutputConditions).To(HaveLen(1))
+		Expect(context.Forwarder.Status.OutputConditions[0]).To(matchers.MatchCondition("kafka-out", true, obs.ReasonValidationSuccess, ".*"))
 	})
 })

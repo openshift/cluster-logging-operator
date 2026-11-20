@@ -8,12 +8,12 @@ const (
 )
 
 type HttpAuth struct {
-	Strategy HttpAuthStrategy `json:"strategy,omitempty" yaml:"strategy,omitempty" toml:"strategy,omitempty"`
+	Strategy HttpAuthStrategy `json:"strategy,omitempty"`
 	HttpAuthBasic
-	Token string `json:"token,omitempty" yaml:"token,omitempty" toml:"token,omitempty"`
+	Token string `json:"token,omitempty"`
 }
 
 type HttpAuthBasic struct {
-	User     string `json:"user,omitempty" yaml:"user,omitempty" toml:"user,omitempty"`
-	Password string `json:"password,omitempty" yaml:"password,omitempty" toml:"password,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
 }

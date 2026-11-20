@@ -17,38 +17,38 @@ const (
 )
 
 type Keepalive struct {
-	TimeSecs uint `json:"time_secs,omitempty" yaml:"time_secs,omitempty" toml:"time_secs,omitempty"`
+	TimeSecs uint `json:"time_secs,omitempty"`
 }
 
 type SyslogEncodingConfig struct {
-	RFC      string `json:"rfc,omitempty" yaml:"rfc,omitempty" toml:"rfc,omitempty"`
-	Facility string `json:"facility,omitempty" yaml:"facility,omitempty" toml:"facility,omitempty"`
-	Severity string `json:"severity,omitempty" yaml:"severity,omitempty" toml:"severity,omitempty"`
-	AppName  string `json:"app_name,omitempty" yaml:"app_name,omitempty" toml:"app_name,omitempty"`
-	MsgID    string `json:"msg_id,omitempty" yaml:"msg_id,omitempty" toml:"msg_id,omitempty"`
-	ProcID   string `json:"proc_id,omitempty" yaml:"proc_id,omitempty" toml:"proc_id,omitempty"`
+	RFC      string `json:"rfc,omitempty"`
+	Facility string `json:"facility,omitempty"`
+	Severity string `json:"severity,omitempty"`
+	AppName  string `json:"app_name,omitempty"`
+	MsgID    string `json:"msg_id,omitempty"`
+	ProcID   string `json:"proc_id,omitempty"`
 }
 
 type SocketEncoding struct {
-	Codec        string                `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
-	ExceptFields []string              `json:"except_fields,omitempty" yaml:"except_fields,omitempty" toml:"except_fields,omitempty"`
-	Syslog       *SyslogEncodingConfig `json:"syslog,omitempty" yaml:"syslog,omitempty" toml:"syslog,omitempty"`
+	Codec        string                `json:"codec,omitempty"`
+	ExceptFields []string              `json:"except_fields,omitempty"`
+	Syslog       *SyslogEncodingConfig `json:"syslog,omitempty"`
 }
 
 type Socket struct {
-	Type             types.SinkType        `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
-	Inputs           []string              `json:"inputs,omitempty" yaml:"inputs,omitempty" toml:"inputs,omitempty"`
-	Address          string                `json:"address,omitempty" yaml:"address,omitempty" toml:"address,omitempty"`
-	Mode             SocketMode            `json:"mode,omitempty" yaml:"mode,omitempty" toml:"mode,omitempty"`
-	Keepalive        *Keepalive            `json:"keepalive,omitempty" yaml:"keepalive,omitempty" toml:"keepalive,omitempty"`
-	Path             string                `json:"path,omitempty" yaml:"path,omitempty" toml:"path,omitempty"`
-	Encoding         *SocketEncoding       `json:"encoding,omitempty" yaml:"encoding,omitempty" toml:"encoding,omitempty"`
-	Framing          *Framing              `json:"framing,omitempty" yaml:"framing,omitempty" toml:"framing,omitempty"`
-	SendBufferBytes  uint                  `json:"send_buffer_bytes,omitempty" yaml:"send_buffer_bytes,omitempty" toml:"send_buffer_bytes,omitempty"`
-	HealthCheck      *HealthCheck          `json:"healthcheck,omitempty" yaml:"healthcheck,omitempty" toml:"healthcheck,omitempty"`
-	Acknowledgements *Acknowledgements     `json:"acknowledgements,omitempty" yaml:"acknowledgements,omitempty" toml:"acknowledgements,omitempty"`
-	Buffer           *Buffer               `json:"buffer,omitempty" yaml:"buffer,omitempty" toml:"buffer,omitempty"`
-	TLS              *transport.TlsEnabled `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
+	Type             types.SinkType        `json:"type,omitempty"`
+	Inputs           []string              `json:"inputs,omitempty"`
+	Address          string                `json:"address,omitempty"`
+	Mode             SocketMode            `json:"mode,omitempty"`
+	Keepalive        *Keepalive            `json:"keepalive,omitempty"`
+	Path             string                `json:"path,omitempty"`
+	Encoding         *SocketEncoding       `json:"encoding,omitempty"`
+	Framing          *Framing              `json:"framing,omitempty"`
+	SendBufferBytes  uint                  `json:"send_buffer_bytes,omitempty"`
+	HealthCheck      *HealthCheck          `json:"healthcheck,omitempty"`
+	Acknowledgements *Acknowledgements     `json:"acknowledgements,omitempty"`
+	Buffer           *Buffer               `json:"buffer,omitempty"`
+	TLS              *transport.TlsEnabled `json:"tls,omitempty"`
 }
 
 func NewSocket(mode SocketMode, init func(s *Socket), inputs ...string) (s *Socket) {

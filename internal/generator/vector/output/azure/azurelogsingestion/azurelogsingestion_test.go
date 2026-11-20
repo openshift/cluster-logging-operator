@@ -100,7 +100,7 @@ var _ = Describe("Generating vector config for Azure Log Ingestion output:", fun
 	)
 
 	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), tune bool, expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -118,7 +118,7 @@ var _ = Describe("Generating vector config for Azure Log Ingestion output:", fun
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("for client secret auth", nil, false, "azli_common.toml"),
+		Entry("for client secret auth", nil, false, "azli_common.yaml"),
 		Entry("for workload identity auth", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.Authentication = &obs.AzureLogsIngestionAuthentication{
 				Type: obs.AzureLogsIngestionAuthTypeWorkloadIdentity,
@@ -130,21 +130,21 @@ var _ = Describe("Generating vector config for Azure Log Ingestion output:", fun
 					},
 				},
 			}
-		}, false, "azli_workload_identity.toml"),
+		}, false, "azli_workload_identity.yaml"),
 		Entry("with timestamp field", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.TimestampField = "Timestamp"
-		}, false, "azli_timestamp_field.toml"),
+		}, false, "azli_timestamp_field.yaml"),
 		Entry("with token scope", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.TokenScope = "https://monitor.azure.cn/.default"
-		}, false, "azli_token_scope.toml"),
+		}, false, "azli_token_scope.yaml"),
 		Entry("with tls settings", func(output *obs.OutputSpec) {
 			output.TLS = tlsSpec
-		}, false, "azli_tls.toml"),
+		}, false, "azli_tls.yaml"),
 		Entry("with tuning parameters exceeding 1MB cap", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.Tuning = &obs.AzureLogsIngestionTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
-		}, true, "azli_tuning.toml"),
+		}, true, "azli_tuning.yaml"),
 		Entry("with tuning parameters under 1MB limit", func(output *obs.OutputSpec) {
 			output.AzureLogsIngestion.Tuning = &obs.AzureLogsIngestionTuningSpec{
 				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
@@ -154,6 +154,6 @@ var _ = Describe("Generating vector config for Azure Log Ingestion output:", fun
 					MinRetryDuration: utils.GetPtr(time.Duration(20)),
 				},
 			}
-		}, true, "azli_tuning_under_limit.toml"),
+		}, true, "azli_tuning_under_limit.yaml"),
 	)
 })

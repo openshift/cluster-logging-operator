@@ -75,7 +75,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	DescribeTable("for kafka output", func(expFile string, op utils.Options, visit func(spec *obs.OutputSpec)) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -90,38 +90,38 @@ var _ = Describe("Generate vector config", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with plaintext sasl, to single topic", "kafka_sasl_plaintext_single_topic.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with plaintext sasl, to single topic", "kafka_sasl_plaintext_single_topic.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.Authentication = &obs.KafkaAuthentication{
 				SASL: saslAuth,
 			}
 		}),
-		Entry("with plaintext sasl, to single topic", "kafka_sasl_with_tls_single_topic.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with plaintext sasl, to single topic", "kafka_sasl_with_tls_single_topic.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.Authentication = &obs.KafkaAuthentication{
 				SASL: saslAuth,
 			}
 			spec.TLS = tlsSpec
 		}),
-		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", "kafka_insecure_skipverify.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", "kafka_insecure_skipverify.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
 			spec.Kafka.Topic = ""
 			spec.TLS = tlsSpec
 			tlsSpec.InsecureSkipVerify = true
 
 		}),
-		Entry("without security", "kafka_no_security.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("without security", "kafka_no_security.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""
 		}),
-		Entry("without custom topic template", "kafka_custom_topic.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("without custom topic template", "kafka_custom_topic.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092"
 			spec.Kafka.Topic = `foo-bar{.log_type||"none"}`
 		}),
-		Entry("with NOT tls brokers", "kafka_not_tls_brokers.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with NOT tls brokers", "kafka_not_tls_brokers.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = ""
 			spec.Kafka.Topic = ""
 			spec.Kafka.Brokers = []obs.BrokerURL{`tcp://broker1:9092`, `tcp://broker2:9092`, `tcp://broker3:9092`}
 		}),
-		Entry("with tuning", "kafka_tuning.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with tuning", "kafka_tuning.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tcp://broker1-kafka.svc.messaging.cluster.local:9092/topic"
 			spec.Kafka.Topic = ""
 			spec.Kafka.Tuning = &obs.KafkaTuningSpec{
@@ -129,7 +129,7 @@ var _ = Describe("Generate vector config", func() {
 				MaxWrite:     utils.GetPtr(resource.MustParse("10M")),
 			}
 		}),
-		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic and custom CA", "kafka_sasl_ca_with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic and custom CA", "kafka_sasl_ca_with_tls.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Kafka.URL = "tls://broker1-kafka.svc.messaging.cluster.local:9092/mytopic"
 			spec.Kafka.Topic = "topic"
 			spec.TLS = &obs.OutputTLSSpec{

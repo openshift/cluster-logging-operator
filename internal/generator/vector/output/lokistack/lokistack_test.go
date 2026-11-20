@@ -136,7 +136,7 @@ var _ = Describe("Generate vector config", func() {
 		}
 	)
 	DescribeTable("for LokiStack output", func(expFile string, op framework.Options, visit func(spec *obs.OutputSpec)) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -151,11 +151,11 @@ var _ = Describe("Generate vector config", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with ViaQ datamodel", "lokistack_viaq.toml", initOptions(), func(spec *obs.OutputSpec) {}),
-		Entry("with Otel datamodel", "lokistack_otel.toml", initOptions(), func(spec *obs.OutputSpec) {
+		Entry("with ViaQ datamodel", "lokistack_viaq.yaml", initOptions(), func(spec *obs.OutputSpec) {}),
+		Entry("with Otel datamodel", "lokistack_otel.yaml", initOptions(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
-		Entry("with Otel datamodel and empty audit sources", "lokistack_otel.toml", func() utils.Options {
+		Entry("with Otel datamodel and empty audit sources", "lokistack_otel.yaml", func() utils.Options {
 			output := initOutput()
 			return utils.Options{
 				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
@@ -178,7 +178,7 @@ var _ = Describe("Generate vector config", func() {
 		}(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 		}),
-		Entry("with Otel datamodel and tuning", "lokistack_otel_tuning.toml", initOptions(), func(spec *obs.OutputSpec) {
+		Entry("with Otel datamodel and tuning", "lokistack_otel_tuning.yaml", initOptions(), func(spec *obs.OutputSpec) {
 			spec.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
 			spec.LokiStack.Tuning = &obs.LokiTuningSpec{
 				BaseOutputTuningSpec: obs.BaseOutputTuningSpec{
@@ -190,6 +190,6 @@ var _ = Describe("Generate vector config", func() {
 				Compression: "gzip",
 			}
 		}),
-		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.toml", initReceiverOptions(), func(spec *obs.OutputSpec) {}),
+		Entry("with ViaQ datamodel with receiver", "lokistack_viaq_receiver.yaml", initReceiverOptions(), func(spec *obs.OutputSpec) {}),
 	)
 })

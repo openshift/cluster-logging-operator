@@ -91,7 +91,7 @@ var _ = Describe("Generate vector config", func() {
 		)
 
 		DescribeTable("for HTTP output", func(visit func(spec *obs.OutputSpec), secrets map[string]*corev1.Secret, op framework.Options, expFile string) {
-			exp, err := tomlContent.ReadFile(expFile)
+			exp, err := expContent.ReadFile(expFile)
 			if err != nil {
 				Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 			}
@@ -107,7 +107,7 @@ var _ = Describe("Generate vector config", func() {
 				c.AddTransforms(transforms)
 			})))
 		},
-			Entry("with Basic auth", nil, secrets, framework.NoOptions, "http_with_auth_basic.toml"),
+			Entry("with Basic auth", nil, secrets, framework.NoOptions, "http_with_auth_basic.yaml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication.Token = &obs.BearerToken{
 					From: obs.BearerTokenFromSecret,
@@ -116,11 +116,11 @@ var _ = Describe("Generate vector config", func() {
 						Name: secretName,
 					},
 				}
-			}, secrets, framework.NoOptions, "http_with_auth_token.toml"),
+			}, secrets, framework.NoOptions, "http_with_auth_token.yaml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = tlsSpec
-			}, secrets, framework.NoOptions, "http_with_tls.toml"),
+			}, secrets, framework.NoOptions, "http_with_tls.yaml"),
 			Entry("with token auth", func(spec *obs.OutputSpec) {
 				spec.HTTP.Authentication = nil
 				spec.TLS = &obs.OutputTLSSpec{
@@ -139,20 +139,20 @@ var _ = Describe("Generate vector config", func() {
 						},
 					},
 				}
-			}, secrets, framework.NoOptions, "http_with_tls_using_configmaps.toml"),
+			}, secrets, framework.NoOptions, "http_with_tls_using_configmaps.yaml"),
 			Entry("with tuning", func(spec *obs.OutputSpec) {
 				spec.HTTP.Tuning = &obs.HTTPTuningSpec{
 					BaseOutputTuningSpec: *baseTune,
 				}
-			}, secrets, framework.NoOptions, "http_with_tuning.toml"),
+			}, secrets, framework.NoOptions, "http_with_tuning.yaml"),
 			Entry("with ndjson", func(spec *obs.OutputSpec) {
 				spec.HTTP.Format = obs.HTTPFormatNDJSON
-			}, secrets, framework.NoOptions, "http_with_ndjson.toml"),
+			}, secrets, framework.NoOptions, "http_with_ndjson.yaml"),
 			Entry("with proxy", func(spec *obs.OutputSpec) {
 				spec.HTTP.ProxyURL = "http://somewhere.org/proxy"
 				spec.HTTP.Headers = nil
 				spec.HTTP.Authentication = nil
-			}, secrets, framework.NoOptions, "http_with_proxy.toml"),
+			}, secrets, framework.NoOptions, "http_with_proxy.yaml"),
 		)
 	})
 

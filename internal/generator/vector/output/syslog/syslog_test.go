@@ -66,7 +66,7 @@ var _ = Describe("vector syslog clf output", func() {
 		}
 	)
 	DescribeTable("#New", func(expFile string, visit func(spec *obs.OutputSpec), tune bool) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -82,11 +82,11 @@ var _ = Describe("vector syslog clf output", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("should configure TCP with defaults", "tcp_with_defaults.toml", func(spec *obs.OutputSpec) {
+		Entry("should configure TCP with defaults", "tcp_with_defaults.yaml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 		}, false),
 
-		Entry("should configure UDP with every setting", "udp_with_every_setting.toml", func(spec *obs.OutputSpec) {
+		Entry("should configure UDP with every setting", "udp_with_every_setting.yaml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
 				URL:        "udp://logserver:514",
 				RFC:        obs.SyslogRFC3164,
@@ -99,14 +99,14 @@ var _ = Describe("vector syslog clf output", func() {
 			}
 		}, false),
 
-		Entry("should configure with defaults RFC3164", "rfc3164_with_defaults.toml", func(spec *obs.OutputSpec) {
+		Entry("should configure with defaults RFC3164", "rfc3164_with_defaults.yaml", func(spec *obs.OutputSpec) {
 			spec.Syslog = &obs.Syslog{
 				URL: "udp://logserver:514",
 				RFC: obs.SyslogRFC3164,
 			}
 		}, false),
 
-		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
+		Entry("should configure TLS with log record field references", "tls_with_field_references.yaml", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Syslog = &obs.Syslog{
 				URL:        "tls://logserver:6514",
@@ -120,14 +120,14 @@ var _ = Describe("vector syslog clf output", func() {
 			}
 		}, false),
 
-		Entry("should set buffer tuning parameters", "tcp_with_tuning.toml", func(spec *obs.OutputSpec) {
+		Entry("should set buffer tuning parameters", "tcp_with_tuning.yaml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 			spec.Syslog.Tuning = &obs.SyslogTuningSpec{
 				DeliveryMode: obs.DeliveryModeAtLeastOnce,
 			}
 		}, true),
 
-		Entry("should configure KubernetesMinimal enrichment", "tcp_with_kubernetes_minimal_enrichment.toml", func(spec *obs.OutputSpec) {
+		Entry("should configure KubernetesMinimal enrichment", "tcp_with_kubernetes_minimal_enrichment.yaml", func(spec *obs.OutputSpec) {
 			spec.Syslog.URL = "tcp://logserver:514"
 			spec.Syslog.Enrichment = obs.EnrichmentTypeKubernetesMinimal
 		}, false),

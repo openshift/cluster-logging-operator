@@ -1,0 +1,44 @@
+sources:
+  input_myreceiver:
+    address: '[::]:12345'
+    decoding:
+      codec: json
+    tls:
+      ciphersuites: TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305
+      crt_file: /var/run/ocp-collector/secrets/instance-myreceiver/tls.crt
+      curves: X25519MLKEM768:X25519:prime256v1:secp384r1
+      enabled: true
+      key_file: /var/run/ocp-collector/secrets/instance-myreceiver/tls.key
+      min_tls_version: VersionTLS12
+    type: http_server
+transforms:
+  input_myreceiver_items:
+    inputs:
+    - input_myreceiver
+    source: |-
+      if exists(.items) {
+        r = array([])
+        for_each(array!(.items)) -> |_index, i| {
+          r = push(r, {"structured": i})
+        }
+        . = r
+      } else {
+        . = {"structured": .}
+      }
+    type: remap
+  input_myreceiver_meta:
+    inputs:
+    - input_myreceiver_items
+    source: |-
+      . = {"_internal": .}
+      ._internal.log_source = "kubeAPI"
+      ._internal.log_type = "audit"
+      ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+      ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+      ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+      audit_time, audit_err = parse_timestamp(to_string(._internal.structured.stageTimestamp) ?? "", "%+")
+      if audit_err != null {
+        audit_time, audit_err = parse_timestamp(to_string(._internal.structured.requestReceivedTimestamp) ?? "", "%+")
+      }
+      if audit_err == null { ._internal.timestamp = audit_time }
+    type: remap

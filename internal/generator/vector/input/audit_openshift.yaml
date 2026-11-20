@@ -1,0 +1,32 @@
+sources:
+  input_myaudit_openshift:
+    glob_minimum_cooldown_ms: 15000
+    host_key: hostname
+    ignore_older_secs: 3600
+    include:
+    - /var/log/oauth-apiserver/audit.log
+    - /var/log/openshift-apiserver/audit.log
+    - /var/log/oauth-server/audit.log
+    max_line_bytes: 3145728
+    max_read_bytes: 262144
+    rotate_wait_secs: 5
+    type: file
+transforms:
+  input_myaudit_openshift_meta:
+    inputs:
+    - input_myaudit_openshift
+    source: |-
+      . = {"_internal": .}
+      ._internal.structured = parse_json!(string!(._internal.message))
+      ._internal = merge!(._internal,._internal.structured)
+      audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
+      if audit_err != null {
+        audit_time, audit_err = parse_timestamp(to_string(._internal.requestReceivedTimestamp) ?? "", "%+")
+      }
+      if audit_err == null { ._internal.timestamp = audit_time }
+      ._internal.log_source = "openshiftAPI"
+      ._internal.log_type = "audit"
+      ._internal.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+      ._internal.openshift = { "cluster_id": "${OPENSHIFT_CLUSTER_ID:-}"}
+      ._internal.openshift.sequence = to_unix_timestamp(now(), unit: "nanoseconds")
+    type: remap

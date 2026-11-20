@@ -79,7 +79,7 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 	)
 
 	DescribeTable("#New", func(expFile string, op utils.Options, visit func(spec *obs.OutputSpec)) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -94,41 +94,41 @@ var _ = Describe("Generating vector config for Splunk output", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with basic sink", "splunk_sink.toml", framework.NoOptions, nil),
-		Entry("with tls spec", "splunk_sink_with_tls.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with basic sink", "splunk_sink.yaml", framework.NoOptions, nil),
+		Entry("with tls spec", "splunk_sink_with_tls.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 		}),
-		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with tls spec", "splunk_sink_with_tls_and_static_index.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Splunk.Index = "foo"
 		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Index = `foo-{.kubernetes.namespace_name||"missing"}`
 		}),
-		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with custom static & dynamic index", "splunk_sink_with_custom_index_dedot.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Index = `foo-{.kubernetes.namespace_labels."test/logging.io"||"missing"}`
 		}),
-		Entry("with tuning", "splunk_tune.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with tuning", "splunk_tune.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Tuning = &obs.SplunkTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 				Compression:          "gzip",
 			}
 		}),
-		Entry("with indexed fields", "splunk_sink_with_indexed_fields.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with indexed fields", "splunk_sink_with_indexed_fields.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
 		}),
-		Entry("with indexed fields & source", "splunk_sink_with_indexed_fields_and_source.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with indexed fields & source", "splunk_sink_with_indexed_fields_and_source.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.Source = `{.foo||"missing"}`
 			spec.Splunk.IndexedFields = []obs.FieldPath{`.log_source`, `.kubernetes.namespace_labels."bar/baz0-9.test"`, `.annotations."authorization.k8s.io/decision"`}
 		}),
-		Entry("with payloadKey", "splunk_sink_payloadkey.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with payloadKey", "splunk_sink_payloadkey.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".openshift"
 		}),
-		Entry("with payloadKey and dynamic sourceType", "splunk_sink_with_payloadkey_and_sourcetype.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with payloadKey and dynamic sourceType", "splunk_sink_with_payloadkey_and_sourcetype.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".message"
 			spec.Splunk.SourceType = `{.kubernetes.labels."splunk/sourcetype"||"generic_single_line"}`
 		}),
-		Entry("with payloadKey and static sourceType", "splunk_sink_with_payloadkey_and_static_sourcetype.toml", framework.NoOptions, func(spec *obs.OutputSpec) {
+		Entry("with payloadKey and static sourceType", "splunk_sink_with_payloadkey_and_static_sourcetype.yaml", framework.NoOptions, func(spec *obs.OutputSpec) {
 			spec.Splunk.PayloadKey = ".message"
 			spec.Splunk.SourceType = "custom-type"
 		}))

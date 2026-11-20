@@ -2,7 +2,6 @@ package transforms
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -10,13 +9,13 @@ import (
 )
 
 type Remap struct {
-	Type types.TransformType `json:"type" yaml:"type" toml:"type"`
+	Type types.TransformType `json:"type"`
 
 	// Inputs is the IDs of the components feeding into this component
-	Inputs []string `json:"inputs" yaml:"inputs" toml:"inputs"`
+	Inputs []string `json:"inputs"`
 
 	// Source is the VRL script used for the remap transformation
-	Source VrlString `json:"source" yaml:"source" toml:"source" multiline:"true" literal:"true"`
+	Source VrlString `json:"source"`
 }
 
 func NewRemap(source string, inputs ...string) *Remap {
@@ -33,15 +32,6 @@ func (t *Remap) TransformType() types.TransformType {
 }
 
 type VrlString string
-
-func (s *VrlString) UnmarshalTOML(data interface{}) (err error) {
-	raw, castable := data.(string)
-	if !castable {
-		return fmt.Errorf("data can not be converted to a string: %v", data)
-	}
-	*s = VrlString(normalize(raw))
-	return nil
-}
 
 // normalize sanitizes the VRL string for beginning tabs, spaces and new line characters
 func normalize(s string) string {

@@ -1,0 +1,34 @@
+sinks:
+  es_1:
+    api_version: v6
+    bulk:
+      action: create
+      index: '{{ _internal.es_1_index }}'
+    encoding:
+      except_fields:
+      - _internal
+    endpoints:
+    - https://es.svc.infra.cluster:9200
+    id_key: _id
+    inputs:
+    - es_1_index
+    tls:
+      ca_file: /var/run/ocp-collector/secrets/es-1/ca-bundle.crt
+      crt_file: /var/run/ocp-collector/secrets/es-1/tls.crt
+      key_file: /var/run/ocp-collector/secrets/es-1/tls.key
+    type: elasticsearch
+transforms:
+  es_1_add_id:
+    inputs:
+    - application
+    source: |-
+      ._id = encode_base64(uuid_v4())
+      if exists(.kubernetes.event.metadata.uid) {
+        ._id = .kubernetes.event.metadata.uid
+      }
+    type: remap
+  es_1_index:
+    inputs:
+    - es_1_add_id
+    source: ._internal.es_1_index = to_string!(._internal.log_type||"none")
+    type: remap

@@ -1,0 +1,13 @@
+sinks:
+  output_azure_monitor_logs:
+    azure_resource_id: /subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/otherResourceGroup/providers/Microsoft.Storage/storageAccounts/examplestorage
+    customer_id: 6vzw6sHc-0bba-6sHc-4b6c-8bz7sr5eggRt
+    encoding:
+      except_fields:
+      - _internal
+    host: ods.opinsights.azure.cn
+    inputs:
+    - pipelineName
+    log_type: myLogType
+    shared_key: SECRET[kubernetes_secret.azure-monitor-secret/shared_key]
+    type: azure_monitor_logs

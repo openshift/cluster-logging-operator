@@ -89,29 +89,50 @@ func FilteredBytes(policy *obs.KubeAPIAudit, b []byte) []byte {
 	return out
 }
 
+// vectorConf renders the Vector YAML config for tests that read events from
+// stdin, apply the given VRL as a remap transform, and print them to stdout.
+func vectorConf(vrl string) string {
+	return fmt.Sprintf(`
+# Vector config for tests that read from stdin and print filtered events to stdout
+sources:
+  in:
+    type: stdin
+    decoding:
+      codec: json
+transforms:
+  policy:
+    type: remap
+    inputs: [in]
+    source: |
+%s
+sinks:
+  console:
+    type: console
+    inputs: [policy]
+    encoding:
+      codec: json
+`, indentLines(vrl, 6))
+}
+
+// indentLines prefixes every non-empty line of s with n spaces so a multi-line
+// VRL program can be embedded as a YAML block scalar.
+func indentLines(s string, n int) string {
+	pad := strings.Repeat(" ", n)
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			lines[i] = pad + line
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func vectorCmd(p *obs.KubeAPIAudit) *exec.Cmd {
 	vrl, err := apiaudit.NewFilter(p).VRL()
 	Expect(err).NotTo(HaveOccurred(), "Failed converting the filter to VRL: %#v", *p)
-	conf := fmt.Sprintf(`
-# Vector config for tests that read from stdin and print filtered events to stdout
-[sources.in]
-type = "stdin"
-decoding.codec = "json"
-
-[transforms.policy]
-type = "remap"
-inputs = ["in"]
-source = '''
-%v
-'''
-
-[sinks.console]
-type = "console"
-inputs = ["policy"]
-encoding.codec = "json"
-`, vrl)
-	Expect(cmd.PodWrite(pod, "", "/tmp/vector.toml", []byte(conf))).To(Succeed(), "Failed writing the configuration to the pod.")
-	cmd := testruntime.Exec(pod, "vector", "-c", "/tmp/vector.toml")
+	conf := vectorConf(vrl)
+	Expect(cmd.PodWrite(pod, "", "/tmp/vector.yaml", []byte(conf))).To(Succeed(), "Failed writing the configuration to the pod.")
+	cmd := testruntime.Exec(pod, "vector", "-c", "/tmp/vector.yaml")
 	cmd.Stderr = test.Writer()
 	return cmd
 

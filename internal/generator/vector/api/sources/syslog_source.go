@@ -8,11 +8,11 @@ import (
 )
 
 type Syslog struct {
-	Type    types.SourceType `json:"type" yaml:"type" toml:"type"`
-	Address string           `json:"address" yaml:"address" toml:"address"`
-	Mode    SyslogMode       `json:"mode" yaml:"mode" toml:"mode"`
+	Type    types.SourceType `json:"type"`
+	Address string           `json:"address"`
+	Mode    SyslogMode       `json:"mode"`
 
-	TLS *transport.TlsEnabled `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
+	TLS *transport.TlsEnabled `json:"tls,omitempty"`
 }
 
 func (s Syslog) SourceType() types.SourceType {

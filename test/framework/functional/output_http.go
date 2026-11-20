@@ -2,7 +2,7 @@ package functional
 
 import (
 	"bytes"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -22,101 +23,106 @@ import (
 
 const (
 	VectorHttpSourceBenchmarkConfTemplate = `
-[sources.my_source]
-type = "http_server"
-address = "127.0.0.1:8090"
-decoding.codec = "json"
-framing.method = "newline_delimited"
+sources:
+  my_source:
+    type: http_server
+    address: 127.0.0.1:8090
+    decoding:
+      codec: json
+    framing:
+      method: newline_delimited
+{{- if ne .MinTLS "" }}
+    tls:
+      enabled: true
+      min_tls_version: "{{ .MinTLS }}"
+{{- if ne .Ciphers "" }}
+      ciphersuites: "{{ .Ciphers }}"
+{{- end }}
+      key_file: /tmp/secrets/http/tls.key
+      crt_file: /tmp/secrets/http/tls.crt
+{{- end }}
 
-{{ if ne .MinTLS "" }}
-[sources.my_source.tls]
-enabled = true
-{{ if ne .MinTLS "" }}
-min_tls_version = "{{.MinTLS}}"
-{{ end }}
-{{ if ne .Ciphers "" }}
-ciphersuites = "{{.Ciphers}}"
-{{ end }}
-key_file = "/tmp/secrets/http/tls.key"
-crt_file = "/tmp/secrets/http/tls.crt"
-{{ end }}
+transforms:
+  app_logs:
+    type: remap
+    inputs: [my_source]
+    source: |
+      epoc_out = to_float(now())
+      mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.fZ")
+      if err != null {
+        mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.f%z")
+        if err != null {
+          log("Unable to parse @timestamp: " + err, level: "error")
+        }
+      }
+      epoc_in = to_float(mytime)
 
-[transforms.app_logs]
-type = "remap"
-inputs = ["my_source"]
-source = '''
- epoc_out = to_float(now())
- mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.fZ")
- if err != null {
-   mytime, err = parse_timestamp(."@timestamp", format: "%Y-%m-%dT%H:%M:%S%.f%z")
-   if err != null {
-     log("Unable to parse @timestamp: " + err, level: "error")
-   }
- }
- epoc_in = to_float(mytime)
+      content = parse_regex!(.message,r'(?<sub>goloader seq - functional\.[0-9A-Z]* - (?<seqid>[0-9]{10}))')
+      message = to_string(content.sub)
+      container_name = .kubernetes.container_name
+      message_size = length!(.message)
+      payload_size = length(encode_json(.))
 
- content = parse_regex!(.message,r'(?<sub>goloader seq - functional\.[0-9A-Z]* - (?<seqid>[0-9]{10}))')
- message = to_string(content.sub)
- container_name = .kubernetes.container_name
-  message_size = length!(.message)
-  payload_size = length(encode_json(.))
+      . = {
+        "epoc_in": epoc_in,
+        "epoc_out": epoc_out,
+        "message": to_string(message),
+        "container_name": container_name,
+        "message_size": message_size,
+        "payload_size": payload_size,
+        "seqid": to_int!(content.seqid)
+      }
 
- . = {
-    "epoc_in": epoc_in,
-    "epoc_out": epoc_out,
-    "message": to_string(message),
-    "container_name": container_name,
-    "message_size": message_size,
-    "payload_size": payload_size,
-    "seqid": to_int!(content.seqid)
-  }
-'''
-
-[sinks.my_sink]
-inputs = ["app_logs"]
-type = "file"
-path = "{{.Path}}"
-		
-[sinks.my_sink.encoding]
-codec = "json"
+sinks:
+  my_sink:
+    inputs: [app_logs]
+    type: file
+    path: "{{ .Path }}"
+    encoding:
+      codec: json
 `
-	VectorHttpSourceConfTemplate = "" +
-		`[sources.my_source]
-type = "http_server"
-address = "127.0.0.1:8090"
-decoding.codec = "json"
-framing.method = "newline_delimited"
-{{ .Username }}
-{{ .Password }}
+	VectorHttpSourceConfTemplate = `
+sources:
+  my_source:
+    type: http_server
+    address: 127.0.0.1:8090
+    decoding:
+      codec: json
+    framing:
+      method: newline_delimited
+{{- if or .Username .Password }}
+    auth:
+{{- if .Username }}
+      username: "{{ .Username }}"
+{{- end }}
+{{- if .Password }}
+      password: "{{ .Password }}"
+{{- end }}
+{{- end }}
+{{- if ne .MinTLS "" }}
+    tls:
+      enabled: true
+      min_tls_version: "{{ .MinTLS }}"
+{{- if ne .Ciphers "" }}
+      ciphersuites: "{{ .Ciphers }}"
+{{- end }}
+      key_file: /tmp/secrets/http/tls.key
+      crt_file: /tmp/secrets/http/tls.crt
+{{- end }}
 
-{{ if ne .MinTLS "" }}
-[sources.my_source.tls]
-enabled = true
-{{ if ne .MinTLS "" }}
-min_tls_version = "{{.MinTLS}}"
-{{ end }}
-{{ if ne .Ciphers "" }}
-ciphersuites = "{{.Ciphers}}"
-{{ end }}
-key_file = "/tmp/secrets/http/tls.key"
-crt_file = "/tmp/secrets/http/tls.crt"
-{{ end }}
-
-[transforms.app_logs]
-type = "remap"
-inputs = ["my_source"]
-source = '''
-  del(.source_type)
-'''
-
-[sinks.my_sink]
-inputs = ["app_logs"]
-type = "file"
-path = "{{.Path}}"
-
-[sinks.my_sink.encoding]
-codec = "json"
-except_fields = ["path"]
+transforms:
+  app_logs:
+    type: remap
+    inputs: [my_source]
+    source: del(.source_type)
+sinks:
+  my_sink:
+    inputs: [app_logs]
+    type: file
+    path: "{{ .Path }}"
+    encoding:
+      codec: json
+      except_fields: [path]
 `
 	FluentdHttpSourceConf = `
 <system>
@@ -168,19 +174,27 @@ func VectorConfFactory(profile configv1.TLSProfileType, options ...Option) strin
 		log.V(0).Error(err, "Unable to parse the vector http conf template")
 		os.Exit(1)
 	}
+	username := ""
+	if v := OptionsValue(options, "username", nil); v != nil {
+		username = fmt.Sprintf("%v", v)
+	}
+	password := ""
+	if v := OptionsValue(options, "password", nil); v != nil {
+		password = fmt.Sprintf("%v", v)
+	}
 	b := &bytes.Buffer{}
 	if err := tmpl.ExecuteTemplate(b, "", struct {
 		MinTLS   string
 		Ciphers  string
 		Path     string
-		Username helpers.OptionalPair
-		Password helpers.OptionalPair
+		Username string
+		Password string
 	}{
 		MinTLS:   minTLS,
 		Ciphers:  ciphers,
 		Path:     path,
-		Username: helpers.NewOptionalPair("auth.username", OptionsValue(options, "username", nil)),
-		Password: helpers.NewOptionalPair("auth.password", OptionsValue(options, "password", nil)),
+		Username: username,
+		Password: password,
 	}); err != nil {
 		log.V(0).Error(err, "Unable execute vector http conf template")
 		os.Exit(1)
@@ -196,11 +210,11 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.
 	log.V(2).Info("Adding vector http output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	toml := VectorConfFactory(profile, options...)
+	conf := VectorConfFactory(profile, options...)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
-		"vector.toml": toml,
+		vector.ConfigFile: conf,
 	})
-	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "vector.toml", toml)
+	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, vector.ConfigFile, conf)
 	if err := f.Test.Create(config); err != nil {
 		return err
 	}
@@ -210,7 +224,7 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutputWithConfig(b *runtime.
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		AddEnvVar("VECTOR_LOG", common.AdaptLogLevel()).
 		AddEnvVar("VECTOR_INTERNAL_LOG_RATE_LIMIT", "0").
-		WithCmd([]string{"vector", "--config-toml", "/tmp/config/vector.toml"})
+		WithCmd([]string{"vector", "--config-yaml", "/tmp/config/" + vector.ConfigFile})
 	if secret != nil {
 		containerBuilder.AddVolumeMount(secret.Name, "/tmp/secrets/http", "", true)
 		b.AddSecretVolume(secret.Name, secret.Name)

@@ -1,0 +1,22 @@
+sinks:
+  es_1:
+    api_version: v8
+    bulk:
+      action: create
+      index: '{{ _internal.es_1_index }}'
+    encoding:
+      except_fields:
+      - _internal
+    endpoints:
+    - https://es1.example.com:9200
+    - https://es2.example.com:9200
+    - https://es3.example.com:9200
+    inputs:
+    - es_1_index
+    type: elasticsearch
+transforms:
+  es_1_index:
+    inputs:
+    - application
+    source: ._internal.es_1_index = to_string!(._internal.log_type||"none")
+    type: remap

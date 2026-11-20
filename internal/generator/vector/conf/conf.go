@@ -54,15 +54,14 @@ const (
        inputRefs: ["application"]
        filterRefs: ["foo"]
 
-    [source.input_application]
-    [transforms.input_application_container]
+    sources:
       input_application
-    [transforms.pipeline_apipe_foo_kubeapiaudit]
-       input_application_container
-	[sinks.output_mykafka_dedot]
-       pipeline_apipe_foo_kubeapiaudit
-   	[sinks.output_mykafka]
-       output_mykafka_dedot
+    transforms:
+      input_application_container
+      pipeline_apipe_foo_kubeapiaudit
+    sinks:
+      output_mykafka_dedot
+      output_mykafka
 */
 //nolint:govet // using declarative style
 func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec, namespace, forwarderName string, resNames factory.ForwarderResourceNames, op utils.Options) (*api.Config, error) {

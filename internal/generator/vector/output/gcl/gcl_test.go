@@ -82,7 +82,7 @@ var _ = Describe("Generate Vector config", func() {
 		}
 	)
 	DescribeTable("For GoogleCloudLogging output", func(visit func(spec *obs.OutputSpec), op utils.Options, expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -97,7 +97,7 @@ var _ = Describe("Generate Vector config", func() {
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("with service account auth", nil, framework.NoOptions, "gcl_with_token.toml"),
+		Entry("with service account auth", nil, framework.NoOptions, "gcl_with_token.yaml"),
 		Entry("with workload identity auth", func(spec *obs.OutputSpec) {
 			spec.GoogleCloudLogging.Authentication = &obs.GoogleCloudLoggingAuthentication{
 				Credentials: &obs.SecretReference{
@@ -108,17 +108,17 @@ var _ = Describe("Generate Vector config", func() {
 					From: obs.BearerTokenFromServiceAccount,
 				},
 			}
-		}, framework.NoOptions, "gcl_with_workload_identity.toml"),
+		}, framework.NoOptions, "gcl_with_workload_identity.yaml"),
 		Entry("with TLS config", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
-		}, framework.NoOptions, "gcl_with_tls.toml"),
+		}, framework.NoOptions, "gcl_with_tls.yaml"),
 		Entry("with custom logId", func(spec *obs.OutputSpec) {
 			spec.GoogleCloudLogging.LogId = `my-id{.log_type||"none"}`
-		}, framework.NoOptions, "gcl_with_custom_logid.toml"),
+		}, framework.NoOptions, "gcl_with_custom_logid.yaml"),
 		Entry("with tuning", func(spec *obs.OutputSpec) {
 			spec.GoogleCloudLogging.Tuning = &obs.GoogleCloudLoggingTuningSpec{
 				BaseOutputTuningSpec: *baseTune,
 			}
-		}, framework.NoOptions, "gcl_with_tuning.toml"),
+		}, framework.NoOptions, "gcl_with_tuning.yaml"),
 	)
 })

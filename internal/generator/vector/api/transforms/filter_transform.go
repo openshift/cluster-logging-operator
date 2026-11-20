@@ -7,13 +7,13 @@ import (
 )
 
 type Filter struct {
-	Type types.TransformType `json:"type" yaml:"type" toml:"type"`
+	Type types.TransformType `json:"type"`
 
 	// Inputs is the IDs of the components feeding into this component
-	Inputs []string `json:"inputs" yaml:"inputs" toml:"inputs"`
+	Inputs []string `json:"inputs"`
 
 	// Source is the VRL script used for the remap transformation
-	Condition Condition `json:"condition,omitempty" yaml:"condition,omitempty" toml:"condition,omitempty" multiline:"true" literal:"true"`
+	Condition Condition `json:"condition,omitempty"`
 }
 
 type Condition string

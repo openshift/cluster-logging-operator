@@ -78,7 +78,7 @@ var _ = Describe("Generate vector config", func() {
 	)
 
 	DescribeTable("for OTLP output", func(secret observability.Secrets, op utils.Options, tune bool, visit func(spec *obs.OutputSpec), expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -98,7 +98,7 @@ var _ = Describe("Generate vector config", func() {
 			initOptions(),
 			false,
 			nil,
-			"otlp_all.toml",
+			"otlp_all.yaml",
 		),
 		Entry("with only some audit sources",
 			nil,
@@ -107,7 +107,7 @@ var _ = Describe("Generate vector config", func() {
 			},
 			false,
 			nil,
-			"otlp_audit_two_sources.toml",
+			"otlp_audit_two_sources.yaml",
 		),
 		Entry("with base tuning and compression",
 			nil,
@@ -119,7 +119,7 @@ var _ = Describe("Generate vector config", func() {
 					Compression:          "gzip",
 				}
 			},
-			"otlp_tuning.toml",
+			"otlp_tuning.yaml",
 		),
 		Entry("with tuning, compression and TLS",
 			map[string]*corev1.Secret{
@@ -146,7 +146,7 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			},
-			"otlp_tuning_with_tls.toml",
+			"otlp_tuning_with_tls.yaml",
 		),
 		Entry("with token auth from secret",
 			secrets,
@@ -163,7 +163,7 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			},
-			"otlp_with_auth_token.toml",
+			"otlp_with_auth_token.yaml",
 		),
 		Entry("with token auth from SA",
 			secrets,
@@ -176,7 +176,7 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			},
-			"otlp_with_auth_sa_token.toml",
+			"otlp_with_auth_sa_token.yaml",
 		),
 		Entry("with basic auth",
 			secrets,
@@ -194,7 +194,7 @@ var _ = Describe("Generate vector config", func() {
 					},
 				}
 			},
-			"otlp_with_auth_basic.toml",
+			"otlp_with_auth_basic.yaml",
 		),
 	)
 })

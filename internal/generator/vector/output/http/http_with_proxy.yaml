@@ -1,0 +1,15 @@
+sinks:
+  http_receiver:
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    inputs:
+    - application
+    method: post
+    proxy:
+      enabled: true
+      http: http://somewhere.org/proxy
+      https: http://somewhere.org/proxy
+    type: http
+    uri: https://my-logstore.com

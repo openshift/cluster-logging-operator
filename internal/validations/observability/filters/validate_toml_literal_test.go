@@ -8,18 +8,22 @@ import (
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
 
-var _ = Describe("TOML literal injection guards (LOG-9752)", func() {
+// The collector config is serialized as YAML (quoted/escaped or block scalar),
+// so filter values containing the former TOML literal multiline terminator or
+// newlines can no longer break out of the generated VRL. Admission must accept
+// them; safety holds by construction. See LOG-10361.
+var _ = Describe("Filter values that formerly tripped the TOML literal guards (LOG-10361)", func() {
 
 	Context("#validateFieldPath", func() {
 		It("should accept a valid quoted segment", func() {
 			Expect(validateFieldPath(`.kubernetes."test-foo"`)).To(BeEmpty())
 		})
-		It("should reject the literal multiline terminator inside a quoted segment", func() {
-			Expect(validateFieldPath(`.kubernetes."x'''y"`)).To(ContainSubstring("must not contain the sequence"))
+		It("should accept a quoted segment containing the former TOML literal terminator", func() {
+			Expect(validateFieldPath(`.kubernetes."x'''y"`)).To(BeEmpty())
 		})
 	})
 
-	Context("#validateKubeAPIAuditFilter", func() {
+	Context("#KubeAPIAudit", func() {
 		newSpec := func(rules ...auditv1.PolicyRule) obs.FilterSpec {
 			return obs.FilterSpec{
 				Name:         "my-audit",
@@ -31,43 +35,13 @@ var _ = Describe("TOML literal injection guards (LOG-9752)", func() {
 			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", Namespaces: []string{"openshift-*"}, Verbs: []string{"get"}})
 			Expect(ValidateFilter(spec).Status).To(Equal(metav1.ConditionTrue))
 		})
-		It("should reject a namespace wildcard containing the terminator", func() {
-			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", Namespaces: []string{"x'''y"}})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
-		})
-		It("should reject a resourceName containing the terminator", func() {
-			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", Resources: []auditv1.GroupResources{{Resources: []string{"pods"}, ResourceNames: []string{"a'''b"}}}})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
-		})
-		It("should reject a rule level containing the terminator", func() {
-			spec := newSpec(auditv1.PolicyRule{Level: "x'''y"})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
-		})
-		It("should reject a rule omitStage containing the terminator", func() {
-			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", OmitStages: []auditv1.Stage{"x'''y"}})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
-		})
-		It("should reject a filter-level omitStage containing the terminator", func() {
-			spec := obs.FilterSpec{
-				Name:         "my-audit",
-				Type:         obs.FilterTypeKubeAPIAudit,
-				KubeAPIAudit: &obs.KubeAPIAudit{OmitStages: []auditv1.Stage{"x'''y"}},
-			}
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		It("should accept a rule value containing the former terminator and a newline", func() {
+			spec := newSpec(auditv1.PolicyRule{Level: "Metadata", Namespaces: []string{"x'''y\nz"}})
+			Expect(ValidateFilter(spec).Status).To(Equal(metav1.ConditionTrue))
 		})
 	})
 
-	Context("#validateOpenshiftLabelsFilter", func() {
+	Context("#OpenshiftLabels", func() {
 		newSpec := func(labels map[string]string) obs.FilterSpec {
 			return obs.FilterSpec{
 				Name:            "my-labels",
@@ -79,17 +53,9 @@ var _ = Describe("TOML literal injection guards (LOG-9752)", func() {
 			spec := newSpec(map[string]string{"environment": "production"})
 			Expect(ValidateFilter(spec).Status).To(Equal(metav1.ConditionTrue))
 		})
-		It("should reject a label value containing the terminator", func() {
-			spec := newSpec(map[string]string{"environment": "x'''y"})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
-		})
-		It("should reject a label key containing the terminator", func() {
-			spec := newSpec(map[string]string{"x'''y": "value"})
-			cond := ValidateFilter(spec)
-			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
-			Expect(cond.Message).To(ContainSubstring("must not contain the sequence"))
+		It("should accept a label key and value containing the former terminator", func() {
+			spec := newSpec(map[string]string{"x'''y": "v'''w"})
+			Expect(ValidateFilter(spec).Status).To(Equal(metav1.ConditionTrue))
 		})
 	})
 })

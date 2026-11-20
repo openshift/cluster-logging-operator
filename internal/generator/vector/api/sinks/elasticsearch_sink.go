@@ -7,15 +7,15 @@ import (
 )
 
 type Elasticsearch struct {
-	Type       types.SinkType          `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
-	Inputs     []string                `json:"inputs,omitempty" yaml:"inputs,omitempty" toml:"inputs,omitempty"`
-	Endpoints  []string                `json:"endpoints,omitempty" yaml:"endpoints,omitempty" toml:"endpoints,omitempty"`
-	IdKey      string                  `json:"id_key,omitempty" yaml:"id_key,omitempty" toml:"id_key,omitempty"`
-	ApiVersion ElasticsearchApiVersion `json:"api_version,omitempty" yaml:"api_version,omitempty" toml:"api_version,omitempty"`
+	Type       types.SinkType          `json:"type,omitempty"`
+	Inputs     []string                `json:"inputs,omitempty"`
+	Endpoints  []string                `json:"endpoints,omitempty"`
+	IdKey      string                  `json:"id_key,omitempty"`
+	ApiVersion ElasticsearchApiVersion `json:"api_version,omitempty"`
 	BaseSink
-	Bulk  *Bulk              `json:"bulk,omitempty" yaml:"bulk,omitempty" toml:"bulk,omitempty"`
-	Auth  *ElasticsearchAuth `json:"auth,omitempty" yaml:"auth,omitempty" toml:"auth,omitempty"`
-	Proxy *Proxy             `json:"proxy,omitempty" yaml:"proxy,omitempty" toml:"proxy,omitempty"`
+	Bulk  *Bulk              `json:"bulk,omitempty"`
+	Auth  *ElasticsearchAuth `json:"auth,omitempty"`
+	Proxy *Proxy             `json:"proxy,omitempty"`
 }
 
 func NewElasticsearch(endpoints []string, init func(s *Elasticsearch), inputs ...string) (s *Elasticsearch) {
@@ -36,7 +36,7 @@ func (s *Elasticsearch) SinkType() types.SinkType {
 }
 
 type ElasticsearchAuth struct {
-	Strategy HttpAuthStrategy `json:"strategy,omitempty" yaml:"strategy,omitempty" toml:"strategy,omitempty"`
+	Strategy HttpAuthStrategy `json:"strategy,omitempty"`
 	HttpAuthBasic
 }
 
@@ -68,6 +68,6 @@ const (
 )
 
 type Bulk struct {
-	Index  string         `json:"index,omitempty" yaml:"index,omitempty" toml:"index,omitempty"`
-	Action BulkActionType `json:"action,omitempty" yaml:"action,omitempty" toml:"action,omitempty"`
+	Index  string         `json:"index,omitempty"`
+	Action BulkActionType `json:"action,omitempty"`
 }

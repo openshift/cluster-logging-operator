@@ -1,0 +1,27 @@
+sinks:
+  http_receiver:
+    auth:
+      password: SECRET[kubernetes_secret.http-receiver/password]
+      strategy: basic
+      user: SECRET[kubernetes_secret.http-receiver/username]
+    batch:
+      max_bytes: 10000000
+    buffer:
+      max_size: 268435488
+      type: disk
+      when_full: block
+    encoding:
+      codec: json
+      except_fields:
+      - _internal
+    inputs:
+    - application
+    method: post
+    request:
+      headers:
+        h1: v1
+        h2: v2
+      retry_initial_backoff_secs: 20
+      retry_max_duration_secs: 35
+    type: http
+    uri: https://my-logstore.com

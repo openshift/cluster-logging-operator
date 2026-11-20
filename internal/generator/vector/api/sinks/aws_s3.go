@@ -7,18 +7,18 @@ import (
 )
 
 type AwsS3 struct {
-	Type      types.SinkType `json:"type,omitempty" yaml:"type,omitempty" toml:"type,omitempty"`
-	Inputs    []string       `json:"inputs,omitempty" yaml:"inputs,omitempty" toml:"inputs,omitempty"`
-	Region    string         `json:"region,omitempty" yaml:"region,omitempty" toml:"region,omitempty"`
-	Bucket    string         `json:"bucket,omitempty" yaml:"bucket,omitempty" toml:"bucket,omitempty"`
-	KeyPrefix string         `json:"key_prefix,omitempty" yaml:"key_prefix,omitempty" toml:"key_prefix,omitempty"`
-	Endpoint  string         `json:"endpoint,omitempty" yaml:"endpoint,omitempty" toml:"endpoint,omitempty"`
+	Type      types.SinkType `json:"type,omitempty"`
+	Inputs    []string       `json:"inputs,omitempty"`
+	Region    string         `json:"region,omitempty"`
+	Bucket    string         `json:"bucket,omitempty"`
+	KeyPrefix string         `json:"key_prefix,omitempty"`
+	Endpoint  string         `json:"endpoint,omitempty"`
 
 	BaseSink
 
-	Auth *AwsAuth `json:"auth,omitempty" yaml:"auth,omitempty" toml:"auth,omitempty"`
+	Auth *AwsAuth `json:"auth,omitempty"`
 
-	HealthCheck HealthCheck `json:"healthcheck" yaml:"healthcheck" toml:"healthcheck"`
+	HealthCheck HealthCheck `json:"healthcheck"`
 }
 
 func NewAwsS3(init func(s *AwsS3), inputs ...string) (s *AwsS3) {

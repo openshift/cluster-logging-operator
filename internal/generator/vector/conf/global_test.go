@@ -14,19 +14,17 @@ var _ = Describe("#Global", func() {
 	Context("for namespaced forwarders", func() {
 		It("should include a global data directory for that forwarder", func() {
 			Expect(`
-expire_metrics_secs = 60
-data_dir = "/var/lib/vector/openshift-logging/my-forwarder"
-
-[api]
-enabled = true
-address = "127.0.0.1:8686"
-
-[log_schema]
-host_key = "hostname"
-
-[secret.kubernetes_secret]
-type = "directory"
-path = "/var/run/ocp-collector/secrets"
+api:
+  address: 127.0.0.1:8686
+  enabled: true
+data_dir: /var/lib/vector/openshift-logging/my-forwarder
+expire_metrics_secs: 60
+log_schema:
+  host_key: hostname
+secret:
+  kubernetes_secret:
+    path: /var/run/ocp-collector/secrets
+    type: directory
 `,
 			).To(EqualConfigFrom(Global(api.NewConfig(nil), constants.OpenshiftNS, "my-forwarder")))
 		})
@@ -34,19 +32,17 @@ path = "/var/run/ocp-collector/secrets"
 	Context("for the legacy forwarder", func() {
 		It("should not include a global data directory for that forwarder", func() {
 			Expect(`
-	expire_metrics_secs = 60
-
-	[api]
-	enabled = true
-	address = "127.0.0.1:8686"
-
-    [log_schema]
-    host_key = "hostname"
-
-	[secret.kubernetes_secret]
-	type = "directory"
-	path = "/var/run/ocp-collector/secrets"
-	`,
+api:
+  address: 127.0.0.1:8686
+  enabled: true
+expire_metrics_secs: 60
+log_schema:
+  host_key: hostname
+secret:
+  kubernetes_secret:
+    path: /var/run/ocp-collector/secrets
+    type: directory
+`,
 			).To(EqualConfigFrom(Global(api.NewConfig(nil), constants.OpenshiftNS, constants.SingletonName)))
 
 		})

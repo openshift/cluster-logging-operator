@@ -1,0 +1,38 @@
+sinks:
+  es_1:
+    api_version: v8
+    auth:
+      password: SECRET[kubernetes_secret.es-1/password]
+      strategy: basic
+      user: SECRET[kubernetes_secret.es-1/username]
+    batch:
+      max_bytes: 10000000
+    buffer:
+      max_size: 268435488
+      type: disk
+      when_full: block
+    bulk:
+      action: create
+      index: '{{ _internal.es_1_index }}'
+    compression: gzip
+    encoding:
+      except_fields:
+      - _internal
+    endpoints:
+    - https://es.svc.infra.cluster:9200
+    inputs:
+    - es_1_index
+    request:
+      retry_initial_backoff_secs: 20
+      retry_max_duration_secs: 35
+    tls:
+      ca_file: /var/run/ocp-collector/secrets/es-1/ca-bundle.crt
+      crt_file: /var/run/ocp-collector/secrets/es-1/tls.crt
+      key_file: /var/run/ocp-collector/secrets/es-1/tls.key
+    type: elasticsearch
+transforms:
+  es_1_index:
+    inputs:
+    - application
+    source: ._internal.es_1_index = to_string!(._internal.log_type||"none")
+    type: remap

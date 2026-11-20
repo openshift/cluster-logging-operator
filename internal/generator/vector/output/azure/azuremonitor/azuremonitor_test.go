@@ -90,7 +90,7 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 	)
 
 	DescribeTable("should generate valid config", func(visit func(output *obs.OutputSpec), expFile string) {
-		exp, err := tomlContent.ReadFile(expFile)
+		exp, err := expContent.ReadFile(expFile)
 		if err != nil {
 			Fail(fmt.Sprintf("Error reading the file %q with exp config: %v", expFile, err))
 		}
@@ -107,16 +107,16 @@ var _ = Describe("Generating vector config for Azure Monitor Logs output:", func
 			c.AddTransforms(transforms)
 		})))
 	},
-		Entry("for common case", nil, "azm_common.toml"),
+		Entry("for common case", nil, "azm_common.yaml"),
 		Entry("for advance case", func(output *obs.OutputSpec) {
 			output.AzureMonitor.AzureResourceId = azureId
 			output.AzureMonitor.Host = hostCN
-		}, "azm_advance.toml"),
+		}, "azm_advance.yaml"),
 		Entry("for common with tls case", func(output *obs.OutputSpec) {
 			output.TLS = tlsSpec
-		}, "azm_tls.toml"),
+		}, "azm_tls.yaml"),
 		Entry("for common with tls case", func(output *obs.OutputSpec) {
 			output.AzureMonitor.Tuning = baseTune
-		}, "azm_tuning.toml"),
+		}, "azm_tuning.yaml"),
 	)
 })

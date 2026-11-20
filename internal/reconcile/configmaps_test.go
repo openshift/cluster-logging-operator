@@ -55,7 +55,7 @@ var _ = Describe("reconciling ConfigMap", func() {
 
 	desiredCollectorCM := func() *corev1.ConfigMap {
 		cm := runtime.NewConfigMap(namespace, name, map[string]string{
-			"vector.toml": "data_dir = \"/var/lib/vector\"",
+			"vector.yaml": "data_dir = \"/var/lib/vector\"",
 		})
 		utils.AddOwnerRefToObject(cm, clfOwner)
 		return cm
@@ -68,13 +68,13 @@ var _ = Describe("reconciling ConfigMap", func() {
 		Expect(reconcile.Configmap(k8sClient, k8sClient, desired, comparators.CompareLabels)).To(Succeed())
 
 		result := getConfigMap(k8sClient)
-		Expect(result.Data).To(HaveKey("vector.toml"))
+		Expect(result.Data).To(HaveKey("vector.yaml"))
 		Expect(result.OwnerReferences).To(Equal([]metav1.OwnerReference{clfOwner}))
 	})
 
 	It("should update the ConfigMap when owned by the ClusterLogForwarder", func() {
 		existing := runtime.NewConfigMap(namespace, name, map[string]string{
-			"vector.toml": "old",
+			"vector.yaml": "old",
 		})
 		utils.AddOwnerRefToObject(existing, clfOwner)
 		k8sClient := newClient(existing)
@@ -83,7 +83,7 @@ var _ = Describe("reconciling ConfigMap", func() {
 		Expect(reconcile.Configmap(k8sClient, k8sClient, desired, comparators.CompareLabels)).To(Succeed())
 
 		result := getConfigMap(k8sClient)
-		Expect(result.Data["vector.toml"]).To(Equal("data_dir = \"/var/lib/vector\""))
+		Expect(result.Data["vector.yaml"]).To(Equal("data_dir = \"/var/lib/vector\""))
 		Expect(result.OwnerReferences).To(Equal([]metav1.OwnerReference{clfOwner}))
 	})
 
@@ -101,13 +101,13 @@ var _ = Describe("reconciling ConfigMap", func() {
 
 		result := getConfigMap(k8sClient)
 		Expect(result.Data).To(HaveKey("config.yaml"))
-		Expect(result.Data).NotTo(HaveKey("vector.toml"))
+		Expect(result.Data).NotTo(HaveKey("vector.yaml"))
 		Expect(result.OwnerReferences).To(Equal([]metav1.OwnerReference{lokiOwner}))
 	})
 
 	It("should refuse an identical ConfigMap owned by another resource", func() {
 		existing := runtime.NewConfigMap(namespace, name, map[string]string{
-			"vector.toml": "data_dir = \"/var/lib/vector\"",
+			"vector.yaml": "data_dir = \"/var/lib/vector\"",
 		})
 		utils.AddOwnerRefToObject(existing, lokiOwner)
 		k8sClient := newClient(existing)

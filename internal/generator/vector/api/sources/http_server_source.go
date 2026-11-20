@@ -9,11 +9,11 @@ import (
 )
 
 type HttpServer struct {
-	Type     types.SourceType `json:"type" yaml:"type" toml:"type"`
-	Address  string           `json:"address" yaml:"address" toml:"address"`
-	Decoding *Decoding        `json:"decoding,omitempty" yaml:"decoding,omitempty" toml:"decoding,omitempty"`
+	Type     types.SourceType `json:"type"`
+	Address  string           `json:"address"`
+	Decoding *Decoding        `json:"decoding,omitempty"`
 
-	TLS *transport.TlsEnabled `json:"tls,omitempty" yaml:"tls,omitempty" toml:"tls,omitempty"`
+	TLS *transport.TlsEnabled `json:"tls,omitempty"`
 }
 
 func (h HttpServer) SourceType() types.SourceType {
@@ -28,5 +28,5 @@ func NewHttpServer(listenAddress string, listenPort int32) *HttpServer {
 }
 
 type Decoding struct {
-	Codec codec.CodecType `json:"codec,omitempty" yaml:"codec,omitempty" toml:"codec,omitempty"`
+	Codec codec.CodecType `json:"codec,omitempty"`
 }

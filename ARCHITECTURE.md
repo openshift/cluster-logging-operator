@@ -99,7 +99,7 @@ The configuration generator translates ClusterLogForwarder specs into Vector con
     └──────────┬──────────────┘
                │
                ▼
-    Vector Configuration (TOML)
+    Vector Configuration (YAML)
 ```
 
 **Output Structure** (`internal/generator/vector/output/`)

@@ -43,27 +43,27 @@ This first command is not required, but can be used to set the `$NAME` substitut
   oc patch obsclf/$NAME --type='json' -p='[{"op": "replace", "path": "/spec/managementState", "value":"Unmanaged"}]'
 ----
 [start=2]
-. Edit the configmap directly using `oc edit` and modify the vector.toml as needed
+. Edit the configmap directly using `oc edit` and modify the vector.yaml as needed
 [source,bash]
 ----
   oc edit configmap/$NAME-config
 ----
 [sidebar]
 ====
-*Alternatively*: If you prefer more controlled editing of the vector.toml file, you can extract the file, make your changes locally, then apply the updated config
+*Alternatively*: If you prefer more controlled editing of the vector.yaml file, you can extract the file, make your changes locally, then apply the updated config
 [source,bash]
 ----
-  oc extract configmap/$NAME-config --keys=vector.toml  --confirm
+  oc extract configmap/$NAME-config --keys=vector.yaml  --confirm
 ----
 Modify this local config file using your favorite text editor (e.g. nano)
 [source,bash]
 ----
-  nano vector.toml
+  nano vector.yaml
 ----
-Use `oc set` to update the configmap with the modified vector.toml file
+Use `oc set` to update the configmap with the modified vector.yaml file
 [source,bash]
 ----
-  oc set data configmap/$NAME-config --from-file=vector.toml=vector.toml
+  oc set data configmap/$NAME-config --from-file=vector.yaml=vector.yaml
 ----
 ====
 [start=3]

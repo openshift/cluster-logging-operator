@@ -163,6 +163,15 @@ func main() {
 	}
 
 	if len(metricsCertPath) > 0 {
+		// Normalize empty names to the controller-runtime defaults so the
+		// wait below checks the same files the metrics server will serve.
+		if metricsCertName == "" {
+			metricsCertName = "tls.crt"
+		}
+		if metricsCertKey == "" {
+			metricsCertKey = "tls.key"
+		}
+
 		log.Info("Initializing metrics certificate watcher using provided certificates",
 			"metrics-cert-path", metricsCertPath, "metrics-cert-name", metricsCertName, "metrics-cert-key", metricsCertKey)
 

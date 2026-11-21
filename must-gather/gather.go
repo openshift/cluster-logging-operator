@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/namespace"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/ui"
 	"github.com/openshift/cluster-logging-operator/must-gather/internal/version"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -38,7 +39,7 @@ type Gather struct {
 }
 
 // NewGather creates a new must-gather orchestrator
-func NewGather(baseCollectionPath, loggingNamespace, logFileName string, logWriter io.Writer) (*Gather, error) {
+func NewGather(baseCollectionPath, loggingNamespace, logFileName string, logWriter io.Writer, sinceSeconds *int64, sinceTime *metav1.Time) (*Gather, error) {
 	logger := api.NewLogger(logWriter)
 	k8sClient, err := client.NewClient(logger)
 	if err != nil {
@@ -56,6 +57,8 @@ func NewGather(baseCollectionPath, loggingNamespace, logFileName string, logWrit
 		LoggingNamespace: loggingNamespace,
 		LogFileName:      logFileName,
 		Logger:           logWriter,
+		SinceSeconds:     sinceSeconds,
+		SinceTime:        sinceTime,
 	}
 
 	return &Gather{
@@ -110,10 +113,10 @@ func (g *Gather) createCollectors() []api.Collector {
 	collectors = append(collectors, cluster.NewCollector(g.client, g.logger, g.config.DestDir))
 
 	// Namespace collectors
-	collectors = append(collectors, namespace.NewCollector(g.client, g.logger, standardNamespaces, g.config.DestDir))
+	collectors = append(collectors, namespace.NewCollector(g.client, g.logger, standardNamespaces, g.config.DestDir, g.config.SinceSeconds, g.config.SinceTime))
 
 	// Log Collection collector
-	collectors = append(collectors, collection.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir))
+	collectors = append(collectors, collection.NewCollector(g.client, g.logger, g.config.LoggingNamespace, g.config.DestDir, g.config.SinceSeconds, g.config.SinceTime))
 
 	// UIPlugin collector (checks for installation internally)
 	collectors = append(collectors, ui.NewUIPluginCollector(g.client, g.logger, g.config.DestDir))

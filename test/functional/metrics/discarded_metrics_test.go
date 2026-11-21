@@ -47,7 +47,11 @@ var _ = Describe("[Functional][Metrics] Discarded source logs metrics", func() {
 			return strings.ReplaceAll(conf, "max_line_bytes = 3145728", "max_line_bytes = 256")
 		}
 
-		roleName := fmt.Sprintf("%s-metrics-reader", framework.Name)
+		// Suffix the cluster-scoped names with the per-spec namespace so concurrent
+		// specs (ginkgo -p) do not collide. /metrics is a non-resource URL and
+		// TokenReviews are cluster-scoped, so these must remain ClusterRole/
+		// ClusterRoleBinding; a namespaced RoleBinding cannot grant them.
+		roleName := fmt.Sprintf("%s-metrics-reader", framework.Namespace)
 		metricsReaderRole = runtime.NewClusterRole(
 			roleName,
 			runtime.NewNonResourceURLPolicyRule([]string{"/metrics"}, []string{"get"}),
@@ -62,7 +66,7 @@ var _ = Describe("[Functional][Metrics] Discarded source logs metrics", func() {
 		Expect(framework.Test.Create(metricsReaderBinding)).To(Succeed())
 
 		tokenReviewBinding = runtime.NewClusterRoleBinding(
-			fmt.Sprintf("%s-token-reviewer", framework.Name),
+			fmt.Sprintf("%s-token-reviewer", framework.Namespace),
 			runtime.NewClusterRoleRef("system:auth-delegator"),
 			runtime.NewServiceAccountSubject("default", framework.Namespace),
 		)

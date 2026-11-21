@@ -8,4 +8,4 @@ echo "Creating the directory used for persisting Vector state $VECTOR_DATA_DIR"
 mkdir -p ${VECTOR_DATA_DIR}
 
 echo "Starting Vector process..."
-exec /usr/bin/vector --config-toml /etc/vector/vector.toml
+exec /usr/bin/vector --dangerously-allow-env-var-interpolation --config-toml /etc/vector/vector.toml

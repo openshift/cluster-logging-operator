@@ -12,7 +12,7 @@ func Global(c *api.Config, namespace, forwarderName string) *api.Config {
 	if dataDir == vector.DefaultDataPath {
 		dataDir = ""
 	}
-	c.Api = &api.Api{Enabled: true, Address: "127.0.0.1:8686", Playground: false}
+	c.Api = &api.Api{Enabled: true, Address: "127.0.0.1:8686"}
 	c.LogSchema = &api.LogSchema{HostKey: "hostname"}
 	c.Global = api.Global{
 		ExpireMetricsSec: 60,

@@ -22,7 +22,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
-var _ = Describe("Tests of collector container security stance", func() {
+var _ = Describe("Tests of collector container security stance", Serial, func() {
 
 	const (
 		namespace = constants.OpenshiftNS

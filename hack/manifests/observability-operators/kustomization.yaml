@@ -5,3 +5,4 @@ resources:
 - cluster-observability-operator
 - loki-operator
 - cluster-logging-operator
+- opentelemetry-operator

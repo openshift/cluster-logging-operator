@@ -57,25 +57,36 @@ if !exists(.level) {
 	RemoveFile           = `del(.file)`
 	RemoveSourceType     = `del(.source_type)`
 	HandleEventRouterLog = `
-pod_name = string!(.kubernetes.pod_name)
-if starts_with(pod_name, "eventrouter-") {
+if exists(.kubernetes.pod_name) && starts_with(string!(.kubernetes.pod_name), "eventrouter-") {
   parsed, err = parse_json(.message)
   if err != null {
     log("Unable to process EventRouter log: " + err, level: "info")
   } else {
-    ., err = merge(.,parsed)
-    if err == null && exists(.event) && is_object(.event) {
-        if exists(.verb) {
-          .event.verb = .verb
-          del(.verb)
-        }
-        .kubernetes.event = del(.event)
-        # escape 'new line' symbol see: LOG-8090 
-        msg = to_string!(del(.kubernetes.event.message))
-        .message = replace(msg, "\n", s'\n')
-        . = set!(., ["@timestamp"], .kubernetes.event.metadata.creationTimestamp)
-        del(.kubernetes.event.metadata.creationTimestamp)
-		. = compact(., nullish: true)
+    ._internal.event = parsed
+    if exists(._internal.event.event) && is_object(._internal.event.event) {
+      ._internal.kubernetes.event = del(._internal.event.event)
+      ._internal.kubernetes.event.verb = del(._internal.event.verb)
+      # escape 'new line' symbol see: LOG-8090
+      msg = to_string!(del(._internal.kubernetes.event.message))
+      ._internal.message = replace(msg, "\n", s'\n')
+      # Determine event timestamp: prefer lastTimestamp, then firstTimestamp (v1 events),
+      # fall back to eventTime (events.k8s.io/v1), then creationTimestamp
+      # lastTimestamp -> firstTimestamp -> eventTime -> creationTimestamp
+      zero_ts = "0001-01-01T00:00:00Z"
+      candidate_timestamps = filter([
+        ._internal.kubernetes.event.lastTimestamp,
+        ._internal.kubernetes.event.firstTimestamp,
+        ._internal.kubernetes.event.eventTime,
+        ._internal.kubernetes.event.metadata.creationTimestamp
+      ]) -> |_index, value| {
+        value != null && value != "" && value != zero_ts
+      }
+      ts = candidate_timestamps[0]
+      ."@timestamp" = ts
+      .timestamp = ts
+      .message = ._internal.message
+      .kubernetes.event = del(._internal.kubernetes.event)
+      . = compact(., nullish: true)
     } else {
       log("Unable to merge EventRouter log message into record: " + err, level: "info")
     }

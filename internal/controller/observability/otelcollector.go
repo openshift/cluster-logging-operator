@@ -1,6 +1,8 @@
 package observability
 
 import (
+	"context"
+	"fmt"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -18,7 +20,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/yaml"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcileOpenTelemetryCollector creates or updates the OpenTelemetryCollector
@@ -175,4 +180,19 @@ func logSourceVolumes(inputs []obs.InputSpec) ([]corev1.Volume, []corev1.VolumeM
 		})
 	}
 	return volumes, mounts
+}
+
+// otelcCRDAvailable returns a non-nil error when the OpenTelemetryCollector
+// custom resource definition is not served by the cluster, which means the
+// OpenTelemetry operator (a deployment-order prerequisite of the otelc
+// collector implementation) is not installed
+func otelcCRDAvailable(k8sClient client.Client) error {
+	list := &otelv1beta1.OpenTelemetryCollectorList{}
+	if err := k8sClient.List(context.Background(), list, client.Limit(1)); err != nil {
+		if meta.IsNoMatchError(err) || apiruntime.IsNotRegisteredError(err) {
+			return fmt.Errorf("the opentelemetrycollectors.opentelemetry.io custom resource definition is not served: %w", err)
+		}
+		return err
+	}
+	return nil
 }

@@ -28,6 +28,17 @@ const (
 
 	protectedSAPodCreatorsKey      = "podCreators"
 	protectedSAWorkloadCreatorsKey = "workloadCreators"
+
+	// protectedSAOtelcCreatorsKey holds the identity of the OpenTelemetry
+	// operator controller, permitted to create workloads using a protected
+	// ServiceAccount only when the workload is owned by an OpenTelemetryCollector
+	// deployed by an authorized ClusterLogForwarder
+	protectedSAOtelcCreatorsKey = "otelcCreators"
+
+	// otelOperatorNamespace is the standard install namespace of the Red Hat
+	// build of the OpenTelemetry operator
+	otelOperatorNamespace  = "openshift-opentelemetry-collector"
+	otelOperatorController = "opentelemetry-operator-controller-manager"
 )
 
 // podControllers lists kube-system controllers that create Pods from
@@ -137,6 +148,7 @@ func ReconcileProtectedSAPolicies(ctx context.Context, k8sClient client.Client, 
 func setCreatorKeys(data map[string]string, operatorNS string) {
 	data[protectedSAPodCreatorsKey] = podCreatorsValue
 	data[protectedSAWorkloadCreatorsKey] = operatorServiceAccountUser(operatorNS) + "," + workloadCreatorsTemplate
+	data[protectedSAOtelcCreatorsKey] = utils.ServiceAccountUsername(otelOperatorNamespace, otelOperatorController)
 }
 
 // SyncProtectedServiceAccounts rebuilds the param ConfigMap from the full set
@@ -146,11 +158,18 @@ func SyncProtectedServiceAccounts(ctx context.Context, k8sClient client.Client, 
 	if err != nil {
 		return err
 	}
+	otelcRefs, err := clusterlogforwarder.ListOtelCollectors(ctx, k8sClient)
+	if err != nil {
+		return err
+	}
 
 	data := map[string]string{}
 	for _, ref := range refs {
 		// Use ConfigMap data as a set: the VAP CEL expression checks key presence
 		// (saKey in params.data), not value, so empty string is sufficient.
+		data[ref.String()] = ""
+	}
+	for _, ref := range otelcRefs {
 		data[ref.String()] = ""
 	}
 	setCreatorKeys(data, operatorNS)

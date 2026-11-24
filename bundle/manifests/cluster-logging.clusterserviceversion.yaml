@@ -83,7 +83,7 @@ metadata:
     certified: "false"
     console.openshift.io/operator-monitoring-default: "true"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
-    createdAt: "2026-11-03T21:02:13Z"
+    createdAt: "2026-11-24T16:05:45Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing log collection and forwarding.
     features.operators.openshift.io/cnf: "false"
@@ -2656,6 +2656,18 @@ spec:
           - get
           - patch
           - update
+        - apiGroups:
+          - opentelemetry.io
+          resources:
+          - opentelemetrycollectors
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:

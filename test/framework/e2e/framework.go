@@ -258,11 +258,19 @@ func (tc *E2ETestFramework) Cleanup() {
 		//allow caller to cleanup if unset (e.g script cleanup())
 		if DoCleanup() {
 			RunCleanupScript()
-		} else {
-			return
 		}
 	} else {
 		clolog.V(1).Info("Test passed. Skipping artifacts gathering")
+	}
+	// run the registered cleanup functions only when cleanup is enabled.
+	// This also covers the AfterSuite path: there is no current test there,
+	// so the failed-test branch above is skipped and the cleanup functions
+	// (e.g. deleting the namespace hosting the loki operator) would
+	// otherwise run regardless of DO_CLEANUP, destroying the resources a
+	// failed run leaves behind for debugging
+	if !DoCleanup() {
+		clolog.V(1).Info("DO_CLEANUP is false; preserving test resources")
+		return
 	}
 	clolog.V(1).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {

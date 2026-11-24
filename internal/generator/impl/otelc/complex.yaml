@@ -60,9 +60,24 @@ receivers:
               to: resource["k8s.pod.uid"]
             - type: move
               id: move_container_name_to_resource
-              output: remove_restartcount
+              output: copy_namespace_compat
               from: attributes.container_name
               to: resource["k8s.container.name"]
+            - type: copy
+              id: copy_namespace_compat
+              output: copy_pod_name_compat
+              from: resource["k8s.namespace.name"]
+              to: resource["kubernetes.namespace_name"]
+            - type: copy
+              id: copy_pod_name_compat
+              output: copy_container_name_compat
+              from: resource["k8s.pod.name"]
+              to: resource["kubernetes.pod_name"]
+            - type: copy
+              id: copy_container_name_compat
+              output: remove_restartcount
+              from: resource["k8s.container.name"]
+              to: resource["kubernetes.container_name"]
             - type: remove
               id: remove_restartcount
               output: remove_logtag
@@ -90,8 +105,23 @@ receivers:
               value: container
             - type: add
               id: add_log_type
+              output: add_log_type_compat
               field: resource["openshift.log.type"]
               value: infrastructure
+            - type: add
+              id: add_log_type_compat
+              output: add_log_source_compat
+              field: resource["log_type"]
+              value: infrastructure
+            - type: add
+              id: add_log_source_compat
+              output: add_cluster_id_compat
+              field: resource["log_source"]
+              value: container
+            - type: add
+              id: add_cluster_id_compat
+              field: resource["openshift.cluster_id"]
+              value: ${env:OPENSHIFT_CLUSTER_ID}
     filelog/input_mytestapp_container:
         include:
             - /var/log/pods/test-ns_*/*/*.log
@@ -148,9 +178,24 @@ receivers:
               to: resource["k8s.pod.uid"]
             - type: move
               id: move_container_name_to_resource
-              output: remove_restartcount
+              output: copy_namespace_compat
               from: attributes.container_name
               to: resource["k8s.container.name"]
+            - type: copy
+              id: copy_namespace_compat
+              output: copy_pod_name_compat
+              from: resource["k8s.namespace.name"]
+              to: resource["kubernetes.namespace_name"]
+            - type: copy
+              id: copy_pod_name_compat
+              output: copy_container_name_compat
+              from: resource["k8s.pod.name"]
+              to: resource["kubernetes.pod_name"]
+            - type: copy
+              id: copy_container_name_compat
+              output: remove_restartcount
+              from: resource["k8s.container.name"]
+              to: resource["kubernetes.container_name"]
             - type: remove
               id: remove_restartcount
               output: remove_logtag
@@ -178,8 +223,23 @@ receivers:
               value: container
             - type: add
               id: add_log_type
+              output: add_log_type_compat
               field: resource["openshift.log.type"]
               value: application
+            - type: add
+              id: add_log_type_compat
+              output: add_log_source_compat
+              field: resource["log_type"]
+              value: application
+            - type: add
+              id: add_log_source_compat
+              output: add_cluster_id_compat
+              field: resource["log_source"]
+              value: container
+            - type: add
+              id: add_cluster_id_compat
+              field: resource["openshift.cluster_id"]
+              value: ${env:OPENSHIFT_CLUSTER_ID}
 processors:
     k8sattributes:
         extract:
@@ -212,15 +272,15 @@ exporters:
     otlphttp/output_default_lokistack_application:
         endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/otlp
         tls:
-            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+            ca_file: /var/conf/configmap-openshift-service-ca-crt/ca-bundle.crt
     otlphttp/output_default_lokistack_audit:
         endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/audit/otlp
         tls:
-            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+            ca_file: /var/conf/configmap-openshift-service-ca-crt/ca-bundle.crt
     otlphttp/output_default_lokistack_infrastructure:
         endpoint: https://logging-loki-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure/otlp
         tls:
-            ca_file: /var/run/ocp-collector/config/openshift-service-ca.crt/ca-bundle.crt
+            ca_file: /var/conf/configmap-openshift-service-ca-crt/ca-bundle.crt
 service:
     pipelines:
         logs/pipeline:

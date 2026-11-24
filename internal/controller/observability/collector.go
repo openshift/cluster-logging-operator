@@ -99,6 +99,18 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 	log.V(3).Info("Generated collector config", "config", collectorConfig)
+
+	// The OpenTelemetry operator owns the workload lifecycle of an otelc
+	// based collector: create the OpenTelemetryCollector CR carrying the
+	// generated config instead of deploying the collector directly
+	if internalobs.IsOtelc(*context.Forwarder) {
+		if err := ReconcileOpenTelemetryCollector(context, resourceNames, collectorConfig, ownerRef); err != nil {
+			log.Error(err, "collector.ReconcileOpenTelemetryCollector")
+			return err
+		}
+		return nil
+	}
+
 	var collectorConfHash string
 	collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
@@ -179,7 +191,7 @@ func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourc
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clf.Annotations, op)
-	g := forwardergenerator.New(constants.VectorName)
+	g := forwardergenerator.New(internalobs.CollectorImplementation(clf))
 	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
 	if err != nil {

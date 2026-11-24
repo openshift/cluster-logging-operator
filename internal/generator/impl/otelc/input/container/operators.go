@@ -73,7 +73,7 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			Output: "move_pod_name_to_resource",
 			Config: map[string]interface{}{
 				"from": "attributes.namespace",
-				"to":   "resource[\"k8s.namespace.name\"]",
+				"to":   operators.ResourceAttribute("k8s.namespace.name"),
 			},
 		},
 
@@ -84,7 +84,7 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			Output: "move_pod_uid_to_resource",
 			Config: map[string]interface{}{
 				"from": "attributes.pod_name",
-				"to":   "resource[\"k8s.pod.name\"]",
+				"to":   operators.ResourceAttribute("k8s.pod.name"),
 			},
 		},
 
@@ -95,7 +95,7 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			Output: "move_container_name_to_resource",
 			Config: map[string]interface{}{
 				"from": "attributes.uid",
-				"to":   "resource[\"k8s.pod.uid\"]",
+				"to":   operators.ResourceAttribute("k8s.pod.uid"),
 			},
 		},
 
@@ -103,10 +103,40 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 		{
 			Type:   operators.OperatorTypeMove,
 			ID:     "move_container_name_to_resource",
-			Output: "remove_restartcount",
+			Output: "copy_namespace_compat",
 			Config: map[string]interface{}{
 				"from": "attributes.container_name",
-				"to":   "resource[\"k8s.container.name\"]",
+				"to":   operators.ResourceAttribute("k8s.container.name"),
+			},
+		},
+
+		// Step 8b: Copy the per-record kubernetes identity to its deprecated
+		// ViaQ name for consumer compatibility, mirroring the k8s.* attributes
+		{
+			Type:   operators.OperatorTypeCopy,
+			ID:     "copy_namespace_compat",
+			Output: "copy_pod_name_compat",
+			Config: map[string]interface{}{
+				"from": operators.ResourceAttribute("k8s.namespace.name"),
+				"to":   operators.ResourceAttribute("kubernetes.namespace_name"),
+			},
+		},
+		{
+			Type:   operators.OperatorTypeCopy,
+			ID:     "copy_pod_name_compat",
+			Output: "copy_container_name_compat",
+			Config: map[string]interface{}{
+				"from": operators.ResourceAttribute("k8s.pod.name"),
+				"to":   operators.ResourceAttribute("kubernetes.pod_name"),
+			},
+		},
+		{
+			Type:   operators.OperatorTypeCopy,
+			ID:     "copy_container_name_compat",
+			Output: "remove_restartcount",
+			Config: map[string]interface{}{
+				"from": operators.ResourceAttribute("k8s.container.name"),
+				"to":   operators.ResourceAttribute("kubernetes.container_name"),
 			},
 		},
 
@@ -142,7 +172,7 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			Type: operators.OperatorTypeAdd,
 			ID:   "add_node_name",
 			Config: map[string]interface{}{
-				"field": "resource[\"k8s.node.name\"]",
+				"field": operators.ResourceAttribute("k8s.node.name"),
 				"value": nodeName,
 			},
 		},
@@ -151,7 +181,7 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			ID:     "add_cluster_uid",
 			Output: "add_log_source",
 			Config: map[string]interface{}{
-				"field": "resource[\"openshift.cluster.uid\"]",
+				"field": operators.ResourceAttribute("openshift.cluster.uid"),
 				"value": clusterUID,
 			},
 		},
@@ -160,16 +190,47 @@ func NewOperators(clusterUID, nodeName, logSource, logType string) []operators.O
 			ID:     "add_log_source",
 			Output: "add_log_type",
 			Config: map[string]interface{}{
-				"field": "resource[\"openshift.log.source\"]",
+				"field": operators.ResourceAttribute("openshift.log.source"),
+				"value": logSource,
+			},
+		},
+		{
+			Type:   operators.OperatorTypeAdd,
+			ID:     "add_log_type",
+			Output: "add_log_type_compat",
+			Config: map[string]interface{}{
+				"field": operators.ResourceAttribute("openshift.log.type"),
+				"value": logType,
+			},
+		},
+		// Deprecated ViaQ compatibility attributes, mirroring their
+		// non-deprecated data model counterparts. Consumers (including the
+		// lokistack queries) still rely on these names; emit them until they
+		// are deliberately dropped
+		{
+			Type:   operators.OperatorTypeAdd,
+			ID:     "add_log_type_compat",
+			Output: "add_log_source_compat",
+			Config: map[string]interface{}{
+				"field": operators.ResourceAttribute("log_type"),
+				"value": logType,
+			},
+		},
+		{
+			Type:   operators.OperatorTypeAdd,
+			ID:     "add_log_source_compat",
+			Output: "add_cluster_id_compat",
+			Config: map[string]interface{}{
+				"field": operators.ResourceAttribute("log_source"),
 				"value": logSource,
 			},
 		},
 		{
 			Type: operators.OperatorTypeAdd,
-			ID:   "add_log_type",
+			ID:   "add_cluster_id_compat",
 			Config: map[string]interface{}{
-				"field": `resource["openshift.log.type"]`,
-				"value": logType,
+				"field": operators.ResourceAttribute("openshift.cluster_id"),
+				"value": clusterUID,
 			},
 		},
 	}

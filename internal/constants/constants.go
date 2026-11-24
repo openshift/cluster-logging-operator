@@ -74,9 +74,6 @@ const (
 	ContainerLogDir = "/var/log/containers"
 	PodLogDir       = "/var/log/pods"
 
-	// Annotation Names
-	AnnotationServingCertSecretName = "service.beta.openshift.io/serving-cert-secret-name"
-
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"
 

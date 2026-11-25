@@ -4,7 +4,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	collectorcommon "github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
@@ -78,7 +79,7 @@ func auth(s *sinks.AzureLogsIngestion, azli *obs.AzureLogsIngestion) {
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
 	tfs = api.Transforms{}
 
-	remapReservedKeywordsID := vectorhelpers.MakeID(id, "remap_reserved_keywords")
+	remapReservedKeywordsID := helpers.MakeID(id, "remap_reserved_keywords")
 	tfs[remapReservedKeywordsID] = RemapReservedKeywords(inputs...)
 	inputs = []string{remapReservedKeywordsID}
 

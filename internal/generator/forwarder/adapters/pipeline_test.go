@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/component"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 type FakeElement struct {
@@ -27,7 +27,7 @@ var _ = Describe("Pipeline adapters", func() {
 				Application: &obs.Application{},
 			},
 		}
-		inputMap map[string]helpers.InputComponent
+		inputMap map[string]component.Provider
 
 		outputMap         map[string]*adapters.Output
 		fakeElement       = &FakeElement{}
@@ -53,7 +53,7 @@ var _ = Describe("Pipeline adapters", func() {
 	BeforeEach(func() {
 		i := adapters.NewInput(inputSpecs[0])
 		i.Ids = []string{"input_app_in_container_meta"}
-		inputMap = map[string]helpers.InputComponent{
+		inputMap = map[string]component.Provider{
 			inputSpecs[0].Name: i,
 		}
 		outputMap = map[string]*adapters.Output{

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/output/lokistack"
 	lokioutput "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/utils/sets"
 )
@@ -136,7 +137,7 @@ var _ = Describe("#GenerateOutput", func() {
 				Name: lokistackOutApp,
 				Type: obs.OutputTypeOTLP,
 				OTLP: &obs.OTLP{
-					URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokiOtlpEndpoint,
+					URL: "https://test-lokistack-gateway-http.openshift-logging.svc:8080/api/logs/v1/application" + lokistack.OtlpEndpoint,
 					Authentication: &obs.HTTPAuthentication{
 						Token: &obs.BearerToken{
 							From: obs.BearerTokenFromServiceAccount,

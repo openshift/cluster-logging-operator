@@ -2,12 +2,12 @@ package input
 
 import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	v1 "github.com/openshift/cluster-logging-operator/internal/generator/vector/filter/openshift/viaq/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 func NewJournalInput(input *adapters.Input) (id string, source types.Source, tfs api.Transforms) {

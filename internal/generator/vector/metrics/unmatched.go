@@ -5,9 +5,9 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -24,7 +24,7 @@ func NewUnmatched(id string, op utils.Options, labels map[string]string) types.T
 		transforms.UnmatchedRoute(id),
 	)
 	logToMetric.Metrics[0].Tags.AddAll(labels)
-	unmatchedID := vectorhelpers.MakeID(id, transforms.Unmatched)
+	unmatchedID := helpers.MakeID(id, transforms.Unmatched)
 	op.AddToStringSet(framework.OptionLogsToMetricInputs, unmatchedID)
 	return logToMetric
 }

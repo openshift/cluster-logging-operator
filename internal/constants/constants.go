@@ -38,6 +38,8 @@ const (
 
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 
+	ComponentNameOtelc = "otelcol"
+
 	//ServiceAccountSecretPath is the path to find the projected serviceAccount token and other SA secrets
 	ServiceAccountSecretPath          = "/var/run/ocp-collector/serviceaccount"
 	TrustedCABundleMountFile          = "tls-ca-bundle.pem"
@@ -65,14 +67,12 @@ const (
 	CollectorTrustedCAName      = "collector-trusted-ca-bundle"
 
 	VectorImageEnvVar         = "RELATED_IMAGE_VECTOR"
+	OtelcImageEnvVar          = "RELATED_IMAGE_OTEL_COLLECTOR"
 	VectorReceiverImageEnvVar = "IMAGE_VECTOR_RECEIVER"
 	LogfilesmetricImageEnvVar = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
 
 	ContainerLogDir = "/var/log/containers"
 	PodLogDir       = "/var/log/pods"
-
-	// Annotation Names
-	AnnotationServingCertSecretName = "service.beta.openshift.io/serving-cert-secret-name"
 
 	ClusterLogging         = "cluster-logging"
 	ClusterLoggingOperator = "cluster-logging-operator"

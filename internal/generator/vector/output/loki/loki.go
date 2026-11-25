@@ -6,14 +6,14 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	commontemplate "github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common/template"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -74,9 +74,9 @@ var (
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (string, types.Sink, api.Transforms) {
 	tfs := api.Transforms{}
-	componentID := vectorhelpers.MakeID(id, "remap")
+	componentID := helpers.MakeID(id, "remap")
 	tfs[componentID] = CleanupFields(inputs...)
-	remapLabelID := vectorhelpers.MakeID(id, "remap_label")
+	remapLabelID := helpers.MakeID(id, "remap_label")
 	tfs[remapLabelID] = RemapLabels(componentID)
 
 	sink := sinks.NewLoki(o.Loki.URL, func(s *sinks.Loki) {
@@ -101,7 +101,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	}, remapLabelID)
 
 	if hasTenantKey(o.Loki) {
-		lokiTenantID := vectorhelpers.MakeID(id, "loki_tenant")
+		lokiTenantID := helpers.MakeID(id, "loki_tenant")
 		tenantTemplate := commontemplate.NewTemplateRemap([]string{remapLabelID}, o.Loki.TenantKey, lokiTenantID)
 		sink.Inputs = []string{lokiTenantID}
 		sink.TenantId = tenantId(o.Loki, lokiTenantID)

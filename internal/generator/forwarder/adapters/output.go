@@ -4,7 +4,7 @@ import (
 	openshiftv1 "github.com/openshift/api/config/v1"
 	obsv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	nhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	nhelpers "github.com/openshift/cluster-logging-operator/internal/generator/forwarder/component"
 )
 
 // Output is an internal representation of the public API Output
@@ -48,7 +48,7 @@ func NewOutput(spec obsv1.OutputSpec) *Output {
 
 // AddInputFrom adds an input to an output regardless if the "input"
 // originates directly from a log source or pipeline filter
-func (o *Output) AddInputFrom(n nhelpers.InputComponent) {
+func (o *Output) AddInputFrom(n nhelpers.Provider) {
 	if o == nil {
 		return
 	}

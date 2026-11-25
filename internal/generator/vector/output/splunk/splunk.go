@@ -6,7 +6,8 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
@@ -101,11 +102,11 @@ for_each(indexed_fields) -> |_, field| {
 `
 
 func New(id string, o *adapters.Output, inputs []string, secrets observability.Secrets, op utils.Options) (_ string, sink types.Sink, tfs api.Transforms) {
-	inputID := vectorhelpers.MakeID(id, "timestamp")
+	inputID := helpers.MakeID(id, "timestamp")
 	tfs = api.Transforms{}
 	splunkIndexID := ""
 	if hasIndexKey(o.Splunk) {
-		splunkIndexID = vectorhelpers.MakeID(id, "splunk_index")
+		splunkIndexID = helpers.MakeID(id, "splunk_index")
 		tfs[splunkIndexID] = commontemplate.NewTemplateRemap([]string{inputID}, o.Splunk.Index, splunkIndexID)
 		inputID = splunkIndexID
 	}
@@ -136,11 +137,11 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 		builder.WriteString(fmt.Sprintf(indexedFieldsRemap, pathSegmentArrayStr))
 		indexedFields = remapped
 	}
-	splunkMetadataID := vectorhelpers.MakeID(id, "metadata")
+	splunkMetadataID := helpers.MakeID(id, "metadata")
 	tfs[splunkMetadataID] = transforms.NewRemap(builder.String(), inputID)
 	inputID = splunkMetadataID
 
-	tfs[vectorhelpers.MakeID(id, "timestamp")] = fixTimestampFormat(inputs)
+	tfs[helpers.MakeID(id, "timestamp")] = fixTimestampFormat(inputs)
 	sink = sinks.NewSplunkHecLogs(o.Splunk.URL, func(s *sinks.SplunkHecLogs) {
 		s.Index = tenant(o.Splunk, splunkIndexID)
 		s.DefaultToken = defaultToken(o.Splunk)

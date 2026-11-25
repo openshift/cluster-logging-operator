@@ -2,15 +2,12 @@ package helpers
 
 import (
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	v1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-
 	"golang.org/x/sys/unix"
 )
 
@@ -23,10 +20,14 @@ const (
 var quoteRegex = regexp.MustCompile(`^".+"$`)
 
 var (
-	Replacer         = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 	listenAllAddress string
 	listenAllOnce    sync.Once
 )
+
+// MakeRouteInputID appends sourceType to rerouteId for input ids
+func MakeRouteInputID(rerouteId, sourceType string) string {
+	return strings.ToLower(strings.Join([]string{rerouteId, sourceType}, "."))
+}
 
 func TrimSpaces(in []string) []string {
 	o := make([]string, len(in))
@@ -34,10 +35,6 @@ func TrimSpaces(in []string) []string {
 		o[i] = strings.TrimSpace(s)
 	}
 	return o
-}
-
-func FormatComponentID(name string) string {
-	return strings.ToLower(Replacer.Replace(name))
 }
 
 func ListenOnAllLocalInterfacesAddress() string {
@@ -55,24 +52,6 @@ func ListenOnAllLocalInterfacesAddress() string {
 	}
 	listenAllOnce.Do(f)
 	return listenAllAddress
-}
-
-// ConfigPath is the quoted path for any configmap visible to the collector
-func ConfigPath(name string, file string, formatter ...string) string {
-	formatString := "%q"
-	if len(formatter) > 0 {
-		formatString = formatter[0]
-	}
-	return fmt.Sprintf(formatString, filepath.Join(constants.ConfigMapBaseDir, name, file))
-}
-
-// SecretPath is the quoted path for any secret visible to the collector
-func SecretPath(secretName string, file string, formatter ...string) string {
-	formatString := "%q"
-	if len(formatter) > 0 {
-		formatString = formatter[0]
-	}
-	return fmt.Sprintf(formatString, filepath.Join(constants.CollectorSecretsDir, secretName, file))
 }
 
 // SecretFrom formatted string SECRET[<secret_component_id>.<secret_name>#<secret_key>]

@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -99,6 +101,29 @@ func ReconcileCollector(context internalcontext.ForwarderContext, pollInterval, 
 		return err
 	}
 	log.V(3).Info("Generated collector config", "config", collectorConfig)
+
+	// The OpenTelemetry operator owns the workload lifecycle of an otelc
+	// based collector: create the OpenTelemetryCollector CR carrying the
+	// generated config instead of deploying the collector directly
+	if internalobs.IsOtelc(*context.Forwarder) {
+		// Gracefully fail when the OpenTelemetryCollector custom resource
+		// definition is not served (the OpenTelemetry operator is not
+		// installed): record it on the forwarder's status and return early
+		// without attempting to deploy anything
+		if err := otelcCRDAvailable(context.Client); err != nil {
+			message := "the OpenTelemetry collector requires the OpenTelemetry operator, which does not appear to be installed: " + err.Error()
+			internalobs.SetCondition(&context.Forwarder.Status.Conditions, internalobs.NewCondition(
+				obs.ConditionTypeValid, metav1.ConditionFalse, obs.ReasonOpenTelemetryOperatorMissing, message))
+			log.Error(err, "the OpenTelemetryCollector resource is not served; the OpenTelemetry operator is required for an otelc collector")
+			return errors.New(message)
+		}
+		if err := ReconcileOpenTelemetryCollector(context, resourceNames, collectorConfig, ownerRef); err != nil {
+			log.Error(err, "collector.ReconcileOpenTelemetryCollector")
+			return err
+		}
+		return nil
+	}
+
 	var collectorConfHash string
 	collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
@@ -179,7 +204,7 @@ func GenerateConfig(k8Client client.Client, clf obs.ClusterLogForwarder, resourc
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8Client)
 	op[framework.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 	EvaluateAnnotationsForEnabledCapabilities(clf.Annotations, op)
-	g := forwardergenerator.New()
+	g := forwardergenerator.New(internalobs.CollectorImplementation(clf))
 	generatedConfig, err := g.GenerateConf(secrets, clf.Spec, clf.Namespace, clf.Name, resourceNames, op)
 
 	if err != nil {

@@ -206,3 +206,45 @@ func (auditSources AuditSources) AsStrings() (result []string) {
 	}
 	return result
 }
+
+// DetermineTenants identifies which tenants (application, infrastructure, audit) are needed
+// for an output based on the input types being forwarded to it.
+// Returns a slice of tenant names as strings.
+func (inputs Inputs) DetermineTenants() []string {
+	tenantsSet := map[string]struct{}{}
+
+	for _, inputSpec := range inputs {
+		switch inputSpec.Type {
+		case obs.InputTypeApplication:
+			tenantsSet[string(obs.InputTypeApplication)] = struct{}{}
+			// If application includes infrastructure namespaces, add infrastructure tenant
+			if IncludesInfraNamespace(inputSpec.Application) {
+				tenantsSet[string(obs.InputTypeInfrastructure)] = struct{}{}
+			}
+		case obs.InputTypeAudit:
+			tenantsSet[string(obs.InputTypeAudit)] = struct{}{}
+		case obs.InputTypeInfrastructure:
+			tenantsSet[string(obs.InputTypeInfrastructure)] = struct{}{}
+		case obs.InputTypeReceiver:
+			tenantsSet[getTenantForReceiver(inputSpec.Receiver.Type)] = struct{}{}
+		}
+	}
+
+	// Convert set to sorted slice for deterministic output
+	tenants := make([]string, 0, len(tenantsSet))
+	for tenant := range tenantsSet {
+		tenants = append(tenants, tenant)
+	}
+	sort.Strings(tenants)
+
+	return tenants
+}
+
+// getTenantForReceiver maps receiver types to tenants for LokiStack.
+// HTTP receivers are treated as audit logs, others as infrastructure.
+func getTenantForReceiver(receiverType obs.ReceiverType) string {
+	if receiverType == obs.ReceiverTypeHTTP {
+		return string(obs.InputTypeAudit)
+	}
+	return string(obs.InputTypeInfrastructure)
+}

@@ -6,7 +6,8 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/component"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sources"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/input"
@@ -70,7 +71,7 @@ func Conf(secrets map[string]*corev1.Secret, clfspec obs.ClusterLogForwarderSpec
 
 	// Init inputs, outputs, pipelines
 	inputMap := map[string]*adapters.Input{}
-	inputCompMap := map[string]helpers.InputComponent{}
+	inputCompMap := map[string]component.Provider{}
 	for _, i := range clfspec.Inputs {
 		a := adapters.NewInput(i)
 		inputMap[i.Name] = a

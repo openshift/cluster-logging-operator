@@ -1,0 +1,178 @@
+= OpenTelemetry Collector Based Log Forwarding
+
+[WARNING]
+****
+This feature is in *dev preview*. It is not supported for production use and
+may change or be removed in a future release. The default, fully supported
+collector implementation remains
+https://vector.dev/[vector]; see link:../../collection.adoc[collection and log
+forwarding features] for the supported feature matrix.
+****
+
+== Enabling the feature
+
+The OpenTelemetry Collector (otelc) based deployment is selected per
+`ClusterLogForwarder` using an annotation:
+
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+  annotations:
+    observability.openshift.io/collector: otelcol
+spec:
+  ...
+----
+
+The annotation value is the collector component name: `otelcol` selects the
+OpenTelemetry Collector; omitting the annotation (or any other value) deploys
+the default vector based collector.
+
+[NOTE]
+****
+The otelc implementation requires the Red Hat build of the OpenTelemetry
+operator to be installed on the cluster. The operator is a deployment-order
+dependency: this operator creates the `OpenTelemetryCollector` custom resource
+describing the collector, and the OpenTelemetry operator owns the resulting
+collector workload. For development clusters the operator can be installed
+with:
+
+    oc apply -k hack/manifests/observability-operators/opentelemetry-operator/
+****
+
+== How it works
+
+When the annotation is present, the ClusterLogForwarder controller:
+
+. Generates an OpenTelemetry Collector configuration from the forwarder
+  specification using the same generator framework as the vector
+  implementation
+. Creates (or updates) an `OpenTelemetryCollector` custom resource carrying
+  that configuration in the forwarder's namespace, owned by the forwarder
+. Skips deploying its own collector workload: the OpenTelemetry operator
+  deploys and manages the collector daemonset (or deployment) from the custom
+  resource
+
+The collector pods run with the forwarder's service account, so the RBAC and
+security context constraints the operator reconciles for log collection apply
+unchanged. Node log directories (e.g. `/var/log/pods`) are mounted read-only
+according to the forwarder's inputs, and output secrets, certificates and
+trusted CA bundles are mounted at the same paths the generated configuration
+references.
+
+Logs are normalized to the
+https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md[Red Hat observability data model]:
+container records carry `k8s.*`, `openshift.*` and `log.iostream` resource
+and log record attributes, pod labels are forwarded as `k8s.pod.label.*`, and
+severity is reported through the record's `severityText` and
+`severityNumber`.
+
+== Feature support
+
+The following tables compare the `ClusterLogForwarder` feature support of the
+otelc implementation against the vector implementation (see
+link:../../collection.adoc[collection and log forwarding features] for the
+full vector feature matrix). The status column uses:
+
+* *Supported* - implemented and verified with otelc
+* *Not supported* - implemented for vector only; a known gap of otelc
+* *Not validated* - expected to work but not verified with otelc
+
+=== Log sources
+
+.Log source support
+[options="header"]
+|======
+|Feature|otelc|Notes
+|Application container logs|Supported|CRI-O container logs collected from `/var/log/pods`
+|Infrastructure container logs|Supported|Container logs from infrastructure namespaces
+|Kubernetes metadata|Supported|Namespace, pod, container and node identity derived from the log file path and enriched from the Kubernetes API
+|Pod labels|Supported|Forwarded as `k8s.pod.label.*` resource attributes
+|Application label selectors|Not supported|All container logs in non-infrastructure namespaces are collected; namespace and pod selectors are not applied
+|Infra journal logs|Not supported|The journald source is not implemented
+|Kubernetes API audit logs|Not supported|Audit sources are not implemented
+|OpenShift API audit logs|Not supported|Audit sources are not implemented
+|OVN audit logs|Not supported|Audit sources are not implemented
+|Auditd logs|Not supported|Audit sources are not implemented
+|HTTP receiver input|Not supported|Receiver inputs are not implemented
+|Syslog receiver input|Not supported|Receiver inputs are not implemented
+|======
+
+=== Outputs
+
+.Output support
+[options="header"]
+|======
+|Feature|otelc|Notes
+|LokiStack|Supported|OTLP HTTP per tenant (application, infrastructure, audit); supports the Otel and default data models
+|OTLP|Supported|OTLP HTTP exporter to the configured URL; compression tuning is honored
+|Azure Monitor Logs|Not supported|
+|Cloudwatch|Not supported|
+|Elasticsearch|Not supported|
+|Google Cloud Logging|Not supported|
+|Kafka|Not supported|
+|Splunk|Not supported|
+|Syslog|Not supported|
+|HTTP|Not supported|
+|======
+
+=== Authorization and authentication
+
+.Authorization and authentication support
+[options="header"]
+|======
+|Feature|otelc|Notes
+|LokiStack bearer token|Supported|Service account token based authentication
+|Output username / password|Not supported|Not mapped to the collector configuration
+|Output client certificates|Not supported|Not mapped to the collector configuration
+|Trusted CA bundles|Supported|Mounted and referenced by the generated configuration
+|======
+
+=== Normalizations and transformations
+
+.Normalization and transformation support
+[options="header"]
+|======
+|Feature|otelc|Notes
+|Observability data model|Supported|`k8s.*`, `openshift.*`, `log.iostream` attributes and `severityText`/`severityNumber`; see the https://github.com/rhobs/observability-data-model/blob/main/cluster-logging.md[data model]
+|ViaQ compatibility attributes|Partial|The deprecated attributes required by consumers are emitted alongside their data model counterparts: `log_type`, `log_source`, `openshift.cluster_id`, `kubernetes.namespace_name`, `kubernetes.pod_name` and `kubernetes.container_name`. The remaining deprecated names (e.g. `kubernetes.host`) are not emitted
+|Static labels (openshift labels filter)|Supported|Forwarded as `openshift.label.*` resource attributes
+|Log level / severity detection|Not supported|The log message is not evaluated for a severity level; `severityText` and `severityNumber` are unset
+|JSON parsing|Not supported|
+|Prune filter|Not supported|
+|Drop filter|Not supported|
+|Multiline error detection|Not supported|
+|======
+
+=== Deployment, security and operations
+
+.Deployment, security and operations support
+[options="header"]
+|======
+|Feature|otelc|Notes
+|Collector as daemonset|Supported|Deployed by the OpenTelemetry operator from the `OpenTelemetryCollector` custom resource
+|Collector as deployment|Supported|Where the forwarder spec requires it
+|Collector service account and RBAC|Supported|The forwarder's service account, SCC and RBAC apply unchanged
+|Protected collector service accounts|Supported|The ValidatingAdmissionPolicy permits the OpenTelemetry operator to create workloads for custom resources deployed by an authorized forwarder
+|Checkpointing|Not supported|File offsets are in-memory only; on restart, files are read from the end and records written while the collector was down are lost (vector persists checkpoints and resumes from the last read position). The `file_storage` extension is not configured
+|Durable output buffering|Not supported|Exporter queues are in-memory only; there is no disk buffer equivalent to vector's `AtLeastOnce` delivery mode. The `file_storage` extension is not configured
+|Delivery tuning|Not supported|Delivery modes are not applied
+|Rate limiting|Not supported|Input and output rate limits are not applied
+|Metrics and alerting|Not supported|Collector metrics endpoints and dashboards are not wired to cluster monitoring
+|Network policy|Not supported|The collector network policy feature is not applied to the OpenTelemetry operator managed workload
+|TLS security profile|Not validated|
+|FIPS|Not validated|
+|======
+
+== Verification
+
+Functional and end to end tests cover the feature:
+
+* `test/functional/normalization/otel` verifies container logs written to an
+  OTLP endpoint satisfy the observability data model
+* `test/e2e/logforwarding/lokistack` verifies forwarding to LokiStack's OTLP
+  endpoint with both collector implementations, deploying the OpenTelemetry
+  operator if it is not already installed

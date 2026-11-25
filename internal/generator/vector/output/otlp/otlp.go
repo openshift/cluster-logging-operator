@@ -7,15 +7,16 @@ import (
 
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/sinks"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/transforms"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/codec"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/common/tls"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/metrics"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -79,8 +80,8 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	reduceInputs := []string{}
 	// Container
 	if sources.Has(logSourceContainer) {
-		transformContainerID := helpers.MakeID(id, logSourceContainer)                       // "output_my_id_container"
-		transformContainerInputID := helpers.MakeRouteInputID(rerouteID, logSourceContainer) // "output_my_id_reroute.container"
+		transformContainerID := helpers.MakeID(id, logSourceContainer)                             // "output_my_id_container"
+		transformContainerInputID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceContainer) // "output_my_id_reroute.container"
 		reduceContainerID := helpers.MakeID(id, "groupby", "container")
 		tfs[transformContainerID] = TransformContainer([]string{transformContainerInputID})
 		// Group by cluster_id, namespace_name, pod_name, container_name
@@ -91,7 +92,7 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	if sources.Has(logSourceNode) {
 		// Journal
 		transformNodeID := helpers.MakeID(id, logSourceNode)
-		transformNodeRouteID := helpers.MakeRouteInputID(rerouteID, logSourceNode)
+		transformNodeRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceNode)
 		tfs[transformNodeID] = TransformJournal([]string{transformNodeRouteID})
 
 		groupByHostInputs = append(groupByHostInputs, transformNodeID)
@@ -100,26 +101,26 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 	if sources.Has(logSourceAuditd) {
 		// Audit
 		transformAuditHostID := helpers.MakeID(id, logSourceAuditd)
-		transformAuditHostRouteID := helpers.MakeRouteInputID(rerouteID, logSourceAuditd)
+		transformAuditHostRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceAuditd)
 		tfs[transformAuditHostID] = TransformAuditHost([]string{transformAuditHostRouteID})
 		groupByHostInputs = append(groupByHostInputs, transformAuditHostID)
 	}
 	if sources.Has(logSourceKubeAPI) {
 		transformAuditKubeID := helpers.MakeID(id, logSourceKubeAPI)
-		transformAuditKubeRouteID := helpers.MakeRouteInputID(rerouteID, logSourceKubeAPI)
+		transformAuditKubeRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceKubeAPI)
 		tfs[transformAuditKubeID] = TransformAuditKube([]string{transformAuditKubeRouteID})
 		groupBySourceInputs = append(groupBySourceInputs, transformAuditKubeID)
 	}
 	if sources.Has(logSourceOpenshiftAPI) {
 
 		transformAuditOpenshiftID := helpers.MakeID(id, logSourceOpenshiftAPI)
-		transformAuditOpenshiftRouteID := helpers.MakeRouteInputID(rerouteID, logSourceOpenshiftAPI)
+		transformAuditOpenshiftRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceOpenshiftAPI)
 		tfs[transformAuditOpenshiftID] = TransformAuditOpenshift([]string{transformAuditOpenshiftRouteID})
 		groupBySourceInputs = append(groupBySourceInputs, transformAuditOpenshiftID)
 	}
 	if sources.Has(logSourceOvn) {
 		transformAuditOvnID := helpers.MakeID(id, logSourceOvn)
-		transformAuditOvnRouteID := helpers.MakeRouteInputID(rerouteID, logSourceOvn)
+		transformAuditOvnRouteID := vectorhelpers.MakeRouteInputID(rerouteID, logSourceOvn)
 		tfs[transformAuditOvnID] = TransformAuditOvn([]string{transformAuditOvnRouteID})
 		groupBySourceInputs = append(groupBySourceInputs, transformAuditOvnID)
 	}

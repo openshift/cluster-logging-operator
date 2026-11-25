@@ -77,6 +77,9 @@ const (
 	// ReasonManagementStateUnmanaged is used when the workload is in an Unmanaged state
 	ReasonManagementStateUnmanaged = "ManagementStateUnmanaged"
 
+	// ReasonOpenTelemetryOperatorMissing means the OpenTelemetry operator required by the otelc collector implementation is not installed
+	ReasonOpenTelemetryOperatorMissing = "OpenTelemetryOperatorMissing"
+
 	// ReasonMissingSpec applies when a type is specified without a defined spec (e.g. type application without obs.Application)
 	ReasonMissingSpec = "MissingSpec"
 

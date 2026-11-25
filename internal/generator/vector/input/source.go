@@ -4,9 +4,10 @@ import (
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	internalobs "github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/input/container"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/utils/set"
@@ -35,7 +36,7 @@ func NewSource(input *adapters.Input, resNames factory.ForwarderResourceNames, s
 				}
 			}
 			// Need to remove any of the default excluded infra namespaces if they are part of the includes
-			excludesList := pruneInfraNS(appIncludes)
+			excludesList := container.PruneInfraNS(appIncludes)
 			for _, ns := range excludesList {
 				ncs := helpers.NamespaceContainer{
 					Namespace: ns,
@@ -53,7 +54,7 @@ func NewSource(input *adapters.Input, resNames factory.ForwarderResourceNames, s
 			}
 		} else {
 			// Need to remove any of the default excluded infra namespaces if they are part of the includes
-			excludesList := pruneInfraNS(appIncludes)
+			excludesList := container.PruneInfraNS(appIncludes)
 			for _, ns := range excludesList {
 				ncs := helpers.NamespaceContainer{
 					Namespace: ns,
@@ -61,9 +62,9 @@ func NewSource(input *adapters.Input, resNames factory.ForwarderResourceNames, s
 				eb.AddCombined(ncs)
 			}
 		}
-		eb.AddExtensions(excludeExtensions...)
+		eb.AddExtensions(container.ExcludeExtensions...)
 		includes := ib.Build()
-		excludes := eb.Build(infraNamespaces...)
+		excludes := eb.Build(container.InfraNamespaces...)
 		sourceId, source, ctfs := NewContainerSource(input, includes, excludes, obs.InputTypeApplication, obs.InfrastructureSourceContainer)
 		inputSources.Add(sourceId, source)
 		return inputSources, ctfs
@@ -78,8 +79,8 @@ func NewSource(input *adapters.Input, resNames factory.ForwarderResourceNames, s
 			}
 		}
 		if sources.Has(obs.InfrastructureSourceContainer) {
-			infraIncludes := helpers.NewContainerPathGlobBuilder().AddNamespaces(infraNamespaces...).Build()
-			sourceId, source, ctfs := NewContainerSource(input, infraIncludes, loggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer)
+			infraIncludes := helpers.NewContainerPathGlobBuilder().AddNamespaces(container.InfraNamespaces...).Build()
+			sourceId, source, ctfs := NewContainerSource(input, infraIncludes, container.LoggingExcludes, obs.InputTypeInfrastructure, obs.InfrastructureSourceContainer)
 			inputSources.Add(sourceId, source)
 			tfs.Merge(ctfs)
 		}

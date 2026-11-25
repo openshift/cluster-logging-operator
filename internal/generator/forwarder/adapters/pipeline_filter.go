@@ -3,14 +3,15 @@ package adapters
 import (
 	"sort"
 
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/component"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
 // PipelineFilter is a dedicated instance of the CLF filter for the pipeline
 type PipelineFilter struct {
 	ids     []string
-	Next    []helpers.InputComponent
+	Next    []component.Provider
 	Factory func(inputs ...string) types.Transform
 }
 
@@ -21,7 +22,7 @@ func (pf *PipelineFilter) InputIDs() []string {
 	return pf.ids
 }
 
-func (pf *PipelineFilter) AddInputFrom(n helpers.InputComponent) {
+func (pf *PipelineFilter) AddInputFrom(n component.Provider) {
 	pf.Next = append(pf.Next, n)
 }
 

@@ -8,9 +8,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	obsruntime "github.com/openshift/cluster-logging-operator/internal/runtime/observability"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	oteloperator "github.com/openshift/cluster-logging-operator/test/framework/e2e/operator/opentelemetry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -127,34 +129,56 @@ var _ = Describe("[ClusterLogForwarder] Forward to Lokistack", func() {
 		}
 	})
 
-	It("should send logs to lokistack's OTLP endpoint when dataModel == Otel", func() {
-		lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
-		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
+	DescribeTable("should send logs to lokistack's OTLP endpoint when dataModel == Otel",
+		func(collectorImpl string) {
+			if collectorImpl == constants.ComponentNameOtelc {
+				// the otelc collector requires the OpenTelemetry operator to
+				// own the collector workload: deploy it, or skip the install
+				// when it is already deployed
+				if err := oteloperator.Deploy(e2e); err != nil {
+					Fail(fmt.Sprintf("Unable to deploy the opentelemetry operator: %v", err))
+				}
+				forwarder.Annotations[constants.AnnotationCollectorImplementation] = constants.ComponentNameOtelc
+			}
 
-		if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
-			Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
-		}
-		if err := e2e.WaitForDaemonSet(forwarder.Namespace, forwarder.Name); err != nil {
-			Fail(err.Error())
-		}
+			lokiStackOut.LokiStack.DataModel = obs.LokiStackDataModelOpenTelemetry
+			forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)
 
-		found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+			if err := e2e.CreateObservabilityClusterLogForwarder(forwarder); err != nil {
+				Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+			}
 
-		res, err := lokistackReceiver.GetApplicationLogsByKeyValue(serviceAccount.Name, otlpKey, logGenName, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(res).ToNot(BeEmpty())
-		Expect(len(res)).To(Equal(1))
+			// the CLO deploys the vector collector as a daemonset named after
+			// the forwarder; the OpenTelemetry operator deploys the otelc
+			// collector as <forwarder>-collector
+			collectorDaemonSet := forwarder.Name
+			if collectorImpl == constants.ComponentNameOtelc {
+				collectorDaemonSet = fmt.Sprintf("%s-collector", forwarder.Name)
+			}
+			if err := e2e.WaitForDaemonSet(forwarder.Namespace, collectorDaemonSet); err != nil {
+				Fail(err.Error())
+			}
 
-		found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
+			found, err := lokistackReceiver.HasApplicationLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout, otlpKey, logGenName)
+			Expect(err).To(BeNil())
+			Expect(found).To(BeTrue())
 
-		found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
-		Expect(err).To(BeNil())
-		Expect(found).To(BeTrue())
-	})
+			res, err := lokistackReceiver.GetApplicationLogsByKeyValue(serviceAccount.Name, otlpKey, logGenName, framework.DefaultWaitForLogsTimeout)
+			Expect(err).To(BeNil())
+			Expect(res).ToNot(BeEmpty())
+			Expect(len(res)).To(Equal(1))
+
+			found, err = lokistackReceiver.HasAuditLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+			Expect(err).To(BeNil())
+			Expect(found).To(BeTrue())
+
+			found, err = lokistackReceiver.HasInfrastructureLogs(serviceAccount.Name, framework.DefaultWaitForLogsTimeout)
+			Expect(err).To(BeNil())
+			Expect(found).To(BeTrue())
+		},
+		Entry("when the collector is vector", ""),
+		Entry("when the collector is otelc", constants.ComponentNameOtelc),
+	)
 
 	It("should send logs to lokistack when dataModel is not spec'd", func() {
 		forwarder.Spec.Outputs = append(forwarder.Spec.Outputs, *lokiStackOut)

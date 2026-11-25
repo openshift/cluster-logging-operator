@@ -1,12 +1,11 @@
 package tls
 
 import (
-	obs "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api/types/transport"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -37,9 +36,9 @@ func NewTls(comp observability.TransportLayerSecurity, secrets observability.Sec
 	conf = &transport.TLS{}
 	if comp != nil && comp.GetTlsSpec() != nil {
 		spec := comp.GetTlsSpec()
-		conf.CAFile = ValuePath(spec.CA, "%s")
-		conf.CRTFile = ValuePath(spec.Certificate, "%s")
-		conf.KeyFile = SecretPath(spec.Key, "%s")
+		conf.CAFile = helpers.ValuePath(spec.CA, "%s")
+		conf.CRTFile = helpers.ValuePath(spec.Certificate, "%s")
+		conf.KeyFile = helpers.SecretPath(spec.Key, "%s")
 		conf.KeyPass = secrets.AsString(spec.KeyPassphrase)
 		if _, found := framework.HasOption(ExcludeInsecureSkipVerify, options); !found && comp.IsInsecureSkipVerify() {
 			conf.VerifyCertificate = utils.GetPtr(false)
@@ -65,23 +64,4 @@ func SetTLSProfile(t *transport.TLS, op utils.Options) *transport.TLS {
 		t.Curves = groups.(string)
 	}
 	return t
-}
-
-func ValuePath(resource *obs.ValueReference, formatter ...string) string {
-	if resource == nil {
-		return ""
-	}
-	if resource.SecretName != "" {
-		return helpers.SecretPath(resource.SecretName, resource.Key, formatter...)
-	} else if resource.ConfigMapName != "" {
-		return helpers.ConfigPath(resource.ConfigMapName, resource.Key, formatter...)
-	}
-	return ""
-}
-
-func SecretPath(resource *obs.SecretReference, formatter ...string) string {
-	if resource == nil || resource.SecretName == "" {
-		return ""
-	}
-	return helpers.SecretPath(resource.SecretName, resource.Key, formatter...)
 }

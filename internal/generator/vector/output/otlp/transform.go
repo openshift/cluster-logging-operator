@@ -37,8 +37,7 @@ resource.attributes = append( resource.attributes,
     {"key": "k8s.namespace.name", "value": {"stringValue": .kubernetes.namespace_name}}
   ]
 )
-# Use original (non-dedotted) labels to preserve keys containing dots and slashes
-if exists(._internal.kubernetes.labels) {for_each(object!(._internal.kubernetes.labels)) -> |key,value| {
+if exists(.kubernetes.labels) {for_each(object!(.kubernetes.labels)) -> |key,value| {
     resource.attributes = append(resource.attributes,
         [{"key": "k8s.pod.label." + key, "value": {"stringValue": value}}]
     )
@@ -162,7 +161,7 @@ o = {
   "logRecords": r
 }
 `
-	// The Minimum Viable Product (MVP) labels
+	// The (M)inimum (V)iable (P)roduct Labels (MVP)
 	BackwardCompatBaseResourceAttributes = `
 # Append backward compatibility attributes
 resource.attributes = append( resource.attributes,

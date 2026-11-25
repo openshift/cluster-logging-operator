@@ -9,10 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/api/observability"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder/adapters"
 	"github.com/openshift/cluster-logging-operator/internal/generator/framework"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/adapters"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/api"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
@@ -84,7 +85,7 @@ var _ = Describe("Generate vector config", func() {
 			output := initOutput()
 			return utils.Options{
 				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
-				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+				vectorhelpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
 					Outputs: []obs.OutputSpec{output},
 					Pipelines: []obs.PipelineSpec{
 						{
@@ -106,7 +107,7 @@ var _ = Describe("Generate vector config", func() {
 			output := initOutput()
 			return utils.Options{
 				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
-				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+				vectorhelpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
 					Outputs: []obs.OutputSpec{output},
 					Pipelines: []obs.PipelineSpec{
 						{
@@ -159,7 +160,7 @@ var _ = Describe("Generate vector config", func() {
 			output := initOutput()
 			return utils.Options{
 				framework.OptionServiceAccountTokenSecretName: saTokenSecretName,
-				helpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
+				vectorhelpers.CLFSpec: observability.ClusterLogForwarderSpec(obs.ClusterLogForwarderSpec{
 					Outputs: []obs.OutputSpec{output},
 					Pipelines: []obs.PipelineSpec{
 						{

@@ -23,6 +23,7 @@ Open an issue in this repository
 * link:features/logforwarding/outputs/splunk-forwarding.adoc[Forward logs to Splunk]
 * link:features/logforwarding/outputs/send-logs-to-fluentd-http.adoc[Send logs to Fluentd over Http]
 * link:features/logforwarding/filters/api-audit-filter.adoc[Filter API audit logs using a policy]
+* link:features/logforwarding/otelc/opentelemetry_collector.adoc[OpenTelemetry Collector based log forwarding (dev preview)]
 
 == Relevant links
 

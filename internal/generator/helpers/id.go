@@ -2,26 +2,13 @@ package helpers
 
 import "strings"
 
-// InputComponent is a vector sink, transformation, source that is
-// provided as input to other components
-type InputComponent interface {
-	// InputIDs are the ids of config elements to use as input to other components
-	InputIDs() []string
-}
-
-// ComponentReceiver is a vector component that receives input from another component (e.g. transform, sink)
-type ComponentReceiver interface {
-	AddInputFrom(n InputComponent)
-}
+var (
+	idReplacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+)
 
 // MakeID given a list of components
 func MakeID(parts ...string) string {
-	return FormatComponentID(strings.Join(parts, "_"))
-}
-
-// MakeRouteInputID appends sourceType to rerouteId for input ids
-func MakeRouteInputID(rerouteId, sourceType string) string {
-	return strings.ToLower(strings.Join([]string{rerouteId, sourceType}, "."))
+	return strings.ToLower(idReplacer.Replace(strings.Join(parts, "_")))
 }
 
 // MakeInputID for components that logically represent clf.input

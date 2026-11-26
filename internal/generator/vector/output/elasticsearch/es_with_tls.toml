@@ -22,6 +22,8 @@ endpoints = ["https://es.svc.infra.cluster:9200"]
 id_key = "_id"
 api_version = "v6"
 
+dangerously_allow_unconfined_template_resolution = true
+
 [sinks.es_1.bulk]
 index = "{{ _internal.es_1_index }}"
 action = "create"

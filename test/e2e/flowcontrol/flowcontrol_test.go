@@ -17,7 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("[E2E] FlowControl", func() {
+var _ = Describe("[E2E] FlowControl", Serial, func() {
 
 	var (
 		e2e           *framework.E2ETestFramework

@@ -106,6 +106,13 @@ var _ = Describe("vector syslog clf output", func() {
 			}
 		}, false),
 
+		Entry("should configure TLS with insecureSkipVerify and no CA, certificate, or key (LOG-10600)", "tls_insecure_skip_verify.toml", func(spec *obs.OutputSpec) {
+			spec.Syslog.URL = "tls://logserver:6514"
+			spec.TLS = &obs.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			}
+		}, false),
+
 		Entry("should configure TLS with log record field references", "tls_with_field_references.toml", func(spec *obs.OutputSpec) {
 			spec.TLS = tlsSpec
 			spec.Syslog = &obs.Syslog{

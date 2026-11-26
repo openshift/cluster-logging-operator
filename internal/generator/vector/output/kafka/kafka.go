@@ -52,8 +52,16 @@ func New(id string, o *adapters.Output, inputs []string, secrets observability.S
 }
 
 func kafkaTls(s *sinks.Kafka, o *adapters.Output, secrets observability.Secrets, op utils.Options) {
+	// Exclude vector-side verify flags unless file-based TLS material is
+	// configured for non-tls:// brokers. For tls:// brokers, verification is
+	// governed by librdkafka's enable.ssl.certificate.verification (see
+	// librdKafkaOptions). For non-tls:// brokers without files,
+	// insecureSkipVerify alone must not enable TLS (LOG-10600); with files
+	// (CA or cert/key), keep emitting the verification settings so
+	// certificate validation stays disabled as before.
+	hasTlsFiles := o.TLS != nil && (o.TLS.CA != nil || o.TLS.Key != nil || o.TLS.Certificate != nil)
 	var additionalOptions []framework.Option
-	if o.TLS != nil && isTlsBrokers(o.Kafka) {
+	if isTlsBrokers(o.Kafka) || !hasTlsFiles {
 		additionalOptions = []framework.Option{
 			{Name: tls.ExcludeInsecureSkipVerify, Value: ""},
 		}

@@ -68,7 +68,13 @@ func NewContainerSource(spec *adapters.Input, includes, excludes []string, logTy
 		kl.MaxReadBytes = 3145728
 		kl.GlobMinimumCooldownMillis = 15000
 		kl.AutoPartialMerge = true
+		// Apply 126MB default if maxMessageSize not specified
+		if maxMsgSize == 0 {
+			maxMsgSize = 132120576 // 126MB
+		}
 		kl.MaxMergedLineBytes = uint64(maxMsgSize)
+		// Always truncate oversized messages (never drop)
+		kl.MaxMergedLineAction = "truncate"
 		kl.IncludePathsGlobPatterns = includes
 		kl.ExcludePathsGlobPatterns = excludes
 		kl.ExtraLabelSelector = helpers2.LabelSelectorFrom(selector)

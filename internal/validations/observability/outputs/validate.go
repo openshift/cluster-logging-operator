@@ -33,6 +33,7 @@ func Validate(context internalcontext.ForwarderContext) {
 			messages = append(messages, ValidateGCLAuth(out, context)...)
 		case obs.OutputTypeHTTP:
 			messages = append(messages, validateHttpContentTypeHeaders(out)...)
+			messages = append(messages, validateHTTPBearerTokenRequiresHTTPS(out)...)
 		case obs.OutputTypeElasticsearch:
 			messages = append(messages, validateElasticsearchHeaders(out)...)
 		case obs.OutputTypeAzureLogsIngestion:

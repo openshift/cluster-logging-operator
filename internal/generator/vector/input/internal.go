@@ -23,8 +23,14 @@ if match_any(string(._internal.kubernetes.namespace_name) ?? "", [r'^default$', 
 }
 `
 	parseStructured = `
-._internal.structured = parse_json!(string!(._internal.message))
-._internal = merge!(._internal,._internal.structured)
+._internal.structured, err = parse_json(string!(._internal.message))
+if err == null {
+  ._internal = merge!(._internal,._internal.structured)
+} else {
+  log(err, level: "error")
+  ._internal.structured = {}
+  .message = ._internal.message
+}
 `
 	parseStructuredAuditTimestamp = `
 audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")

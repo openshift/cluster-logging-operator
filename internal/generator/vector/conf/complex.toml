@@ -22,6 +22,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -171,6 +172,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -180,8 +182,14 @@ inputs = ["input_audit_kube"]
 source = '''
 . = {"_internal": .}
 
-._internal.structured = parse_json!(string!(._internal.message))
-._internal = merge!(._internal,._internal.structured)
+._internal.structured, err = parse_json(string!(._internal.message))
+if err == null {
+  ._internal = merge!(._internal,._internal.structured)
+} else {
+  log(err, level: "error")
+  ._internal.structured = {}
+  .message = ._internal.message
+}
 
 audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
 if audit_err != null {
@@ -202,6 +210,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 
@@ -211,8 +220,14 @@ inputs = ["input_audit_openshift"]
 source = '''
 . = {"_internal": .}
 
-._internal.structured = parse_json!(string!(._internal.message))
-._internal = merge!(._internal,._internal.structured)
+._internal.structured, err = parse_json(string!(._internal.message))
+if err == null {
+  ._internal = merge!(._internal,._internal.structured)
+} else {
+  log(err, level: "error")
+  ._internal.structured = {}
+  .message = ._internal.message
+}
 
 audit_time, audit_err = parse_timestamp(to_string(._internal.stageTimestamp) ?? "", "%+")
 if audit_err != null {
@@ -233,6 +248,7 @@ host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 ignore_older_secs = 3600
 max_line_bytes = 3145728
+max_line_bytes_action = "truncate"
 max_read_bytes = 262144
 rotate_wait_secs = 5
 

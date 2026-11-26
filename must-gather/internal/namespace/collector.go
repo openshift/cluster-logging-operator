@@ -25,19 +25,23 @@ const (
 
 // Collector collects namespace-scoped resources
 type Collector struct {
-	client     *client.Client
-	logger     api.Logger
-	namespaces []string
-	destDir    api.Path
+	client       *client.Client
+	logger       api.Logger
+	namespaces   []string
+	destDir      api.Path
+	sinceSeconds *int64
+	sinceTime    *metav1.Time
 }
 
 // NewCollector creates a new namespace resource collector
-func NewCollector(c *client.Client, logger api.Logger, namespaces []string, destDir api.Path) *Collector {
+func NewCollector(c *client.Client, logger api.Logger, namespaces []string, destDir api.Path, sinceSeconds *int64, sinceTime *metav1.Time) *Collector {
 	return &Collector{
-		client:     c,
-		logger:     logger,
-		namespaces: namespaces,
-		destDir:    destDir,
+		client:       c,
+		logger:       logger,
+		namespaces:   namespaces,
+		destDir:      destDir,
+		sinceSeconds: sinceSeconds,
+		sinceTime:    sinceTime,
 	}
 }
 
@@ -184,7 +188,9 @@ func (n *Collector) collectContainerLog(ctx context.Context, namespace, podName,
 		Previous:  previous,
 		// Timestamps restores per-line RFC3339 prefixes, matching the previous
 		// `oc adm inspect`-based gather (LOG-10434).
-		Timestamps: true,
+		Timestamps:   true,
+		SinceSeconds: n.sinceSeconds,
+		SinceTime:    n.sinceTime,
 	}
 
 	req := n.client.KubernetesClient.CoreV1().Pods(namespace).GetLogs(podName, logOpts)

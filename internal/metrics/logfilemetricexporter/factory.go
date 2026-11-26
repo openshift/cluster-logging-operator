@@ -3,6 +3,7 @@ package logfilemetricexporter
 import (
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/tls"
@@ -32,13 +33,7 @@ const (
 	// lfmeRunAsUser is the fixed non-root UID the exporter runs as. The exporter reads the
 	// hostPath log directories via group 0 (the default GID granted by OpenShift), which
 	// satisfies the 0750 root:root permissions on /var/log/pods without joining extra groups.
-	lfmeRunAsUser int64 = 1000
-	// selinuxTypeLogWriter (container_logwriter_t) is an MCS-constrained container domain that
-	// grants read plus the inotify "watch"/"watch_reads" permissions on container_log_t, which
-	// the exporter requires to watch /var/log/pods. It is far more restrictive than the
-	// super-privileged spc_t; the otherwise-preferable container_logreader_t domain is not
-	// usable because it denies the inotify "watch" permission.
-	selinuxTypeLogWriter = "container_logwriter_t"
+	lfmeRunAsUser = common.NonRootUser
 )
 
 var (
@@ -157,7 +152,7 @@ func securityContext() *v1.SecurityContext {
 			Drop: auth.RequiredDropCapabilities,
 		},
 		SELinuxOptions: &v1.SELinuxOptions{
-			Type: selinuxTypeLogWriter,
+			Type: common.SelinuxTypeLogWriter,
 		},
 		RunAsUser:                utils.GetPtr(lfmeRunAsUser),
 		RunAsNonRoot:             utils.GetPtr(true),
